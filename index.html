@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enosfera — Archivio personale vini per sommelier</title>
+  <meta name="description" content="Archivio personale vini per sommelier professionisti. Schede di degustazione AIS e FISAR, scansione etichette AI, export inventario.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --wine: #6B1E2E;
+      --wine-l: #A0354A;
+      --wine-pale: #F5ECE8;
+      --gold: #B8892A;
+      --gold-l: #D4A94A;
+      --ais: #1A3A6B;
+      --ais-pale: #EAF0FB;
+      --fisar: #1A5C3A;
+      --fisar-pale: #E8F5EE;
+      --ink: #1A1410;
+      --muted: #7A6B5E;
+      --border: rgba(107,30,46,0.15);
+      --border2: rgba(107,30,46,0.3);
+      --bg: #FFFFFF;
+      --surf: #FAF7F2;
+      --cream: #FAF7F2;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --ink: #F0EAE4;
+        --muted: #9A8B80;
+        --border: rgba(240,210,200,0.15);
+        --border2: rgba(240,210,200,0.3);
+        --bg: #1A1210;
+        --surf: #251A16;
+        --cream: #251A16;
+        --wine-pale: #2A0F18;
+        --ais-pale: #0A1528;
+        --fisar-pale: #0A1F14;
+      }
+    }
+
+    html { font-size: 16px; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--surf);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    /* ── LAYOUT ── */
+    .app-shell { max-width: 760px; margin: 0 auto; padding: 1.5rem 1rem; }
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* ── BUTTONS ── */
+    .btn {
+      font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+      padding: 7px 16px; border-radius: 8px;
+      border: 0.5px solid var(--border2); background: var(--bg);
+      color: var(--ink); cursor: pointer; transition: background .15s, opacity .15s;
+      display: inline-flex; align-items: center; gap: 5px;
+    }
+    .btn:hover { background: var(--surf); }
+    .btn.primary { background: var(--wine); color: #fff; border-color: var(--wine); }
+    .btn.primary:hover { background: var(--wine-l); }
+    .btn.gold { background: var(--gold); color: #fff; border-color: var(--gold); }
+    .btn.gold:hover { background: var(--gold-l); }
+    .btn.sm { padding: 5px 12px; font-size: 12px; }
+    .btn.danger { color: #c0392b; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── NAV ── */
+    .nav {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1.25rem;
+    }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-icon {
+      width: 36px; height: 36px; background: var(--wine); border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 18px; flex-shrink: 0;
+    }
+    .logo-text { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--ink); }
+    .logo-text em { color: var(--wine); font-style: italic; }
+    .nav-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+    .user-pill {
+      display: flex; align-items: center; gap: 7px;
+      padding: 5px 12px; border-radius: 20px;
+      background: var(--surf); border: 0.5px solid var(--border);
+      font-size: 12px; color: var(--muted);
+    }
+    .avatar {
+      width: 24px; height: 24px; border-radius: 50%; background: var(--wine);
+      color: #fff; font-size: 10px; font-weight: 500;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .assoc-badge { font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 20px; }
+    .badge-ais    { background: var(--ais-pale); color: var(--ais); }
+    .badge-fisar  { background: var(--fisar-pale); color: var(--fisar); }
+    .badge-onav   { background: var(--wine-pale); color: #7A3A10; }
+    .badge-fis    { background: #F0EAF8; color: #5A2A7A; }
+
+    /* ── STATS BAR ── */
+    .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.25rem; }
+    .stat { background: var(--bg); border: 0.5px solid var(--border); border-radius: 10px; padding: 10px 13px; }
+    .stat-n { font-size: 22px; font-weight: 500; font-family: 'Playfair Display', serif; color: var(--wine); }
+    .stat-l { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* ── FILTERS ── */
+    .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.25rem; align-items: center; }
+    .filter-bar input {
+      flex: 1; min-width: 140px; font-family: 'DM Sans', sans-serif;
+      font-size: 13px; padding: 7px 12px; border-radius: 8px;
+      border: 0.5px solid var(--border); background: var(--bg); color: var(--ink);
+    }
+    .filter-bar input:focus { outline: none; border-color: var(--wine); }
+    .chip {
+      font-size: 12px; padding: 5px 12px; border-radius: 20px;
+      border: 0.5px solid var(--border); background: var(--bg);
+      color: var(--muted); cursor: pointer; transition: all .15s; white-space: nowrap;
+    }
+    .chip.active { background: var(--wine-pale); color: var(--wine); border-color: var(--wine); font-weight: 500; }
+
+    /* ── WINE GRID ── */
+    .wine-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+    .wcard {
+      background: var(--bg); border: 0.5px solid var(--border);
+      border-radius: 12px; overflow: hidden; cursor: pointer;
+      transition: border-color .15s, transform .1s;
+    }
+    .wcard:hover { border-color: var(--wine); transform: translateY(-1px); }
+    .wimg {
+      height: 120px; background: var(--wine-pale);
+      display: flex; align-items: center; justify-content: center;
+      position: relative; overflow: hidden;
+    }
+    .wimg img { width: 100%; height: 100%; object-fit: cover; }
+    .wimg .ph { font-size: 34px; opacity: .3; color: var(--wine); }
+    .wbadge { position: absolute; top: 8px; right: 8px; font-size: 10px; font-weight: 500; padding: 3px 8px; border-radius: 20px; }
+    .br  { background: rgba(107,30,46,.15); color: var(--wine); }
+    .bb  { background: rgba(184,137,42,.15); color: var(--gold); }
+    .bro { background: rgba(200,100,120,.15); color: #A04050; }
+    .bs  { background: rgba(60,100,180,.15);  color: #2A5A9A; }
+    .winfo { padding: 11px 13px; }
+    .wname { font-family: 'Playfair Display', serif; font-size: 14px; font-weight: 500; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .wprod { font-size: 11px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .wmeta { display: flex; justify-content: space-between; margin-top: 7px; font-size: 11px; color: var(--muted); align-items: center; }
+    .wscore { font-weight: 500; color: var(--gold); }
+    .stars { color: var(--gold); font-size: 10px; letter-spacing: -1px; }
+
+    .empty { text-align: center; padding: 3.5rem 1rem; color: var(--muted); }
+    .empty i { font-size: 44px; opacity: .25; display: block; margin-bottom: 12px; }
+    .empty p { font-size: 14px; line-height: 1.6; }
+
+    /* ── LOGIN ── */
+    #screen-login { padding-top: 3rem; }
+    .login-wrap { max-width: 360px; margin: 0 auto; }
+    .login-logo { text-align: center; margin-bottom: 2rem; }
+    .login-logo .logo-icon { width: 56px; height: 56px; font-size: 28px; margin: 0 auto 12px; }
+    .login-logo h1 { font-family: 'Playfair Display', serif; font-size: 24px; color: var(--ink); }
+    .login-logo p { font-size: 13px; color: var(--muted); margin-top: 5px; }
+    .ltabs { display: flex; margin-bottom: 1.25rem; border: 0.5px solid var(--border); border-radius: 9px; overflow: hidden; }
+    .ltab { flex: 1; padding: 9px; text-align: center; font-size: 13px; cursor: pointer; color: var(--muted); background: var(--surf); transition: all .15s; }
+    .ltab.active { background: var(--wine); color: #fff; font-weight: 500; }
+    .lcard { background: var(--bg); border: 0.5px solid var(--border); border-radius: 12px; padding: 1.5rem; }
+    .lfield { margin-bottom: 1rem; }
+    .lfield:last-of-type { margin-bottom: 0; }
+    .lfield label { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 5px; }
+    .lfield input, .lfield select {
+      width: 100%; font-family: 'DM Sans', sans-serif; font-size: 13px;
+      padding: 9px 12px; border-radius: 8px;
+      border: 0.5px solid var(--border); background: var(--bg); color: var(--ink);
+    }
+    .lfield input:focus, .lfield select:focus { outline: none; border-color: var(--wine); }
+    .lbtn {
+      width: 100%; padding: 10px; font-size: 14px; font-weight: 500;
+      font-family: 'DM Sans', sans-serif; background: var(--wine);
+      color: #fff; border: none; border-radius: 8px; cursor: pointer; margin-top: 1rem;
+      transition: background .15s;
+    }
+    .lbtn:hover { background: var(--wine-l); }
+    .lerr { font-size: 12px; color: #c0392b; text-align: center; margin-top: 8px; display: none; }
+    .demo-hint { font-size: 11px; color: var(--muted); text-align: center; margin-top: 10px; }
+    .demo-hint b { color: var(--ink); }
+
+    /* ── FORM ── */
+    .fhdr { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; }
+    .fhdr h2 { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--ink); }
+    .fsec { background: var(--bg); border: 0.5px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: .9rem; }
+    .stitle { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: .9rem; display: flex; align-items: center; gap: 5px; }
+    .frow { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+    .fg { margin-bottom: 11px; }
+    .fg:last-child { margin-bottom: 0; }
+    .fg label { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 5px; }
+    .fg input, .fg select, .fg textarea {
+      width: 100%; font-family: 'DM Sans', sans-serif; font-size: 13px;
+      padding: 8px 12px; border-radius: 8px;
+      border: 0.5px solid var(--border); background: var(--bg); color: var(--ink);
+    }
+    .fg input:focus, .fg select:focus, .fg textarea:focus { outline: none; border-color: var(--wine); }
+    .fg textarea { resize: vertical; min-height: 75px; }
+
+    .upload-z {
+      border: 1.5px dashed var(--border); border-radius: 10px;
+      padding: 1.25rem; text-align: center; cursor: pointer;
+      transition: all .15s; margin-bottom: 8px;
+    }
+    .upload-z:hover { border-color: var(--wine); background: var(--wine-pale); }
+    .upload-z i { font-size: 26px; color: var(--wine); opacity: .55; margin-bottom: 7px; display: block; }
+    .upload-z p { font-size: 12px; color: var(--muted); }
+    .upload-z b { color: var(--wine); }
+
+    .ai-banner {
+      background: var(--wine-pale); border: 0.5px solid rgba(107,30,46,.2);
+      border-radius: 10px; padding: 11px 15px; margin-bottom: .9rem;
+      display: flex; align-items: center; gap: 11px; flex-wrap: wrap;
+    }
+    .ai-pill {
+      background: var(--wine); color: #fff; font-size: 10px;
+      font-weight: 500; padding: 3px 10px; border-radius: 20px; white-space: nowrap;
+    }
+    .ai-txt { font-size: 12px; color: var(--muted); flex: 1; min-width: 120px; }
+
+    .spin-wrap { display: none; align-items: center; gap: 9px; padding: 8px 0; }
+    .spin-wrap.show { display: flex; }
+    .spin {
+      width: 16px; height: 16px; border: 2px solid var(--border);
+      border-top-color: var(--wine); border-radius: 50%;
+      animation: sp .8s linear infinite;
+    }
+    @keyframes sp { to { transform: rotate(360deg); } }
+
+    /* ── DEGUSTAZIONE ── */
+    .deg-tabs { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+    .deg-tab {
+      font-size: 12px; padding: 5px 14px; border-radius: 20px;
+      border: 0.5px solid var(--border); background: var(--bg);
+      color: var(--muted); cursor: pointer; font-weight: 500;
+      display: flex; align-items: center; gap: 4px; transition: all .15s;
+    }
+    .deg-tab.ais-act   { background: var(--ais-pale); color: var(--ais); border-color: var(--ais); }
+    .deg-tab.fisar-act { background: var(--fisar-pale); color: var(--fisar); border-color: var(--fisar); }
+    .deg-tab.free-act  { background: var(--wine-pale); color: var(--wine); border-color: var(--wine); }
+    .deg-schema { display: none; }
+    .deg-schema.active { display: block; }
+
+    .param-group { margin-bottom: 1rem; }
+    .pg-title { font-size: 12px; font-weight: 500; color: var(--ink); margin-bottom: .5rem; padding-bottom: .4rem; border-bottom: 0.5px solid var(--border); }
+    .param-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .param-label { font-size: 12px; color: var(--muted); min-width: 135px; line-height: 1.3; }
+    .param-val { font-size: 12px; font-weight: 500; color: var(--wine); min-width: 18px; text-align: right; }
+    .param-row input[type=range] { flex: 1; accent-color: var(--wine); }
+    .pselect { font-size: 12px; padding: 4px 8px; border-radius: 6px; border: 0.5px solid var(--border); background: var(--bg); color: var(--ink); flex: 1; }
+
+    .score-circle {
+      width: 68px; height: 68px; border-radius: 50%;
+      background: var(--wine-pale); border: 2px solid var(--wine);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      margin: 0 auto 10px;
+    }
+    .score-n { font-size: 24px; font-weight: 500; font-family: 'Playfair Display', serif; color: var(--wine); line-height: 1; }
+    .score-max { font-size: 10px; color: var(--muted); }
+    .score-circle.fisar { border-color: var(--fisar); background: var(--fisar-pale); }
+    .score-circle.fisar .score-n { color: var(--fisar); }
+
+    .ffoot { display: flex; gap: 9px; justify-content: flex-end; margin-top: 1rem; }
+
+    /* ── DETAIL ── */
+    .dhero {
+      background: var(--wine-pale); border-radius: 12px;
+      padding: 1.25rem; margin-bottom: .9rem;
+      display: flex; gap: 1.25rem; align-items: flex-start;
+    }
+    .dimgs { display: flex; flex-direction: column; gap: 7px; }
+    .dimg {
+      width: 84px; height: 110px; object-fit: cover; border-radius: 8px;
+      border: 0.5px solid var(--border); background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; overflow: hidden; flex-shrink: 0;
+    }
+    .dvintage { font-size: 12px; color: var(--wine); font-weight: 500; margin-bottom: 3px; }
+    .dname { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 500; color: var(--ink); margin-bottom: 3px; line-height: 1.2; }
+    .dprod { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+    .dchips { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+    .dchip { font-size: 11px; padding: 3px 9px; border-radius: 20px; background: rgba(107,30,46,.1); color: var(--wine); }
+    .dgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: .9rem; }
+    .dfield { background: var(--bg); border: 0.5px solid var(--border); border-radius: 9px; padding: 11px 13px; }
+    .fl { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 2px; }
+    .fv { font-size: 13px; color: var(--ink); }
+
+    .deg-result-card { border-radius: 12px; padding: 1.1rem; margin-bottom: .9rem; }
+    .deg-result-card.ais { background: var(--ais-pale); border: 0.5px solid rgba(26,58,107,.2); }
+    .deg-result-card.fisar { background: var(--fisar-pale); border: 0.5px solid rgba(26,92,58,.2); }
+    .deg-result-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: .9rem; }
+    .deg-result-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; display: flex; align-items: center; gap: 4px; }
+    .deg-result-label.ais { color: var(--ais); }
+    .deg-result-label.fisar { color: var(--fisar); }
+    .deg-score-big { font-size: 24px; font-family: 'Playfair Display', serif; font-weight: 500; }
+    .deg-score-big.ais { color: var(--ais); }
+    .deg-score-big.fisar { color: var(--fisar); }
+    .deg-bar-wrap { margin-bottom: 5px; }
+    .deg-bar-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+    .deg-bar { height: 5px; background: rgba(0,0,0,.08); border-radius: 3px; overflow: hidden; }
+    .deg-bar-fill { height: 100%; border-radius: 3px; }
+    .deg-bar-fill.ais { background: var(--ais); }
+    .deg-bar-fill.fisar { background: var(--fisar); }
+    .deg-note { font-size: 12px; color: var(--muted); font-style: italic; margin-top: 8px; line-height: 1.6; }
+
+    .tag-list { display: flex; gap: 5px; flex-wrap: wrap; margin-top: .75rem; }
+    .tag { font-size: 11px; padding: 3px 9px; border-radius: 20px; background: var(--wine-pale); color: var(--wine); }
+
+    /* ── EXPORT ── */
+    .export-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: .9rem; }
+    .export-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 0.5px solid var(--border); }
+    .export-row:last-child { border-bottom: none; }
+    .export-info { display: flex; align-items: flex-start; gap: 12px; flex: 1; }
+    .export-info i { font-size: 20px; color: var(--wine); margin-top: 1px; flex-shrink: 0; }
+    .export-info-text span { font-size: 13px; color: var(--ink); font-weight: 500; }
+    .export-info-text small { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .export-msg { font-size: 12px; text-align: center; padding: 10px; border-radius: 8px; margin-top: .5rem; display: none; }
+    .export-msg.ok { background: var(--fisar-pale); color: var(--fisar); }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: var(--ink); color: var(--bg); font-size: 13px;
+      padding: 10px 20px; border-radius: 20px; opacity: 0;
+      transition: all .3s; pointer-events: none; z-index: 9999; white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 520px) {
+      .stat-row { grid-template-columns: repeat(2, 1fr); }
+      .frow { grid-template-columns: 1fr; }
+      .dgrid { grid-template-columns: 1fr; }
+      .dhero { flex-direction: column; }
+      .logo-text { font-size: 17px; }
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- ══ LOGIN ══ -->
+  <div id="screen-login" class="screen active">
+    <div class="login-wrap">
+      <div class="login-logo">
+        <div class="logo-icon"><i class="ti ti-wine" aria-hidden="true"></i></div>
+        <h1><em style="color:var(--wine);font-style:italic">Enosfera</em></h1>
+        <p>Il tuo archivio personale da sommelier</p>
+      </div>
+      <div class="ltabs">
+        <div class="ltab active" id="ltab-login" onclick="switchLTab('login')">Accedi</div>
+        <div class="ltab" id="ltab-reg" onclick="switchLTab('reg')">Registrati</div>
+      </div>
+      <div class="lcard">
+        <div id="lform-login">
+          <div class="lfield"><label>Email</label><input type="email" id="l-email" placeholder="nome@email.it" onkeydown="if(event.key==='Enter')doLogin()"></div>
+          <div class="lfield"><label>Password</label><input type="password" id="l-pwd" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+          <button class="lbtn" onclick="doLogin()">Accedi</button>
+          <div class="lerr" id="lerr">Email o password non corretti</div>
+          <p class="demo-hint">Demo: <b>mario@ais.it</b> / <b>1234</b> &nbsp;·&nbsp; <b>laura@fisar.it</b> / <b>1234</b></p>
+        </div>
+        <div id="lform-reg" style="display:none">
+          <div class="lfield"><label>Nome e cognome *</label><input type="text" id="r-name" placeholder="Mario Rossi"></div>
+          <div class="lfield"><label>Email *</label><input type="email" id="r-email" placeholder="nome@email.it"></div>
+          <div class="lfield"><label>Password * (min. 4 caratteri)</label><input type="password" id="r-pwd" placeholder="••••••••"></div>
+          <div class="lfield">
+            <label>Associazione di appartenenza</label>
+            <select id="r-assoc">
+              <option value="">Nessuna / Appassionato</option>
+              <option value="AIS">AIS — Associazione Italiana Sommelier</option>
+              <option value="FISAR">FISAR — Fed. Italiana Sommelier Albergatori Ristoratori</option>
+              <option value="ONAV">ONAV — Org. Nazionale Assaggiatori Vino</option>
+              <option value="FIS">FIS — Fondazione Italiana Sommelier</option>
+            </select>
+          </div>
+          <div class="lfield"><label>Numero tessera (opzionale)</label><input type="text" id="r-card" placeholder="es. AIS-2024-00123"></div>
+          <button class="lbtn" onclick="doRegister()">Crea account</button>
+          <div class="lerr" id="rerr">Compila tutti i campi obbligatori</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ LIST ══ -->
+  <div id="screen-list" class="screen">
+    <div class="nav">
+      <div class="logo">
+        <div class="logo-icon"><i class="ti ti-wine" aria-hidden="true"></i></div>
+        <div class="logo-text"><em>Enosfera</em></div>
+      </div>
+      <div class="nav-right">
+        <div class="user-pill">
+          <div class="avatar" id="nav-avatar">M</div>
+          <span id="nav-name">Mario</span>
+          <span class="assoc-badge" id="nav-badge" style="display:none"></span>
+        </div>
+        <button class="btn sm" onclick="showScreen('screen-export')"><i class="ti ti-download"></i>Export</button>
+        <button class="btn sm danger" onclick="doLogout()" aria-label="Esci"><i class="ti ti-logout"></i></button>
+      </div>
+    </div>
+    <div class="stat-row" id="stats-bar"></div>
+    <div class="filter-bar">
+      <input type="text" id="search-input" placeholder="Cerca nome, produttore, regione…" oninput="renderGrid()">
+      <div class="chip active" data-f="all" onclick="setFilter('all',this)">Tutti</div>
+      <div class="chip" data-f="Rosso"     onclick="setFilter('Rosso',this)">Rosso</div>
+      <div class="chip" data-f="Bianco"    onclick="setFilter('Bianco',this)">Bianco</div>
+      <div class="chip" data-f="Rosato"    onclick="setFilter('Rosato',this)">Rosato</div>
+      <div class="chip" data-f="Spumante"  onclick="setFilter('Spumante',this)">Spumante</div>
+      <button class="btn primary sm" onclick="showAdd()" style="margin-left:auto"><i class="ti ti-plus"></i>Aggiungi</button>
+    </div>
+    <div class="wine-grid" id="wine-grid"></div>
+    <div class="empty" id="empty-state" style="display:none">
+      <i class="ti ti-bottle" aria-hidden="true"></i>
+      <p>La tua cantina è vuota.<br>Aggiungi il primo vino!</p>
+    </div>
+  </div>
+
+  <!-- ══ ADD FORM ══ -->
+  <div id="screen-add" class="screen">
+    <div class="fhdr">
+      <button class="btn sm" onclick="showScreen('screen-list')" aria-label="Indietro"><i class="ti ti-arrow-left"></i></button>
+      <h2>Aggiungi vino</h2>
+    </div>
+
+    <div class="ai-banner">
+      <span class="ai-pill"><i class="ti ti-sparkles" style="font-size:10px"></i> AI</span>
+      <span class="ai-txt">Scatta una foto all'etichetta — l'AI compila il form automaticamente</span>
+      <button class="btn gold sm" onclick="document.getElementById('cam-inp').click()">
+        <i class="ti ti-camera"></i>Scansiona etichetta
+      </button>
+      <input type="file" id="cam-inp" accept="image/*" capture="environment" style="display:none" onchange="scanLabel(this)">
+    </div>
+    <div class="spin-wrap" id="ai-spin"><div class="spin"></div><span style="font-size:12px;color:var(--muted)">Lettura etichetta in corso…</span></div>
+
+    <div class="fsec">
+      <div class="stitle"><i class="ti ti-photo" aria-hidden="true"></i>Foto etichette</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:5px">Fronte etichetta</div>
+          <div class="upload-z" onclick="document.getElementById('img-front').click()">
+            <input type="file" id="img-front" accept="image/*" style="display:none" onchange="previewImg(this,'prev-front','front')">
+            <div id="prev-front"><i class="ti ti-photo-up" aria-hidden="true"></i><p><b>Carica</b> o scatta foto</p></div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:5px">Controetichetta</div>
+          <div class="upload-z" onclick="document.getElementById('img-back').click()">
+            <input type="file" id="img-back" accept="image/*" style="display:none" onchange="previewImg(this,'prev-back','back')">
+            <div id="prev-back"><i class="ti ti-photo-up" aria-hidden="true"></i><p><b>Carica</b> o scatta foto</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fsec">
+      <div class="stitle"><i class="ti ti-id-badge" aria-hidden="true"></i>Identità del vino</div>
+      <div class="frow">
+        <div class="fg"><label>Nome vino *</label><input type="text" id="f-name" placeholder="es. Amarone della Valpolicella"></div>
+        <div class="fg"><label>Produttore / Cantina</label><input type="text" id="f-producer" placeholder="es. Masi Agricola"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Annata</label><input type="number" id="f-vintage" placeholder="2019" min="1900" max="2030"></div>
+        <div class="fg"><label>Tipologia</label>
+          <select id="f-type">
+            <option value="">Seleziona…</option>
+            <option>Rosso</option><option>Bianco</option><option>Rosato</option>
+            <option>Spumante</option><option>Dolce</option><option>Passito</option><option>Altro</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>DOC / DOCG / IGT</label><input type="text" id="f-doc" placeholder="es. DOCG Barolo"></div>
+        <div class="fg"><label>Vitigni</label><input type="text" id="f-grapes" placeholder="es. Nebbiolo 100%"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Regione</label><input type="text" id="f-region" placeholder="es. Piemonte"></div>
+        <div class="fg"><label>Paese</label><input type="text" id="f-country" placeholder="es. Italia"></div>
+      </div>
+    </div>
+
+    <div class="fsec">
+      <div class="stitle"><i class="ti ti-flask" aria-hidden="true"></i>Dati tecnici &amp; cantina</div>
+      <div class="frow">
+        <div class="fg"><label>Gradazione alcolica (%)</label><input type="number" id="f-abv" placeholder="14.5" step="0.1" min="0" max="25"></div>
+        <div class="fg"><label>Formato bottiglia</label>
+          <select id="f-format">
+            <option value="">Seleziona…</option>
+            <option>750 ml</option><option>375 ml (mezza)</option>
+            <option>1,5 L (Magnum)</option><option>3 L (Jeroboam)</option><option>5 L (Rehoboam)</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Prezzo pagato (€)</label><input type="number" id="f-price" placeholder="28.00" step="0.5" min="0"></div>
+        <div class="fg"><label>N° bottiglie in cantina</label><input type="number" id="f-qty" value="1" min="1"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Data acquisto</label><input type="date" id="f-date"></div>
+        <div class="fg"><label>Luogo acquisto</label><input type="text" id="f-shop" placeholder="es. Enoteca Bianchi, Milano"></div>
+      </div>
+      <div class="fg"><label>Finestra di consumo ottimale</label><input type="text" id="f-drink" placeholder="es. 2025–2038"></div>
+    </div>
+
+    <!-- DEGUSTAZIONE -->
+    <div class="fsec">
+      <div class="stitle"><i class="ti ti-stars" aria-hidden="true"></i>Scheda di degustazione</div>
+      <div class="deg-tabs">
+        <div class="deg-tab ais-act"  id="dtab-ais"   onclick="switchDeg('ais')"><i class="ti ti-award"></i>Metodo AIS</div>
+        <div class="deg-tab"          id="dtab-fisar" onclick="switchDeg('fisar')"><i class="ti ti-award"></i>Metodo FISAR</div>
+        <div class="deg-tab"          id="dtab-free"  onclick="switchDeg('free')"><i class="ti ti-note"></i>Libero</div>
+      </div>
+
+      <!-- AIS -->
+      <div class="deg-schema active" id="deg-ais">
+        <div style="text-align:center;margin-bottom:1rem">
+          <div class="score-circle"><span class="score-n" id="ais-tot">0</span><span class="score-max">/100</span></div>
+          <div style="font-size:11px;color:var(--muted)">Punteggio AIS calcolato automaticamente</div>
+        </div>
+        <div class="param-group">
+          <div class="pg-title" style="color:var(--ais)"><i class="ti ti-eye" style="font-size:12px;vertical-align:-1px;margin-right:4px"></i>Esame visivo</div>
+          <div class="param-row"><span class="param-label">Limpidezza</span><input type="range" min="1" max="5" value="3" step="1" class="ais-r" oninput="calcAIS(this,'ap-limp')"><span class="param-val" id="ap-limp">3</span></div>
+          <div class="param-row"><span class="param-label">Colore (intensità)</span><input type="range" min="1" max="5" value="3" step="1" class="ais-r" oninput="calcAIS(this,'ap-col')"><span class="param-val" id="ap-col">3</span></div>
+          <div class="param-row"><span class="param-label">Consistenza</span><input type="range" min="1" max="5" value="3" step="1" class="ais-r" oninput="calcAIS(this,'ap-cons')"><span class="param-val" id="ap-cons">3</span></div>
+        </div>
+        <div class="param-group">
+          <div class="pg-title" style="color:var(--ais)"><i class="ti ti-wind" style="font-size:12px;vertical-align:-1px;margin-right:4px"></i>Esame olfattivo</div>
+          <div class="param-row"><span class="param-label">Intensità</span><input type="range" min="1" max="5" value="3" step="1" class="ais-r" oninput="calcAIS(this,'ap-oint')"><span class="param-val" id="ap-oint">3</span></div>
+          <div class="param-row"><span class="param-label">Complessità</span><input type="range" min="1" max="5" value="3" step="1" class="ais-r" oninput="calcAIS(this,'ap-ocomp')"><span class="param-val" id="ap-ocomp">3</span></div>
+          <div class="param-row"><span class="param-label">Qualità olfattiva</span><input type="range" min="1" max="5" value="3" step="1" class="ais-r" oninput="calcAIS(this,'ap-oqual')"><span class="param-val" id="ap-oqual">3</span></div>
+        </div>
+        <div class="param-group">
+          <div class="pg-title" style="color:var(--ais)"><i class="ti ti-droplet" style="font-size:12px;vertical-align:-1px;margin-right:4px"></i>Esame gustativo</div>
+          <div class="param-row"><span class="param-label">Struttura</span><input type="range" min="1" max="5" value="3" step="1" class="ais-r" oninput="calcAIS(this,'ap-gstr')"><span class="param-val" id="ap-gstr">3</span></div>
+          <div class="param-row"><span class="param-label">Equilibrio</span><input type="range" min="1" max="5" value="3" step="1" class="ais-r" oninput="calcAIS(this,'ap-geq')"><span class="param-val" id="ap-geq">3</span></div>
+          <div class="param-row"><span class="param-label">Intensità gusto-olfattiva</span><input type="range" min="1" max="5" value="3" step="1" class="ais-r" oninput="calcAIS(this,'ap-gigo')"><span class="param-val" id="ap-gigo">3</span></div>
+          <div class="param-row"><span class="param-label">Persistenza (PAI)</span><input type="range" min="1" max="5" value="3" step="1" class="ais-r" oninput="calcAIS(this,'ap-gpai')"><span class="param-val" id="ap-gpai">3</span></div>
+          <div class="param-row"><span class="param-label">Qualità gustativa</span><input type="range" min="1" max="5" value="3" step="1" class="ais-r" oninput="calcAIS(this,'ap-gqual')"><span class="param-val" id="ap-gqual">3</span></div>
+        </div>
+        <div class="param-group">
+          <div class="pg-title" style="color:var(--ais)"><i class="ti ti-clipboard-check" style="font-size:12px;vertical-align:-1px;margin-right:4px"></i>Considerazioni finali</div>
+          <div class="param-row"><span class="param-label">Stato evolutivo</span>
+            <select class="pselect" id="ap-stato">
+              <option>Giovane</option><option>Pronto</option><option selected>Al culmine</option>
+              <option>Leggermente maturo</option><option>Maturo</option><option>Oltre la maturità</option>
+            </select>
+          </div>
+          <div class="param-row"><span class="param-label">Armonia complessiva</span><input type="range" min="1" max="10" value="7" step="1" class="ais-r" oninput="calcAIS(this,'ap-arm')"><span class="param-val" id="ap-arm">7</span></div>
+        </div>
+        <div class="fg"><label>Note olfattive descrittive</label><textarea id="ap-olfnote" placeholder="Famiglia aromatica, descrittori primari/secondari/terziari…"></textarea></div>
+        <div class="fg" style="margin-top:8px"><label>Note gustative descrittive</label><textarea id="ap-gustnote" placeholder="Tannini, acidità, corpo, calore, finale…"></textarea></div>
+      </div>
+
+      <!-- FISAR -->
+      <div class="deg-schema" id="deg-fisar">
+        <div style="text-align:center;margin-bottom:1rem">
+          <div class="score-circle fisar"><span class="score-n" id="fisar-tot">0</span><span class="score-max">/100</span></div>
+          <div style="font-size:11px;color:var(--muted)">Aspetto /20 · Profumo /30 · Gusto /50</div>
+        </div>
+        <div class="param-group">
+          <div class="pg-title" style="color:var(--fisar)">Aspetto (max 20 pt)</div>
+          <div class="param-row"><span class="param-label">Limpidezza</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-limp')"><span class="param-val" id="fp-limp" style="color:var(--fisar)">3</span></div>
+          <div class="param-row"><span class="param-label">Colore</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-col')"><span class="param-val" id="fp-col" style="color:var(--fisar)">3</span></div>
+          <div class="param-row"><span class="param-label">Fluidità</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-flu')"><span class="param-val" id="fp-flu" style="color:var(--fisar)">3</span></div>
+          <div class="param-row"><span class="param-label">Effervescenza</span><input type="range" min="0" max="5" value="0" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-eff')"><span class="param-val" id="fp-eff" style="color:var(--fisar)">0</span></div>
+        </div>
+        <div class="param-group">
+          <div class="pg-title" style="color:var(--fisar)">Profumo (max 30 pt)</div>
+          <div class="param-row"><span class="param-label">Franchezza</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-fr')"><span class="param-val" id="fp-fr" style="color:var(--fisar)">3</span></div>
+          <div class="param-row"><span class="param-label">Intensità</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-pint')"><span class="param-val" id="fp-pint" style="color:var(--fisar)">3</span></div>
+          <div class="param-row"><span class="param-label">Persistenza olfattiva</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-pers')"><span class="param-val" id="fp-pers" style="color:var(--fisar)">3</span></div>
+          <div class="param-row"><span class="param-label">Qualità / finezza</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-qual')"><span class="param-val" id="fp-qual" style="color:var(--fisar)">3</span></div>
+          <div class="param-row"><span class="param-label">Armonia olfattiva</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-arm')"><span class="param-val" id="fp-arm" style="color:var(--fisar)">3</span></div>
+          <div class="param-row"><span class="param-label">Tipicità varietale</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-tip')"><span class="param-val" id="fp-tip" style="color:var(--fisar)">3</span></div>
+        </div>
+        <div class="param-group">
+          <div class="pg-title" style="color:var(--fisar)">Gusto (max 50 pt)</div>
+          <div class="param-row"><span class="param-label">Franchezza gusto</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-gfr')"><span class="param-val" id="fp-gfr" style="color:var(--fisar)">3</span></div>
+          <div class="param-row"><span class="param-label">Struttura</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-gst')"><span class="param-val" id="fp-gst" style="color:var(--fisar)">3</span></div>
+          <div class="param-row"><span class="param-label">Morbidezza</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-morb')"><span class="param-val" id="fp-morb" style="color:var(--fisar)">3</span></div>
+          <div class="param-row"><span class="param-label">Durezza (acidità/tannini)</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-dur')"><span class="param-val" id="fp-dur" style="color:var(--fisar)">3</span></div>
+          <div class="param-row"><span class="param-label">Persistenza aromatica</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-pai')"><span class="param-val" id="fp-pai" style="color:var(--fisar)">3</span></div>
+          <div class="param-row"><span class="param-label">Armonia gustativa</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-garm')"><span class="param-val" id="fp-garm" style="color:var(--fisar)">3</span></div>
+          <div class="param-row"><span class="param-label">Tipicità gustativa</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-gtip')"><span class="param-val" id="fp-gtip" style="color:var(--fisar)">3</span></div>
+          <div class="param-row"><span class="param-label">Qualità globale</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-gqual')"><span class="param-val" id="fp-gqual" style="color:var(--fisar)">3</span></div>
+          <div class="param-row"><span class="param-label">Evoluzione / potenziale</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-evol')"><span class="param-val" id="fp-evol" style="color:var(--fisar)">3</span></div>
+          <div class="param-row"><span class="param-label">Eccellenza (bonus)</span><input type="range" min="0" max="5" value="0" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-ecc')"><span class="param-val" id="fp-ecc" style="color:var(--fisar)">0</span></div>
+        </div>
+        <div class="fg"><label>Note di degustazione FISAR</label><textarea id="fp-note" placeholder="Aspetto, profumi, gusto, conclusioni e abbinamenti…"></textarea></div>
+      </div>
+
+      <!-- LIBERO -->
+      <div class="deg-schema" id="deg-free">
+        <div class="param-row" style="margin-bottom:14px">
+          <span class="param-label">Punteggio personale</span>
+          <input type="range" min="1" max="100" value="88" step="1" id="f-score" oninput="document.getElementById('score-free').textContent=this.value" style="flex:1;accent-color:var(--wine)">
+          <span style="font-size:20px;font-family:'Playfair Display',serif;color:var(--wine);min-width:38px;text-align:right" id="score-free">88</span>
+        </div>
+        <div class="fg"><label>Note di degustazione</label><textarea id="f-notes" placeholder="Colore, profumo, gusto, persistenza, abbinamenti suggeriti…"></textarea></div>
+        <div class="fg" style="margin-top:8px"><label>Tag personali</label><input type="text" id="f-tags" placeholder="es. compleanno, regalo, da ricomprare"></div>
+      </div>
+    </div>
+
+    <div class="ffoot">
+      <button class="btn" onclick="showScreen('screen-list')">Annulla</button>
+      <button class="btn primary" onclick="saveWine()"><i class="ti ti-device-floppy"></i>Salva in cantina</button>
+    </div>
+  </div>
+
+  <!-- ══ DETAIL ══ -->
+  <div id="screen-detail" class="screen">
+    <div class="nav" style="margin-bottom:.9rem">
+      <button class="btn sm" onclick="showScreen('screen-list')"><i class="ti ti-arrow-left"></i>Cantina</button>
+      <button class="btn sm danger" onclick="deleteWine()" aria-label="Elimina vino"><i class="ti ti-trash"></i>Elimina</button>
+    </div>
+    <div id="detail-content"></div>
+  </div>
+
+  <!-- ══ EXPORT ══ -->
+  <div id="screen-export" class="screen">
+    <div class="nav" style="margin-bottom:.9rem">
+      <button class="btn sm" onclick="showScreen('screen-list')"><i class="ti ti-arrow-left"></i>Cantina</button>
+      <span style="font-family:'Playfair Display',serif;font-size:18px;color:var(--ink)">Export archivio</span>
+    </div>
+    <div class="export-card">
+      <div class="export-row">
+        <div class="export-info"><i class="ti ti-file-spreadsheet" aria-hidden="true"></i><div class="export-info-text"><span>Esporta in CSV</span><small>Tutti i dati in formato tabella — apri con Excel o Numbers</small></div></div>
+        <button class="btn primary sm" onclick="exportCSV()">Scarica CSV</button>
+      </div>
+      <div class="export-row">
+        <div class="export-info"><i class="ti ti-file-text" aria-hidden="true"></i><div class="export-info-text"><span>Backup completo JSON</span><small>Dati e immagini incluse — utile per ripristinare l'archivio</small></div></div>
+        <button class="btn primary sm" onclick="exportJSON()">Scarica JSON</button>
+      </div>
+      <div class="export-row">
+        <div class="export-info"><i class="ti ti-printer" aria-hidden="true"></i><div class="export-info-text"><span>Schede di degustazione</span><small>Pagine HTML stampabili con parametri AIS e FISAR</small></div></div>
+        <button class="btn primary sm" onclick="exportTasting()">Genera schede</button>
+      </div>
+      <div class="export-row">
+        <div class="export-info"><i class="ti ti-clipboard-list" aria-hidden="true"></i><div class="export-info-text"><span>Inventario cantina</span><small>Lista bottiglie con valori, prezzi e stato evolutivo</small></div></div>
+        <button class="btn primary sm" onclick="exportInventory()">Scarica inventario</button>
+      </div>
+    </div>
+    <div class="export-msg ok" id="export-msg"></div>
+  </div>
+
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ── DATA ── */
+const DEMO_USERS = [
+  { id:'u1', name:'Mario Bianchi', email:'mario@ais.it', pwd:'1234', assoc:'AIS', card:'AIS-2024-00041' },
+  { id:'u2', name:'Laura Verdi', email:'laura@fisar.it', pwd:'1234', assoc:'FISAR', card:'FISAR-2023-00892' }
+];
+const DEMO_WINES = {
+  u1: [
+    { id:1, name:'Barolo Brunate', producer:'Giuseppe Rinaldi', vintage:2016, type:'Rosso', doc:'DOCG Barolo', grapes:'Nebbiolo 100%', region:'Piemonte', country:'Italia', abv:14, format:'750 ml', price:85, qty:1, date:'2022-11-20', shop:'Vinoetà Milano', drink:'2026–2038', degSchema:'ais', aisParams:{ limp:5, col:4, cons:4, oint:5, ocomp:5, oqual:5, gstr:5, geq:4, gigo:5, gpai:5, gqual:5, stato:'Al culmine', arm:9 }, aisScore:95, olfNote:'Rosa appassita, tabacco, liquirizia, spezie orientali', gustNote:'Tannini potenti ma vellutati, acidità vibrante, finale lunghissimo', score:95, notes:'', tags:'top,barolo', frontImg:'', backImg:'' },
+    { id:2, name:'Amarone della Valpolicella Classico', producer:'Masi Agricola', vintage:2018, type:'Rosso', doc:'DOCG Amarone', grapes:'Corvina, Corvinone, Rondinella', region:'Veneto', country:'Italia', abv:17, format:'750 ml', price:45, qty:2, date:'2023-03-15', shop:'Enoteca Venezia', drink:'2025–2040', degSchema:'ais', aisParams:{ limp:5, col:5, cons:5, oint:5, ocomp:4, oqual:5, gstr:5, geq:5, gigo:5, gpai:4, gqual:5, stato:'Al culmine', arm:9 }, aisScore:93, olfNote:'Ciliegia matura, prugna secca, cioccolato fondente, caffè', gustNote:'Caldo, avvolgente, tannini vellutati, lunga persistenza', score:93, notes:'', tags:'eccellente,veneto', frontImg:'', backImg:'' },
+    { id:3, name:'Vernaccia di San Gimignano Riserva', producer:'Teruzzi', vintage:2021, type:'Bianco', doc:'DOCG Vernaccia', grapes:'Vernaccia 100%', region:'Toscana', country:'Italia', abv:13, format:'750 ml', price:18, qty:3, date:'2023-07-01', shop:'Supermercato', drink:'2023–2026', degSchema:'free', score:86, notes:'Fresco, floreale, note di pesca e mandorla amara. Finale sapido.', tags:'estate,bianco', frontImg:'', backImg:'' }
+  ],
+  u2: [
+    { id:10, name:'Franciacorta Satèn', producer:'Bellavista', vintage:2019, type:'Spumante', doc:'DOCG Franciacorta', grapes:'Chardonnay 100%', region:'Lombardia', country:'Italia', abv:12.5, format:'750 ml', price:32, qty:1, date:'2023-12-28', shop:'Wine bar Brescia', drink:'2024–2028', degSchema:'fisar', fisarParams:{ limp:5, col:5, flu:4, eff:5, fr:5, pint:4, pers:5, qual:5, arm:4, tip:4, gfr:5, gst:4, morb:5, dur:4, pai:5, garm:5, gtip:4, gqual:5, evol:4, ecc:3 }, fisarScore:91, fpNote:'Perlage fine e persistente. Brioche, agrumi canditi, fiori bianchi. Cremoso ed elegante.', score:91, notes:'', tags:'bollicine,top', frontImg:'', backImg:'' }
+  ]
+};
+
+let users = JSON.parse(localStorage.getItem('enosfera-users') || 'null') || DEMO_USERS;
+let allWines = JSON.parse(localStorage.getItem('enosfera-wines') || 'null') || DEMO_WINES;
+let currentUser = null;
+let currentFilter = 'all';
+let currentDetailId = null;
+let frontImg = '', backImg = '';
+let activeDeg = 'ais';
+
+/* ── STORAGE ── */
+function persist() {
+  try { localStorage.setItem('enosfera-users', JSON.stringify(users)); localStorage.setItem('enosfera-wines', JSON.stringify(allWines)); } catch(e) {}
+}
+function myWines() { return allWines[currentUser.id] || []; }
+function setMyWines(w) { allWines[currentUser.id] = w; persist(); }
+
+/* ── TOAST ── */
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+/* ── LOGIN ── */
+function switchLTab(t) {
+  document.getElementById('ltab-login').classList.toggle('active', t === 'login');
+  document.getElementById('ltab-reg').classList.toggle('active', t === 'reg');
+  document.getElementById('lform-login').style.display = t === 'login' ? '' : 'none';
+  document.getElementById('lform-reg').style.display  = t === 'reg'   ? '' : 'none';
+}
+function doLogin() {
+  const em = document.getElementById('l-email').value.trim().toLowerCase();
+  const pw = document.getElementById('l-pwd').value;
+  const u  = users.find(x => x.email.toLowerCase() === em && x.pwd === pw);
+  if (!u) { document.getElementById('lerr').style.display = 'block'; return; }
+  document.getElementById('lerr').style.display = 'none';
+  currentUser = u; initApp();
+}
+function doRegister() {
+  const name = document.getElementById('r-name').value.trim();
+  const email = document.getElementById('r-email').value.trim().toLowerCase();
+  const pwd  = document.getElementById('r-pwd').value;
+  const err  = document.getElementById('rerr');
+  if (!name || !email || pwd.length < 4) { err.textContent = 'Compila tutti i campi obbligatori'; err.style.display = 'block'; return; }
+  if (users.find(u => u.email.toLowerCase() === email)) { err.textContent = 'Email già registrata'; err.style.display = 'block'; return; }
+  err.style.display = 'none';
+  const u = { id: 'u' + Date.now(), name, email, pwd, assoc: document.getElementById('r-assoc').value, card: document.getElementById('r-card').value.trim() };
+  users.push(u); allWines[u.id] = []; currentUser = u; persist(); initApp();
+}
+function doLogout() { currentUser = null; showScreen('screen-login'); }
+
+function initApp() {
+  const u = currentUser;
+  const initials = u.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  document.getElementById('nav-avatar').textContent = initials;
+  document.getElementById('nav-name').textContent   = u.name.split(' ')[0];
+  const bc = document.getElementById('nav-badge');
+  if (u.assoc) { bc.textContent = u.assoc; bc.className = 'assoc-badge badge-' + u.assoc.toLowerCase(); bc.style.display = ''; }
+  else bc.style.display = 'none';
+  showScreen('screen-list');
+}
+
+/* ── SCREENS ── */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+  if (id === 'screen-list') renderAll();
+}
+
+/* ── RENDER LIST ── */
+function renderAll() {
+  const w = myWines();
+  const tot = w.length;
+  const bot = w.reduce((s, x) => s + (x.qty || 1), 0);
+  const sc  = w.filter(x => x.score);
+  const avg = sc.length ? Math.round(sc.reduce((s, x) => s + x.score, 0) / sc.length) : null;
+  const val = w.reduce((s, x) => s + ((x.price || 0) * (x.qty || 1)), 0);
+  document.getElementById('stats-bar').innerHTML = `
+    <div class="stat"><div class="stat-n">${tot}</div><div class="stat-l">Etichette</div></div>
+    <div class="stat"><div class="stat-n">${bot}</div><div class="stat-l">Bottiglie</div></div>
+    <div class="stat"><div class="stat-n">${avg || '—'}</div><div class="stat-l">Punteggio medio</div></div>
+    <div class="stat"><div class="stat-n">€${Math.round(val)}</div><div class="stat-l">Valore cantina</div></div>
+  `;
+  renderGrid();
+}
+function setFilter(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderGrid();
+}
+function renderGrid() {
+  const q    = (document.getElementById('search-input')?.value || '').toLowerCase();
+  const list = myWines().filter(w => {
+    if (currentFilter !== 'all' && w.type !== currentFilter) return false;
+    if (q && ![(w.name||''),(w.producer||''),(w.region||'')].join(' ').toLowerCase().includes(q)) return false;
+    return true;
+  });
+  const g = document.getElementById('wine-grid');
+  const e = document.getElementById('empty-state');
+  if (!list.length) { g.innerHTML = ''; e.style.display = 'block'; return; }
+  e.style.display = 'none';
+  const bc = t => t === 'Bianco' ? 'bb' : t === 'Rosato' ? 'bro' : t === 'Spumante' ? 'bs' : 'br';
+  const st = s => { const n = Math.round((s || 80) / 20); return '★'.repeat(n) + '☆'.repeat(5 - n); };
+  const sTag = w => w.degSchema === 'ais' ? `<span style="font-size:10px;padding:2px 6px;border-radius:10px;background:var(--ais-pale);color:var(--ais)">AIS</span>` : w.degSchema === 'fisar' ? `<span style="font-size:10px;padding:2px 6px;border-radius:10px;background:var(--fisar-pale);color:var(--fisar)">FISAR</span>` : '';
+  g.innerHTML = list.map(w => `
+    <div class="wcard" onclick="showDetail(${w.id})">
+      <div class="wimg">${w.frontImg ? `<img src="${w.frontImg}" alt="${w.name}" loading="lazy">` : '<div class="ph"><i class="ti ti-bottle" aria-hidden="true"></i></div>'}${w.type ? `<span class="wbadge ${bc(w.type)}">${w.type}</span>` : ''}</div>
+      <div class="winfo">
+        <div class="wname">${w.name}</div>
+        <div class="wprod">${[w.producer, w.vintage].filter(Boolean).join(' · ') || '—'}</div>
+        <div class="wmeta"><span style="display:flex;align-items:center;gap:4px">${sTag(w)}<span class="stars">${st(w.score)}</span></span><span class="wscore">${w.score || '—'}/100</span></div>
+      </div>
+    </div>`).join('');
+}
+
+/* ── ADD FORM ── */
+function showAdd() {
+  frontImg = ''; backImg = ''; activeDeg = 'ais';
+  const clear = ids => ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  clear(['f-name','f-producer','f-doc','f-grapes','f-region','f-country','f-shop','f-drink','f-notes','f-tags','ap-olfnote','ap-gustnote','fp-note']);
+  clear(['f-vintage','f-abv','f-price']);
+  const qty = document.getElementById('f-qty'); if (qty) qty.value = 1;
+  const fd  = document.getElementById('f-date'); if (fd) fd.value = new Date().toISOString().split('T')[0];
+  document.querySelectorAll('.ais-r,.fisar-r').forEach(r => r.value = 3);
+  const fscore = document.getElementById('f-score'); if (fscore) fscore.value = 88;
+  document.getElementById('score-free').textContent = '88';
+  document.getElementById('prev-front').innerHTML = '<i class="ti ti-photo-up" aria-hidden="true"></i><p><b>Carica</b> o scatta foto</p>';
+  document.getElementById('prev-back').innerHTML  = '<i class="ti ti-photo-up" aria-hidden="true"></i><p><b>Carica</b> o scatta foto</p>';
+  switchDeg('ais'); calcAIS(); calcFISAR();
+  showScreen('screen-add');
+}
+function switchDeg(t) {
+  activeDeg = t;
+  const map = { ais: 'ais-act', fisar: 'fisar-act', free: 'free-act' };
+  ['ais','fisar','free'].forEach(tab => {
+    const btn = document.getElementById('dtab-' + tab);
+    const pnl = document.getElementById('deg-' + tab);
+    btn.className = 'deg-tab' + (tab === t ? ' ' + map[tab] : '');
+    pnl.className = 'deg-schema' + (tab === t ? ' active' : '');
+  });
+}
+
+/* ── SCORING ── */
+function gv(id) { return parseFloat(document.getElementById(id)?.value) || 0; }
+function sv(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
+
+function calcAIS(input, outId) {
+  if (input && outId) sv(outId, input.value);
+  const v = id => parseFloat(document.querySelector(`[oninput*="${id}"]`)?.value) || 0;
+  const vis  = gv('') || (document.querySelectorAll('.ais-r')[0]?.value|0) + (document.querySelectorAll('.ais-r')[1]?.value|0) + (document.querySelectorAll('.ais-r')[2]?.value|0);
+  const sliders = [...document.querySelectorAll('.ais-r')].map(r => +r.value);
+  const sum = sliders.reduce((a, b) => a + b, 0);
+  const max = sliders.length > 0 ? (sliders.length - 1) * 5 + 10 : 63;
+  const tot = Math.round((sum / (document.querySelectorAll('.ais-r').length > 0 ? (12*5 + 10 - 12 + 7) : 53)) * 100);
+  document.getElementById('ais-tot').textContent = Math.min(100, Math.max(0, recalcAIS()));
+}
+function recalcAIS() {
+  const r = [...document.querySelectorAll('.ais-r')].map(x => +x.value);
+  if (!r.length) return 0;
+  const sum = r.reduce((a, b) => a + b, 0);
+  return Math.round((sum / 53) * 100);
+}
+function calcFISAR(input, outId) {
+  if (input && outId) sv(outId, input.value);
+  document.getElementById('fisar-tot').textContent = Math.min(100, recalcFISAR());
+}
+function recalcFISAR() {
+  const get = cls => [...document.querySelectorAll('.' + cls)].map(x => +x.value);
+  const fr = get('fisar-r');
+  if (!fr.length) return 0;
+  const asp = fr[0] + fr[1] + fr[2] + fr[3];
+  const pro = fr[4] + fr[5] + fr[6] + fr[7] + fr[8] + fr[9];
+  const gu  = fr[10] + fr[11] + fr[12] + fr[13] + fr[14] + fr[15] + fr[16] + fr[17] + fr[18] + fr[19];
+  return Math.round((asp/20)*20 + (pro/30)*30 + (gu/50)*50);
+}
+
+/* ── IMAGES ── */
+function previewImg(input, previewId, side) {
+  const file = input.files[0]; if (!file) return;
+  const r = new FileReader();
+  r.onload = e => {
+    document.getElementById(previewId).innerHTML = `<img src="${e.target.result}" style="width:100%;height:80px;object-fit:cover;border-radius:6px" alt="">`;
+    if (side === 'front') frontImg = e.target.result; else backImg = e.target.result;
+  };
+  r.readAsDataURL(file);
+}
+
+/* ── AI SCAN ── */
+async function scanLabel(input) {
+  const file = input.files[0]; if (!file) return;
+  const r = new FileReader();
+  r.onload = async e => {
+    frontImg = e.target.result;
+    document.getElementById('prev-front').innerHTML = `<img src="${e.target.result}" style="width:100%;height:80px;object-fit:cover;border-radius:6px" alt="">`;
+    document.getElementById('ai-spin').classList.add('show');
+    showScreen('screen-add');
+    try {
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          messages: [{ role: 'user', content: [
+            { type: 'image', source: { type: 'base64', media_type: file.type, data: e.target.result.split(',')[1] } },
+            { type: 'text', text: 'Analizza questa etichetta di vino ed estrai tutte le informazioni visibili. Rispondi SOLO con JSON valido, zero testo extra, zero markdown. Schema: {"name":"","producer":"","vintage":null,"type":"Rosso|Bianco|Rosato|Spumante|Dolce|Passito|Altro","doc":"","grapes":"","region":"","country":"","abv":null,"drink":"","notes":""}. Campi non visibili: stringa vuota o null.' }
+          ]}]
+        })
+      });
+      const data = await resp.json();
+      const txt  = (data.content || []).map(b => b.text || '').join('');
+      try { fillForm(JSON.parse(txt.replace(/```json|```/g, '').trim())); } catch(_) {}
+    } catch(err) { toast('Lettura etichetta non riuscita'); }
+    document.getElementById('ai-spin').classList.remove('show');
+    input.value = '';
+  };
+  r.readAsDataURL(file);
+}
+function fillForm(d) {
+  const set = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; };
+  set('f-name', d.name); set('f-producer', d.producer); set('f-vintage', d.vintage);
+  set('f-doc', d.doc); set('f-grapes', d.grapes); set('f-region', d.region);
+  set('f-country', d.country || 'Italia'); set('f-abv', d.abv); set('f-drink', d.drink);
+  if (d.type) { const el = document.getElementById('f-type'); if (el) el.value = d.type; }
+  if (d.notes) { const el = document.getElementById('f-notes'); if (el) el.value = d.notes; }
+  toast('Etichetta letta! Controlla e completa i dati.');
+}
+
+/* ── SAVE ── */
+function saveWine() {
+  const name = (document.getElementById('f-name')?.value || '').trim();
+  if (!name) { toast('Inserisci il nome del vino'); return; }
+  const aisScore   = recalcAIS();
+  const fisarScore = recalcFISAR();
+  const finalScore = activeDeg === 'ais' ? aisScore : activeDeg === 'fisar' ? fisarScore : +document.getElementById('f-score')?.value || 88;
+  const getAP = () => { const r = [...document.querySelectorAll('.ais-r')]; return { limp:+r[0]?.value, col:+r[1]?.value, cons:+r[2]?.value, oint:+r[3]?.value, ocomp:+r[4]?.value, oqual:+r[5]?.value, gstr:+r[6]?.value, geq:+r[7]?.value, gigo:+r[8]?.value, gpai:+r[9]?.value, gqual:+r[10]?.value, stato: document.getElementById('ap-stato')?.value, arm:+r[11]?.value }; };
+  const getFP = () => { const r = [...document.querySelectorAll('.fisar-r')]; return { limp:+r[0]?.value, col:+r[1]?.value, flu:+r[2]?.value, eff:+r[3]?.value, fr:+r[4]?.value, pint:+r[5]?.value, pers:+r[6]?.value, qual:+r[7]?.value, arm:+r[8]?.value, tip:+r[9]?.value, gfr:+r[10]?.value, gst:+r[11]?.value, morb:+r[12]?.value, dur:+r[13]?.value, pai:+r[14]?.value, garm:+r[15]?.value, gtip:+r[16]?.value, gqual:+r[17]?.value, evol:+r[18]?.value, ecc:+r[19]?.value }; };
+  const g = id => document.getElementById(id)?.value || '';
+  const wine = {
+    id: Date.now(), name, producer: g('f-producer'),
+    vintage: +g('f-vintage') || null, type: g('f-type'),
+    doc: g('f-doc'), grapes: g('f-grapes'), region: g('f-region'), country: g('f-country') || 'Italia',
+    abv: +g('f-abv') || null, format: g('f-format') || '750 ml',
+    price: +g('f-price') || null, qty: +g('f-qty') || 1,
+    date: g('f-date'), shop: g('f-shop'), drink: g('f-drink'),
+    degSchema: activeDeg,
+    aisParams: activeDeg === 'ais'   ? getAP() : null,
+    aisScore:  activeDeg === 'ais'   ? aisScore : null,
+    olfNote:   g('ap-olfnote'), gustNote: g('ap-gustnote'),
+    fisarParams: activeDeg === 'fisar' ? getFP() : null,
+    fisarScore:  activeDeg === 'fisar' ? fisarScore : null,
+    fpNote: g('fp-note'),
+    score: finalScore, notes: g('f-notes'), tags: g('f-tags'),
+    frontImg, backImg
+  };
+  const w = myWines(); w.unshift(wine); setMyWines(w);
+  toast('Vino aggiunto alla cantina!');
+  showScreen('screen-list');
+}
+
+/* ── DETAIL ── */
+function showDetail(id) {
+  currentDetailId = id;
+  const w = myWines().find(x => x.id === id); if (!w) return;
+  const chips = [w.region, w.country, w.grapes, w.abv ? w.abv + '% alc.' : null].filter(Boolean);
+  const st = s => { const n = Math.round((s || 80) / 20); return '★'.repeat(n) + '☆'.repeat(5 - n); };
+
+  let degHTML = '';
+  if (w.degSchema === 'ais' && w.aisParams) {
+    const p = w.aisParams;
+    const bars = [['Limpidezza',p.limp,5],['Colore',p.col||p.colore,5],['Consistenza',p.cons,5],['Intensità olfattiva',p.oint,5],['Complessità',p.ocomp,5],['Qualità olfattiva',p.oqual,5],['Struttura',p.gstr,5],['Equilibrio',p.geq,5],['Intensità gusto-olfattiva',p.gigo,5],['Persistenza PAI',p.gpai,5],['Qualità gustativa',p.gqual,5],['Armonia',p.arm||p.armonia,10]];
+    degHTML = `<div class="deg-result-card ais">
+      <div class="deg-result-header">
+        <span class="deg-result-label ais"><i class="ti ti-award"></i>Scheda AIS</span>
+        <span class="deg-score-big ais">${w.aisScore || '—'}<span style="font-size:13px;color:var(--muted)">/100</span></span>
+      </div>
+      ${bars.map(([l,v,m])=>`<div class="deg-bar-wrap"><div class="deg-bar-label"><span>${l}</span><span>${v||0}/${m}</span></div><div class="deg-bar"><div class="deg-bar-fill ais" style="width:${Math.round(((v||0)/m)*100)}%"></div></div></div>`).join('')}
+      ${p.stato ? `<div style="margin-top:8px;font-size:12px;color:var(--ais)">Stato evolutivo: <strong>${p.stato}</strong></div>` : ''}
+      ${w.olfNote ? `<div class="deg-note">Olfattivo: ${w.olfNote}</div>` : ''}
+      ${w.gustNote ? `<div class="deg-note">Gustativo: ${w.gustNote}</div>` : ''}
+    </div>`;
+  } else if (w.degSchema === 'fisar' && w.fisarParams) {
+    const p = w.fisarParams;
+    const asp = p.limp+p.col+p.flu+p.eff;
+    const pro = p.fr+p.pint+p.pers+p.qual+p.arm+p.tip;
+    const gu  = p.gfr+p.gst+p.morb+p.dur+p.pai+p.garm+p.gtip+p.gqual+p.evol+p.ecc;
+    degHTML = `<div class="deg-result-card fisar">
+      <div class="deg-result-header">
+        <span class="deg-result-label fisar"><i class="ti ti-award"></i>Scheda FISAR</span>
+        <span class="deg-score-big fisar">${w.fisarScore || '—'}<span style="font-size:13px;color:var(--muted)">/100</span></span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:.75rem">
+        <div style="text-align:center;padding:8px;background:var(--bg);border-radius:8px;border:0.5px solid var(--border)"><div style="font-size:18px;font-weight:500;color:var(--fisar)">${Math.round((asp/20)*20)}</div><div style="font-size:10px;color:var(--muted)">Aspetto /20</div></div>
+        <div style="text-align:center;padding:8px;background:var(--bg);border-radius:8px;border:0.5px solid var(--border)"><div style="font-size:18px;font-weight:500;color:var(--fisar)">${Math.round((pro/30)*30)}</div><div style="font-size:10px;color:var(--muted)">Profumo /30</div></div>
+        <div style="text-align:center;padding:8px;background:var(--bg);border-radius:8px;border:0.5px solid var(--border)"><div style="font-size:18px;font-weight:500;color:var(--fisar)">${Math.round((gu/50)*50)}</div><div style="font-size:10px;color:var(--muted)">Gusto /50</div></div>
+      </div>
+      ${w.fpNote ? `<div class="deg-note">${w.fpNote}</div>` : ''}
+    </div>`;
+  }
+
+  document.getElementById('detail-content').innerHTML = `
+    <div class="dhero">
+      <div class="dimgs">
+        ${w.frontImg ? `<img src="${w.frontImg}" class="dimg" alt="Etichetta">` : `<div class="dimg"><i class="ti ti-bottle" style="font-size:28px;color:var(--wine);opacity:.3"></i></div>`}
+        ${w.backImg  ? `<img src="${w.backImg}"  class="dimg" alt="Controetichetta">` : ''}
+      </div>
+      <div style="flex:1">
+        <div class="dvintage">${w.vintage || ''} ${w.type || ''}</div>
+        <div class="dname">${w.name}</div>
+        <div class="dprod">${w.producer || ''}</div>
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px">
+          <span style="font-size:15px;color:var(--gold);letter-spacing:-1px">${st(w.score)}</span>
+          <span style="font-size:20px;font-family:'Playfair Display',serif;color:var(--wine);font-weight:500">${w.score || '—'}</span>
+          <span style="font-size:11px;color:var(--muted)">/100</span>
+        </div>
+        <div class="dchips">${chips.map(c => `<span class="dchip">${c}</span>`).join('')}</div>
+      </div>
+    </div>
+    <div class="dgrid">
+      <div class="dfield"><div class="fl">Denominazione</div><div class="fv">${w.doc || '—'}</div></div>
+      <div class="dfield"><div class="fl">Formato</div><div class="fv">${w.format || '750 ml'}</div></div>
+      <div class="dfield"><div class="fl">Bottiglie</div><div class="fv">${w.qty || 1}</div></div>
+      <div class="dfield"><div class="fl">Prezzo pagato</div><div class="fv">${w.price ? '€' + w.price.toFixed(2) : '—'}</div></div>
+      <div class="dfield"><div class="fl">Acquistato il</div><div class="fv">${w.date || '—'}</div></div>
+      <div class="dfield"><div class="fl">Da bere</div><div class="fv">${w.drink || '—'}</div></div>
+    </div>
+    ${degHTML}
+    ${w.notes ? `<div class="dfield" style="margin-bottom:.9rem"><div class="fl">Note di degustazione</div><div class="fv" style="font-style:italic;margin-top:4px;line-height:1.7;font-size:13px;color:var(--muted)">${w.notes}</div></div>` : ''}
+    ${w.tags ? `<div class="tag-list">${w.tags.split(',').map(t => `<span class="tag">#${t.trim()}</span>`).join('')}</div>` : ''}
+  `;
+  showScreen('screen-detail');
+}
+
+function deleteWine() {
+  if (!confirm('Rimuovere questo vino dalla cantina?')) return;
+  setMyWines(myWines().filter(w => w.id !== currentDetailId));
+  toast('Vino eliminato');
+  showScreen('screen-list');
+}
+
+/* ── EXPORT ── */
+function showExportMsg(msg) {
+  const el = document.getElementById('export-msg');
+  el.textContent = msg; el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 3500);
+}
+function dl(filename, content, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type }));
+  a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+function exportCSV() {
+  const w = myWines();
+  const hdr = 'Nome,Produttore,Annata,Tipo,DOC,Vitigni,Regione,Paese,Gradazione,Formato,Prezzo,Bottiglie,Data acquisto,Luogo,Da bere,Schema degustazione,Punteggio,Note';
+  const rows = w.map(x => [x.name,x.producer,x.vintage||'',x.type,x.doc,x.grapes,x.region,x.country,x.abv||'',x.format,x.price||'',x.qty,x.date,x.shop,x.drink,x.degSchema||'',x.score||'','"'+(x.notes||x.olfNote||'').replace(/"/g,"''")+'"'].join(','));
+  dl('cantina_' + currentUser.name.replace(/\s/g,'_') + '.csv', [hdr, ...rows].join('\n'), 'text/csv');
+  showExportMsg('✓ CSV esportato con successo');
+}
+function exportJSON() {
+  const data = { user: { name: currentUser.name, assoc: currentUser.assoc, card: currentUser.card }, exportDate: new Date().toISOString(), wines: myWines() };
+  dl('cantina_backup_' + new Date().toISOString().split('T')[0] + '.json', JSON.stringify(data, null, 2), 'application/json');
+  showExportMsg('✓ Backup JSON salvato');
+}
+function exportTasting() {
+  const w = myWines().filter(x => x.degSchema !== 'free');
+  if (!w.length) { showExportMsg('Nessuna scheda AIS/FISAR trovata'); return; }
+  let html = `<!DOCTYPE html><html lang="it"><head><meta charset="utf-8"><title>Schede degustazione — ${currentUser.name}</title><style>body{font-family:Georgia,serif;max-width:720px;margin:auto;padding:2.5rem;color:#1A1410}h1{color:#6B1E2E;font-size:1.5rem}h2{font-size:1.1rem;color:#1A3A6B;margin:.5rem 0 .25rem}p{font-size:.85rem;line-height:1.7;margin:.25rem 0}.chip{display:inline-block;background:#F5ECE8;color:#6B1E2E;font-size:.75rem;padding:2px 8px;border-radius:10px;margin-right:4px}.bar{height:5px;background:#eee;border-radius:3px;margin:3px 0}.fill{height:100%;border-radius:3px}.fill.ais{background:#1A3A6B}.fill.fisar{background:#1A5C3A}.score{font-size:2rem;color:#6B1E2E;font-weight:bold}.meta{font-size:.75rem;color:#888}.divider{border:none;border-top:1px solid #ddd;margin:2rem 0}@media print{.divider{page-break-before:always}}</style></head><body>`;
+  html += `<h1>Schede di degustazione</h1><p class="meta">${currentUser.name} · ${currentUser.assoc || 'Appassionato'} ${currentUser.card ? '· ' + currentUser.card : ''} · ${new Date().toLocaleDateString('it-IT')}</p>`;
+  w.forEach(x => {
+    html += `<div class="divider"></div><table style="width:100%"><tr><td><h1 style="margin:0">${x.name}</h1><p class="meta">${[x.producer,x.vintage].filter(Boolean).join(' · ')}</p><p>${[x.type,x.doc,x.region].filter(Boolean).map(c=>`<span class="chip">${c}</span>`).join('')}</p></td><td style="text-align:right"><div class="score">${x.score||'—'}</div><div class="meta">${x.degSchema?.toUpperCase()||''} /100</div></td></tr></table>`;
+    if (x.degSchema === 'ais' && x.aisParams) {
+      const p = x.aisParams;
+      [['Limpidezza',p.limp,5],['Colore',p.col||p.colore,5],['Intensità olfattiva',p.oint,5],['Struttura',p.gstr,5],['Persistenza PAI',p.gpai,5],['Armonia',p.arm||p.armonia,10]].forEach(([l,v,m]) => {
+        html += `<p style="margin-top:6px">${l}: <strong>${v||0}/${m}</strong></p><div class="bar"><div class="fill ais" style="width:${Math.round(((v||0)/m)*100)}%"></div></div>`;
+      });
+      if (p.stato) html += `<p>Stato evolutivo: <strong>${p.stato}</strong></p>`;
+    }
+    if (x.olfNote)  html += `<h2>Note olfattive</h2><p>${x.olfNote}</p>`;
+    if (x.gustNote) html += `<h2>Note gustative</h2><p>${x.gustNote}</p>`;
+    if (x.fpNote)   html += `<h2>Note di degustazione</h2><p>${x.fpNote}</p>`;
+  });
+  html += '</body></html>';
+  dl('schede_degustazione.html', html, 'text/html');
+  showExportMsg('✓ Schede HTML pronte — apri e stampa con il browser');
+}
+function exportInventory() {
+  const w = myWines();
+  const tot = w.reduce((s, x) => s + (x.qty || 1), 0);
+  const val = w.reduce((s, x) => s + ((x.price||0)*(x.qty||1)), 0);
+  let txt = `INVENTARIO CANTINA\n${currentUser.name}\nAssociazione: ${currentUser.assoc||'—'} | Tessera: ${currentUser.card||'—'}\nData: ${new Date().toLocaleDateString('it-IT')}\n\n`;
+  txt += `RIEPILOGO: ${w.length} etichette · ${tot} bottiglie · valore stimato €${val.toFixed(2)}\n\n${'─'.repeat(60)}\n\n`;
+  w.forEach(x => { txt += `${x.name}${x.vintage?' '+x.vintage:''}\n${x.producer||'—'} | ${x.type||'—'} | ${x.doc||'—'}\nBottiglie: ${x.qty||1} | Prezzo: ${x.price?'€'+x.price.toFixed(2):'—'} | Totale: ${x.price?'€'+(x.price*(x.qty||1)).toFixed(2):'—'}\nDa bere: ${x.drink||'—'} | Schema: ${x.degSchema?.toUpperCase()||'—'} | Punteggio: ${x.score||'—'}/100\n${'─'.repeat(40)}\n\n`; });
+  dl('inventario_cantina.txt', txt, 'text/plain');
+  showExportMsg('✓ Inventario esportato');
+}
+
+/* ── INIT ── */
+calcAIS(); calcFISAR();
+</script>
+</body>
+</html>
