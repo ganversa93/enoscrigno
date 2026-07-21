@@ -329,7 +329,29 @@
     .export-msg { font-size: 12px; text-align: center; padding: 10px; border-radius: 8px; margin-top: .5rem; display: none; }
     .export-msg.ok { background: var(--fisar-pale); color: var(--fisar); }
 
-    /* ── TOAST ── */
+    /* ── FISAR qualitative selects ── */
+    .fisar-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .fisar-field { margin-bottom: 2px; }
+    .fisar-label {
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 4px;
+    }
+    .fisar-pt-badge {
+      font-size: 10px; font-weight: 600; color: var(--fisar);
+      background: var(--fisar-pale); padding: 1px 6px; border-radius: 10px;
+      white-space: nowrap; flex-shrink: 0; margin-left: 6px;
+    }
+    .fisar-sel {
+      width: 100%; font-family: 'DM Sans', sans-serif; font-size: 12px;
+      padding: 7px 10px; border-radius: 8px;
+      border: 0.5px solid var(--border); background: var(--bg); color: var(--ink);
+      cursor: pointer;
+    }
+    .fisar-sel:focus { outline: none; border-color: var(--fisar); }
+    .fisar-sel.filled { border-color: var(--fisar); background: var(--fisar-pale); color: var(--fisar); font-weight: 500; }
+    @media (max-width: 520px) { .fisar-row { grid-template-columns: 1fr; } }
+
+
     .toast {
       position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
       background: var(--ink); color: var(--bg); font-size: 13px;
@@ -558,42 +580,251 @@
         <div class="fg" style="margin-top:8px"><label>Note gustative descrittive</label><textarea id="ap-gustnote" placeholder="Tannini, acidità, corpo, calore, finale…"></textarea></div>
       </div>
 
-      <!-- FISAR -->
+      <!-- FISAR — descrittori qualitativi ufficiali -->
       <div class="deg-schema" id="deg-fisar">
-        <div style="text-align:center;margin-bottom:1rem">
-          <div class="score-circle fisar"><span class="score-n" id="fisar-tot">0</span><span class="score-max">/100</span></div>
+        <div style="text-align:center;margin-bottom:1.1rem">
+          <div class="score-circle fisar"><span class="score-n" id="fisar-tot">—</span><span class="score-max">/100</span></div>
           <div style="font-size:11px;color:var(--muted)">Aspetto /20 · Profumo /30 · Gusto /50</div>
         </div>
+
+        <!-- ASPETTO -->
         <div class="param-group">
-          <div class="pg-title" style="color:var(--fisar)">Aspetto (max 20 pt)</div>
-          <div class="param-row"><span class="param-label">Limpidezza</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-limp')"><span class="param-val" id="fp-limp" style="color:var(--fisar)">3</span></div>
-          <div class="param-row"><span class="param-label">Colore</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-col')"><span class="param-val" id="fp-col" style="color:var(--fisar)">3</span></div>
-          <div class="param-row"><span class="param-label">Fluidità</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-flu')"><span class="param-val" id="fp-flu" style="color:var(--fisar)">3</span></div>
-          <div class="param-row"><span class="param-label">Effervescenza</span><input type="range" min="0" max="5" value="0" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-eff')"><span class="param-val" id="fp-eff" style="color:var(--fisar)">0</span></div>
+          <div class="pg-title" style="color:var(--fisar)"><i class="ti ti-eye" style="font-size:12px;vertical-align:-1px;margin-right:4px"></i>Aspetto <span style="font-weight:400;color:var(--muted)">(max 20 pt)</span> — <span id="fisar-asp-pts" style="color:var(--fisar);font-weight:600">0</span> pt</div>
+          <div class="fisar-row">
+            <div class="fisar-field">
+              <label class="fisar-label">Limpidezza <span class="fisar-pt-badge" id="b-limp">0 pt</span></label>
+              <select class="fisar-sel" id="fp-limp" onchange="calcFISAR()">
+                <option value="0">— Seleziona —</option>
+                <option value="5">Cristallino (5 pt)</option>
+                <option value="4">Limpido (4 pt)</option>
+                <option value="3">Abbastanza limpido (3 pt)</option>
+                <option value="2">Velato (2 pt)</option>
+                <option value="1">Torbido (1 pt)</option>
+              </select>
+            </div>
+            <div class="fisar-field">
+              <label class="fisar-label">Colore — intensità <span class="fisar-pt-badge" id="b-col">0 pt</span></label>
+              <select class="fisar-sel" id="fp-col" onchange="calcFISAR()">
+                <option value="0">— Seleziona —</option>
+                <option value="5">Molto intenso (5 pt)</option>
+                <option value="4">Intenso (4 pt)</option>
+                <option value="3">Abbastanza intenso (3 pt)</option>
+                <option value="2">Poco intenso (2 pt)</option>
+                <option value="1">Scarso (1 pt)</option>
+              </select>
+            </div>
+            <div class="fisar-field">
+              <label class="fisar-label">Fluidità <span class="fisar-pt-badge" id="b-flu">0 pt</span></label>
+              <select class="fisar-sel" id="fp-flu" onchange="calcFISAR()">
+                <option value="0">— Seleziona —</option>
+                <option value="5">Molto scorrevole (5 pt)</option>
+                <option value="4">Scorrevole (4 pt)</option>
+                <option value="3">Abbastanza scorrevole (3 pt)</option>
+                <option value="2">Poco scorrevole (2 pt)</option>
+                <option value="1">Viscoso (1 pt)</option>
+              </select>
+            </div>
+            <div class="fisar-field">
+              <label class="fisar-label">Effervescenza <span class="fisar-pt-badge" id="b-eff">—</span></label>
+              <select class="fisar-sel" id="fp-eff" onchange="calcFISAR()">
+                <option value="-1">N/A — non spumante</option>
+                <option value="5">Molto fine e persistente (5 pt)</option>
+                <option value="4">Fine e persistente (4 pt)</option>
+                <option value="3">Abbastanza fine (3 pt)</option>
+                <option value="2">Poco fine (2 pt)</option>
+                <option value="1">Grossolana (1 pt)</option>
+              </select>
+            </div>
+          </div>
         </div>
+
+        <!-- PROFUMO -->
         <div class="param-group">
-          <div class="pg-title" style="color:var(--fisar)">Profumo (max 30 pt)</div>
-          <div class="param-row"><span class="param-label">Franchezza</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-fr')"><span class="param-val" id="fp-fr" style="color:var(--fisar)">3</span></div>
-          <div class="param-row"><span class="param-label">Intensità</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-pint')"><span class="param-val" id="fp-pint" style="color:var(--fisar)">3</span></div>
-          <div class="param-row"><span class="param-label">Persistenza olfattiva</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-pers')"><span class="param-val" id="fp-pers" style="color:var(--fisar)">3</span></div>
-          <div class="param-row"><span class="param-label">Qualità / finezza</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-qual')"><span class="param-val" id="fp-qual" style="color:var(--fisar)">3</span></div>
-          <div class="param-row"><span class="param-label">Armonia olfattiva</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-arm')"><span class="param-val" id="fp-arm" style="color:var(--fisar)">3</span></div>
-          <div class="param-row"><span class="param-label">Tipicità varietale</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-tip')"><span class="param-val" id="fp-tip" style="color:var(--fisar)">3</span></div>
+          <div class="pg-title" style="color:var(--fisar)"><i class="ti ti-wind" style="font-size:12px;vertical-align:-1px;margin-right:4px"></i>Profumo <span style="font-weight:400;color:var(--muted)">(max 30 pt)</span> — <span id="fisar-pro-pts" style="color:var(--fisar);font-weight:600">0</span> pt</div>
+          <div class="fisar-row">
+            <div class="fisar-field">
+              <label class="fisar-label">Franchezza <span class="fisar-pt-badge" id="b-fr">0 pt</span></label>
+              <select class="fisar-sel" id="fp-fr" onchange="calcFISAR()">
+                <option value="0">— Seleziona —</option>
+                <option value="5">Netto / pulito (5 pt)</option>
+                <option value="4">Abbastanza netto (4 pt)</option>
+                <option value="3">Leggermente alterato (3 pt)</option>
+                <option value="2">Difettoso (2 pt)</option>
+                <option value="1">Non netto (1 pt)</option>
+              </select>
+            </div>
+            <div class="fisar-field">
+              <label class="fisar-label">Intensità <span class="fisar-pt-badge" id="b-pint">0 pt</span></label>
+              <select class="fisar-sel" id="fp-pint" onchange="calcFISAR()">
+                <option value="0">— Seleziona —</option>
+                <option value="5">Molto intenso (5 pt)</option>
+                <option value="4">Intenso (4 pt)</option>
+                <option value="3">Abbastanza intenso (3 pt)</option>
+                <option value="2">Poco intenso (2 pt)</option>
+                <option value="1">Carente (1 pt)</option>
+              </select>
+            </div>
+            <div class="fisar-field">
+              <label class="fisar-label">Persistenza olfattiva <span class="fisar-pt-badge" id="b-pers">0 pt</span></label>
+              <select class="fisar-sel" id="fp-pers" onchange="calcFISAR()">
+                <option value="0">— Seleziona —</option>
+                <option value="5">Molto persistente (5 pt)</option>
+                <option value="4">Persistente (4 pt)</option>
+                <option value="3">Abbastanza persistente (3 pt)</option>
+                <option value="2">Poco persistente (2 pt)</option>
+                <option value="1">Evanescente (1 pt)</option>
+              </select>
+            </div>
+            <div class="fisar-field">
+              <label class="fisar-label">Qualità / finezza <span class="fisar-pt-badge" id="b-qual">0 pt</span></label>
+              <select class="fisar-sel" id="fp-qual" onchange="calcFISAR()">
+                <option value="0">— Seleziona —</option>
+                <option value="5">Eccellente (5 pt)</option>
+                <option value="4">Fine (4 pt)</option>
+                <option value="3">Abbastanza fine (3 pt)</option>
+                <option value="2">Comune (2 pt)</option>
+                <option value="1">Grossolano (1 pt)</option>
+              </select>
+            </div>
+            <div class="fisar-field">
+              <label class="fisar-label">Armonia olfattiva <span class="fisar-pt-badge" id="b-arm">0 pt</span></label>
+              <select class="fisar-sel" id="fp-arm" onchange="calcFISAR()">
+                <option value="0">— Seleziona —</option>
+                <option value="5">Molto armonico (5 pt)</option>
+                <option value="4">Armonico (4 pt)</option>
+                <option value="3">Abbastanza armonico (3 pt)</option>
+                <option value="2">Poco armonico (2 pt)</option>
+                <option value="1">Disarmonico (1 pt)</option>
+              </select>
+            </div>
+            <div class="fisar-field">
+              <label class="fisar-label">Tipicità varietale <span class="fisar-pt-badge" id="b-tip">0 pt</span></label>
+              <select class="fisar-sel" id="fp-tip" onchange="calcFISAR()">
+                <option value="0">— Seleziona —</option>
+                <option value="5">Molto tipico (5 pt)</option>
+                <option value="4">Tipico (4 pt)</option>
+                <option value="3">Abbastanza tipico (3 pt)</option>
+                <option value="2">Poco tipico (2 pt)</option>
+                <option value="1">Atipico (1 pt)</option>
+              </select>
+            </div>
+          </div>
         </div>
+
+        <!-- GUSTO -->
         <div class="param-group">
-          <div class="pg-title" style="color:var(--fisar)">Gusto (max 50 pt)</div>
-          <div class="param-row"><span class="param-label">Franchezza gusto</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-gfr')"><span class="param-val" id="fp-gfr" style="color:var(--fisar)">3</span></div>
-          <div class="param-row"><span class="param-label">Struttura</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-gst')"><span class="param-val" id="fp-gst" style="color:var(--fisar)">3</span></div>
-          <div class="param-row"><span class="param-label">Morbidezza</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-morb')"><span class="param-val" id="fp-morb" style="color:var(--fisar)">3</span></div>
-          <div class="param-row"><span class="param-label">Durezza (acidità/tannini)</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-dur')"><span class="param-val" id="fp-dur" style="color:var(--fisar)">3</span></div>
-          <div class="param-row"><span class="param-label">Persistenza aromatica</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-pai')"><span class="param-val" id="fp-pai" style="color:var(--fisar)">3</span></div>
-          <div class="param-row"><span class="param-label">Armonia gustativa</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-garm')"><span class="param-val" id="fp-garm" style="color:var(--fisar)">3</span></div>
-          <div class="param-row"><span class="param-label">Tipicità gustativa</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-gtip')"><span class="param-val" id="fp-gtip" style="color:var(--fisar)">3</span></div>
-          <div class="param-row"><span class="param-label">Qualità globale</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-gqual')"><span class="param-val" id="fp-gqual" style="color:var(--fisar)">3</span></div>
-          <div class="param-row"><span class="param-label">Evoluzione / potenziale</span><input type="range" min="1" max="5" value="3" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-evol')"><span class="param-val" id="fp-evol" style="color:var(--fisar)">3</span></div>
-          <div class="param-row"><span class="param-label">Eccellenza (bonus)</span><input type="range" min="0" max="5" value="0" step="1" class="fisar-r" oninput="calcFISAR(this,'fp-ecc')"><span class="param-val" id="fp-ecc" style="color:var(--fisar)">0</span></div>
+          <div class="pg-title" style="color:var(--fisar)"><i class="ti ti-droplet" style="font-size:12px;vertical-align:-1px;margin-right:4px"></i>Gusto <span style="font-weight:400;color:var(--muted)">(max 50 pt)</span> — <span id="fisar-gu-pts" style="color:var(--fisar);font-weight:600">0</span> pt</div>
+          <div class="fisar-row">
+            <div class="fisar-field">
+              <label class="fisar-label">Franchezza gustativa <span class="fisar-pt-badge" id="b-gfr">0 pt</span></label>
+              <select class="fisar-sel" id="fp-gfr" onchange="calcFISAR()">
+                <option value="0">— Seleziona —</option>
+                <option value="5">Netto / pulito (5 pt)</option>
+                <option value="4">Abbastanza netto (4 pt)</option>
+                <option value="3">Leggermente alterato (3 pt)</option>
+                <option value="2">Difettoso (2 pt)</option>
+                <option value="1">Non netto (1 pt)</option>
+              </select>
+            </div>
+            <div class="fisar-field">
+              <label class="fisar-label">Struttura <span class="fisar-pt-badge" id="b-gst">0 pt</span></label>
+              <select class="fisar-sel" id="fp-gst" onchange="calcFISAR()">
+                <option value="0">— Seleziona —</option>
+                <option value="5">Molto strutturato (5 pt)</option>
+                <option value="4">Strutturato (4 pt)</option>
+                <option value="3">Abbastanza strutturato (3 pt)</option>
+                <option value="2">Leggero (2 pt)</option>
+                <option value="1">Esile (1 pt)</option>
+              </select>
+            </div>
+            <div class="fisar-field">
+              <label class="fisar-label">Morbidezza <span class="fisar-pt-badge" id="b-morb">0 pt</span></label>
+              <select class="fisar-sel" id="fp-morb" onchange="calcFISAR()">
+                <option value="0">— Seleziona —</option>
+                <option value="5">Morbidissimo (5 pt)</option>
+                <option value="4">Morbido (4 pt)</option>
+                <option value="3">Abbastanza morbido (3 pt)</option>
+                <option value="2">Poco morbido (2 pt)</option>
+                <option value="1">Duro (1 pt)</option>
+              </select>
+            </div>
+            <div class="fisar-field">
+              <label class="fisar-label">Durezza <small style="color:var(--muted)">(acidità / tannini)</small> <span class="fisar-pt-badge" id="b-dur">0 pt</span></label>
+              <select class="fisar-sel" id="fp-dur" onchange="calcFISAR()">
+                <option value="0">— Seleziona —</option>
+                <option value="5">Ottimale / equilibrata (5 pt)</option>
+                <option value="4">Abbastanza equilibrata (4 pt)</option>
+                <option value="3">Leggermente marcata (3 pt)</option>
+                <option value="2">Marcata (2 pt)</option>
+                <option value="1">Eccessiva (1 pt)</option>
+              </select>
+            </div>
+            <div class="fisar-field">
+              <label class="fisar-label">Persistenza aromatica intensa <span class="fisar-pt-badge" id="b-pai">0 pt</span></label>
+              <select class="fisar-sel" id="fp-pai" onchange="calcFISAR()">
+                <option value="0">— Seleziona —</option>
+                <option value="5">Lunghissima (&gt;12 sec) (5 pt)</option>
+                <option value="4">Lunga (9–12 sec) (4 pt)</option>
+                <option value="3">Abbastanza lunga (6–9 sec) (3 pt)</option>
+                <option value="2">Corta (3–6 sec) (2 pt)</option>
+                <option value="1">Cortissima (&lt;3 sec) (1 pt)</option>
+              </select>
+            </div>
+            <div class="fisar-field">
+              <label class="fisar-label">Armonia gustativa <span class="fisar-pt-badge" id="b-garm">0 pt</span></label>
+              <select class="fisar-sel" id="fp-garm" onchange="calcFISAR()">
+                <option value="0">— Seleziona —</option>
+                <option value="5">Molto armonico (5 pt)</option>
+                <option value="4">Armonico (4 pt)</option>
+                <option value="3">Abbastanza armonico (3 pt)</option>
+                <option value="2">Poco armonico (2 pt)</option>
+                <option value="1">Disarmonico (1 pt)</option>
+              </select>
+            </div>
+            <div class="fisar-field">
+              <label class="fisar-label">Tipicità gustativa <span class="fisar-pt-badge" id="b-gtip">0 pt</span></label>
+              <select class="fisar-sel" id="fp-gtip" onchange="calcFISAR()">
+                <option value="0">— Seleziona —</option>
+                <option value="5">Molto tipico (5 pt)</option>
+                <option value="4">Tipico (4 pt)</option>
+                <option value="3">Abbastanza tipico (3 pt)</option>
+                <option value="2">Poco tipico (2 pt)</option>
+                <option value="1">Atipico (1 pt)</option>
+              </select>
+            </div>
+            <div class="fisar-field">
+              <label class="fisar-label">Qualità globale <span class="fisar-pt-badge" id="b-gqual">0 pt</span></label>
+              <select class="fisar-sel" id="fp-gqual" onchange="calcFISAR()">
+                <option value="0">— Seleziona —</option>
+                <option value="5">Eccellente (5 pt)</option>
+                <option value="4">Fine (4 pt)</option>
+                <option value="3">Abbastanza fine (3 pt)</option>
+                <option value="2">Comune (2 pt)</option>
+                <option value="1">Grossolano (1 pt)</option>
+              </select>
+            </div>
+            <div class="fisar-field">
+              <label class="fisar-label">Evoluzione / potenziale <span class="fisar-pt-badge" id="b-evol">0 pt</span></label>
+              <select class="fisar-sel" id="fp-evol" onchange="calcFISAR()">
+                <option value="0">— Seleziona —</option>
+                <option value="5">Ampio potenziale (5 pt)</option>
+                <option value="4">Buon potenziale (4 pt)</option>
+                <option value="3">Pronto / al culmine (3 pt)</option>
+                <option value="2">Leggermente calante (2 pt)</option>
+                <option value="1">Decadente (1 pt)</option>
+              </select>
+            </div>
+            <div class="fisar-field">
+              <label class="fisar-label">Eccellenza <small style="color:var(--muted)">(bonus facoltativo)</small> <span class="fisar-pt-badge" id="b-ecc">—</span></label>
+              <select class="fisar-sel" id="fp-ecc" onchange="calcFISAR()">
+                <option value="0">Non assegnata (0 pt)</option>
+                <option value="5">Eccellenza riconosciuta (+5 pt)</option>
+              </select>
+            </div>
+          </div>
         </div>
-        <div class="fg"><label>Note di degustazione FISAR</label><textarea id="fp-note" placeholder="Aspetto, profumi, gusto, conclusioni e abbinamenti…"></textarea></div>
+
+        <div class="fg"><label>Note di degustazione FISAR</label><textarea id="fp-note" placeholder="Aspetto, profumi, gusto, conclusioni e abbinamenti consigliati…"></textarea></div>
       </div>
 
       <!-- LIBERO -->
@@ -796,7 +1027,12 @@ function showAdd() {
   clear(['f-vintage','f-abv','f-price']);
   const qty = document.getElementById('f-qty'); if (qty) qty.value = 1;
   const fd  = document.getElementById('f-date'); if (fd) fd.value = new Date().toISOString().split('T')[0];
-  document.querySelectorAll('.ais-r,.fisar-r').forEach(r => r.value = 3);
+  document.querySelectorAll('.ais-r').forEach(r => r.value = 3);
+  // Reset FISAR selects
+  Object.keys(FISAR_FIELDS).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.value = id === 'fp-eff' ? '-1' : '0'; el.classList.remove('filled'); }
+  });
   const fscore = document.getElementById('f-score'); if (fscore) fscore.value = 88;
   document.getElementById('score-free').textContent = '88';
   document.getElementById('prev-front').innerHTML = '<i class="ti ti-photo-up" aria-hidden="true"></i><p><b>Carica</b> o scatta foto</p>';
@@ -873,19 +1109,67 @@ function recalcAIS() {
   const sum = r.reduce((a, b) => a + b, 0);
   return Math.round((sum / 53) * 100);
 }
-function calcFISAR(input, outId) {
-  if (input && outId) sv(outId, input.value);
-  document.getElementById('fisar-tot').textContent = Math.min(100, recalcFISAR());
+/* ── FISAR DESCRIPTORS ── */
+// Map of field id → { badge id, section: 'asp'|'pro'|'gu', max pts }
+const FISAR_FIELDS = {
+  'fp-limp': { b:'b-limp', sec:'asp' },
+  'fp-col':  { b:'b-col',  sec:'asp' },
+  'fp-flu':  { b:'b-flu',  sec:'asp' },
+  'fp-eff':  { b:'b-eff',  sec:'asp', optional:true },
+  'fp-fr':   { b:'b-fr',   sec:'pro' },
+  'fp-pint': { b:'b-pint', sec:'pro' },
+  'fp-pers': { b:'b-pers', sec:'pro' },
+  'fp-qual': { b:'b-qual', sec:'pro' },
+  'fp-arm':  { b:'b-arm',  sec:'pro' },
+  'fp-tip':  { b:'b-tip',  sec:'pro' },
+  'fp-gfr':  { b:'b-gfr',  sec:'gu' },
+  'fp-gst':  { b:'b-gst',  sec:'gu' },
+  'fp-morb': { b:'b-morb', sec:'gu' },
+  'fp-dur':  { b:'b-dur',  sec:'gu' },
+  'fp-pai':  { b:'b-pai',  sec:'gu' },
+  'fp-garm': { b:'b-garm', sec:'gu' },
+  'fp-gtip': { b:'b-gtip', sec:'gu' },
+  'fp-gqual':{ b:'b-gqual',sec:'gu' },
+  'fp-evol': { b:'b-evol', sec:'gu' },
+  'fp-ecc':  { b:'b-ecc',  sec:'gu', bonus:true }
+};
+
+function calcFISAR() {
+  let asp = 0, aspMax = 0, pro = 0, gu = 0;
+  Object.entries(FISAR_FIELDS).forEach(([id, cfg]) => {
+    const el = document.getElementById(id);
+    const b  = document.getElementById(cfg.b);
+    if (!el) return;
+    const v = parseInt(el.value);
+    // Style the select
+    el.classList.toggle('filled', v > 0);
+    // Update badge
+    if (b) {
+      if (cfg.optional && v < 0) { b.textContent = 'N/A'; }
+      else if (v === 0)          { b.textContent = '0 pt'; }
+      else                       { b.textContent = v + ' pt'; }
+    }
+    // Accumulate
+    if (cfg.sec === 'asp') { if (!cfg.optional || v >= 0) { asp += Math.max(0, v); aspMax += 5; } }
+    if (cfg.sec === 'pro') { pro += Math.max(0, v); }
+    if (cfg.sec === 'gu')  { gu  += Math.max(0, v); }
+  });
+
+  // Section sub-totals displayed
+  const aspScore   = aspMax > 0 ? Math.round((asp / aspMax) * 20) : 0;
+  const proScore   = Math.round((pro / 30) * 30);
+  const guScore    = Math.round((gu  / 50) * 50);
+  const total      = Math.min(100, aspScore + proScore + guScore);
+
+  const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  setText('fisar-asp-pts', aspScore);
+  setText('fisar-pro-pts', proScore);
+  setText('fisar-gu-pts',  guScore);
+  setText('fisar-tot', total || '—');
+  return total;
 }
-function recalcFISAR() {
-  const get = cls => [...document.querySelectorAll('.' + cls)].map(x => +x.value);
-  const fr = get('fisar-r');
-  if (!fr.length) return 0;
-  const asp = fr[0] + fr[1] + fr[2] + fr[3];
-  const pro = fr[4] + fr[5] + fr[6] + fr[7] + fr[8] + fr[9];
-  const gu  = fr[10] + fr[11] + fr[12] + fr[13] + fr[14] + fr[15] + fr[16] + fr[17] + fr[18] + fr[19];
-  return Math.round((asp/20)*20 + (pro/30)*30 + (gu/50)*50);
-}
+
+function recalcFISAR() { return calcFISAR(); }
 
 /* ── IMAGES ── */
 function previewImg(input, previewId, side) {
@@ -947,7 +1231,15 @@ function saveWine() {
   const fisarScore = recalcFISAR();
   const finalScore = activeDeg === 'ais' ? aisScore : activeDeg === 'fisar' ? fisarScore : +document.getElementById('f-score')?.value || 88;
   const getAP = () => { const r = [...document.querySelectorAll('.ais-r')]; return { limp:+r[0]?.value, col:+r[1]?.value, cons:+r[2]?.value, oint:+r[3]?.value, ocomp:+r[4]?.value, oqual:+r[5]?.value, gstr:+r[6]?.value, geq:+r[7]?.value, gigo:+r[8]?.value, gpai:+r[9]?.value, gqual:+r[10]?.value, stato: document.getElementById('ap-stato')?.value, arm:+r[11]?.value }; };
-  const getFP = () => { const r = [...document.querySelectorAll('.fisar-r')]; return { limp:+r[0]?.value, col:+r[1]?.value, flu:+r[2]?.value, eff:+r[3]?.value, fr:+r[4]?.value, pint:+r[5]?.value, pers:+r[6]?.value, qual:+r[7]?.value, arm:+r[8]?.value, tip:+r[9]?.value, gfr:+r[10]?.value, gst:+r[11]?.value, morb:+r[12]?.value, dur:+r[13]?.value, pai:+r[14]?.value, garm:+r[15]?.value, gtip:+r[16]?.value, gqual:+r[17]?.value, evol:+r[18]?.value, ecc:+r[19]?.value }; };
+  const getFP = () => {
+    const fv = id => Math.max(0, parseInt(document.getElementById(id)?.value) || 0);
+    return {
+      limp: fv('fp-limp'), col: fv('fp-col'), flu: fv('fp-flu'), eff: parseInt(document.getElementById('fp-eff')?.value) ?? -1,
+      fr: fv('fp-fr'), pint: fv('fp-pint'), pers: fv('fp-pers'), qual: fv('fp-qual'), arm: fv('fp-arm'), tip: fv('fp-tip'),
+      gfr: fv('fp-gfr'), gst: fv('fp-gst'), morb: fv('fp-morb'), dur: fv('fp-dur'), pai: fv('fp-pai'),
+      garm: fv('fp-garm'), gtip: fv('fp-gtip'), gqual: fv('fp-gqual'), evol: fv('fp-evol'), ecc: fv('fp-ecc')
+    };
+  };
   const g = id => document.getElementById(id)?.value || '';
   const wine = {
     id: Date.now(), name, producer: g('f-producer'),
