@@ -516,11 +516,7 @@
     <!-- DEGUSTAZIONE -->
     <div class="fsec">
       <div class="stitle"><i class="ti ti-stars" aria-hidden="true"></i>Scheda di degustazione</div>
-      <div class="deg-tabs">
-        <div class="deg-tab ais-act"  id="dtab-ais"   onclick="switchDeg('ais')"><i class="ti ti-award"></i>Metodo AIS</div>
-        <div class="deg-tab"          id="dtab-fisar" onclick="switchDeg('fisar')"><i class="ti ti-award"></i>Metodo FISAR</div>
-        <div class="deg-tab"          id="dtab-free"  onclick="switchDeg('free')"><i class="ti ti-note"></i>Libero</div>
-      </div>
+      <div class="deg-tabs" id="deg-tabs-container"></div>
 
       <!-- AIS -->
       <div class="deg-schema active" id="deg-ais">
@@ -794,7 +790,7 @@ function renderGrid() {
 
 /* ── ADD FORM ── */
 function showAdd() {
-  frontImg = ''; backImg = ''; activeDeg = 'ais';
+  frontImg = ''; backImg = '';
   const clear = ids => ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   clear(['f-name','f-producer','f-doc','f-grapes','f-region','f-country','f-shop','f-drink','f-notes','f-tags','ap-olfnote','ap-gustnote','fp-note']);
   clear(['f-vintage','f-abv','f-price']);
@@ -805,17 +801,55 @@ function showAdd() {
   document.getElementById('score-free').textContent = '88';
   document.getElementById('prev-front').innerHTML = '<i class="ti ti-photo-up" aria-hidden="true"></i><p><b>Carica</b> o scatta foto</p>';
   document.getElementById('prev-back').innerHTML  = '<i class="ti ti-photo-up" aria-hidden="true"></i><p><b>Carica</b> o scatta foto</p>';
-  switchDeg('ais'); calcAIS(); calcFISAR();
+  renderDegTabs();
+  calcAIS(); calcFISAR();
   showScreen('screen-add');
 }
+/* Returns which deg tabs to show based on user association */
+function availableDegTabs() {
+  const assoc = (currentUser?.assoc || '').toUpperCase();
+  const assocTab = assoc === 'AIS'   ? 'ais'
+                 : assoc === 'FISAR' ? 'fisar'
+                 : assoc === 'ONAV'  ? 'ais'   // ONAV usa metodo simile ad AIS
+                 : assoc === 'FIS'   ? 'ais'
+                 : null;
+  // Always show the association tab (if any) + free; never show the other association tab
+  if (assocTab === 'ais')   return ['ais',   'free'];
+  if (assocTab === 'fisar') return ['fisar', 'free'];
+  // No association: show all three
+  return ['ais', 'fisar', 'free'];
+}
+
+function renderDegTabs() {
+  const tabs = availableDegTabs();
+  const assoc = (currentUser?.assoc || '').toUpperCase();
+  const labels = {
+    ais:   { icon: 'ti-award', label: assoc === 'ONAV' ? 'Metodo ONAV' : assoc === 'FIS' ? 'Metodo FIS' : 'Metodo AIS',   cls: 'ais-act'   },
+    fisar: { icon: 'ti-award', label: 'Metodo FISAR', cls: 'fisar-act' },
+    free:  { icon: 'ti-note',  label: 'Libero',       cls: 'free-act'  }
+  };
+  const container = document.getElementById('deg-tabs-container');
+  container.innerHTML = tabs.map(t => `
+    <div class="deg-tab" id="dtab-${t}" onclick="switchDeg('${t}')">
+      <i class="ti ${labels[t].icon}"></i>${labels[t].label}
+    </div>`).join('');
+  // Default: first available tab (= association tab if present)
+  activeDeg = tabs[0];
+  switchDeg(activeDeg);
+}
+
 function switchDeg(t) {
   activeDeg = t;
   const map = { ais: 'ais-act', fisar: 'fisar-act', free: 'free-act' };
-  ['ais','fisar','free'].forEach(tab => {
+  // Update tab buttons (only those rendered)
+  availableDegTabs().forEach(tab => {
     const btn = document.getElementById('dtab-' + tab);
+    if (btn) btn.className = 'deg-tab' + (tab === t ? ' ' + map[tab] : '');
+  });
+  // Show/hide panels
+  ['ais','fisar','free'].forEach(tab => {
     const pnl = document.getElementById('deg-' + tab);
-    btn.className = 'deg-tab' + (tab === t ? ' ' + map[tab] : '');
-    pnl.className = 'deg-schema' + (tab === t ? ' active' : '');
+    if (pnl) pnl.className = 'deg-schema' + (tab === t ? ' active' : '');
   });
 }
 
