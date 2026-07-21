@@ -329,6 +329,13 @@
     .export-msg { font-size: 12px; text-align: center; padding: 10px; border-radius: 8px; margin-top: .5rem; display: none; }
     .export-msg.ok { background: var(--fisar-pale); color: var(--fisar); }
 
+    /* ── PROFILE ── */
+    .profile-avatar-big {
+      width: 64px; height: 64px; border-radius: 50%; background: var(--wine);
+      color: #fff; font-size: 24px; font-weight: 500; font-family: 'Playfair Display', serif;
+      display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;
+    }
+
     /* ── FISAR qualitative selects ── */
     .fisar-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .fisar-field { margin-bottom: 2px; }
@@ -423,13 +430,14 @@
         <div class="logo-text"><em>Enosfera</em></div>
       </div>
       <div class="nav-right">
-        <div class="user-pill">
+        <div class="user-pill" onclick="showProfileScreen()" style="cursor:pointer" title="Modifica profilo">
           <div class="avatar" id="nav-avatar">M</div>
           <span id="nav-name">Mario</span>
           <span class="assoc-badge" id="nav-badge" style="display:none"></span>
+          <i class="ti ti-chevron-right" style="font-size:11px;opacity:.5"></i>
         </div>
         <button class="btn sm" onclick="showScreen('screen-export')"><i class="ti ti-download"></i>Export</button>
-        <button class="btn sm danger" onclick="doLogout()" aria-label="Esci"><i class="ti ti-logout"></i></button>
+        <button class="btn sm danger" onclick="doLogout()" title="Esci"><i class="ti ti-logout"></i></button>
       </div>
     </div>
     <div class="stat-row" id="stats-bar"></div>
@@ -452,9 +460,10 @@
   <!-- ══ ADD FORM ══ -->
   <div id="screen-add" class="screen">
     <div class="fhdr">
-      <button class="btn sm" onclick="showScreen('screen-list')" aria-label="Indietro"><i class="ti ti-arrow-left"></i></button>
-      <h2>Aggiungi vino</h2>
+      <button class="btn sm" onclick="cancelForm()" aria-label="Indietro"><i class="ti ti-arrow-left"></i></button>
+      <h2 id="form-title">Aggiungi vino</h2>
     </div>
+    <input type="hidden" id="f-edit-id" value="">
 
     <div class="ai-banner">
       <span class="ai-pill"><i class="ti ti-sparkles" style="font-size:10px"></i> AI</span>
@@ -533,6 +542,10 @@
         <div class="fg"><label>Luogo acquisto</label><input type="text" id="f-shop" placeholder="es. Enoteca Bianchi, Milano"></div>
       </div>
       <div class="fg"><label>Finestra di consumo ottimale</label><input type="text" id="f-drink" placeholder="es. 2025–2038"></div>
+      <div class="frow">
+        <div class="fg"><label>Data degustazione</label><input type="date" id="f-tastingdate"></div>
+        <div class="fg"><label>Luogo degustazione</label><input type="text" id="f-tastingplace" placeholder="es. Ristorante Da Marco, Roma"></div>
+      </div>
     </div>
 
     <!-- DEGUSTAZIONE -->
@@ -840,8 +853,8 @@
     </div>
 
     <div class="ffoot">
-      <button class="btn" onclick="showScreen('screen-list')">Annulla</button>
-      <button class="btn primary" onclick="saveWine()"><i class="ti ti-device-floppy"></i>Salva in cantina</button>
+      <button class="btn" onclick="cancelForm()">Annulla</button>
+      <button class="btn primary" onclick="saveWine()"><i class="ti ti-device-floppy"></i><span id="form-save-label">Salva in cantina</span></button>
     </div>
   </div>
 
@@ -849,9 +862,77 @@
   <div id="screen-detail" class="screen">
     <div class="nav" style="margin-bottom:.9rem">
       <button class="btn sm" onclick="showScreen('screen-list')"><i class="ti ti-arrow-left"></i>Cantina</button>
-      <button class="btn sm danger" onclick="deleteWine()" aria-label="Elimina vino"><i class="ti ti-trash"></i>Elimina</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn sm" onclick="editWine()"><i class="ti ti-edit"></i>Modifica</button>
+        <button class="btn sm danger" onclick="deleteWine()"><i class="ti ti-trash"></i>Elimina</button>
+      </div>
     </div>
     <div id="detail-content"></div>
+  </div>
+
+  <!-- ══ PROFILE ══ -->
+  <div id="screen-profile" class="screen">
+    <div class="nav" style="margin-bottom:1.25rem">
+      <button class="btn sm" onclick="showScreen('screen-list')"><i class="ti ti-arrow-left"></i>Cantina</button>
+      <span style="font-family:'Playfair Display',serif;font-size:18px;color:var(--ink)">Il mio profilo</span>
+    </div>
+
+    <!-- Dati personali -->
+    <div class="fsec">
+      <div class="stitle"><i class="ti ti-user"></i>Dati personali</div>
+      <div class="frow">
+        <div class="fg"><label>Nome</label><input type="text" id="p-firstname" placeholder="Mario"></div>
+        <div class="fg"><label>Cognome</label><input type="text" id="p-lastname" placeholder="Rossi"></div>
+      </div>
+      <div class="fg"><label>Email</label><input type="email" id="p-email" placeholder="mario@email.it"></div>
+    </div>
+
+    <!-- Password -->
+    <div class="fsec">
+      <div class="stitle"><i class="ti ti-lock"></i>Cambia password</div>
+      <div class="fg"><label>Password attuale</label><input type="password" id="p-pwd-old" placeholder="••••••••"></div>
+      <div class="frow">
+        <div class="fg"><label>Nuova password</label><input type="password" id="p-pwd-new" placeholder="min. 4 caratteri"></div>
+        <div class="fg"><label>Conferma nuova password</label><input type="password" id="p-pwd-confirm" placeholder="••••••••"></div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">Lascia vuoto per non modificare la password.</div>
+    </div>
+
+    <!-- Associazione -->
+    <div class="fsec">
+      <div class="stitle"><i class="ti ti-award"></i>Associazione di appartenenza</div>
+      <div class="frow">
+        <div class="fg">
+          <label>Associazione</label>
+          <select id="p-assoc" onchange="updateDelegazioniList()">
+            <option value="">Nessuna / Appassionato</option>
+            <option value="AIS">AIS — Associazione Italiana Sommelier</option>
+            <option value="FISAR">FISAR — Fed. Italiana Sommelier Albergatori Ristoratori</option>
+            <option value="ONAV">ONAV — Org. Nazionale Assaggiatori Vino</option>
+            <option value="FIS">FIS — Fondazione Italiana Sommelier</option>
+          </select>
+        </div>
+        <div class="fg"><label>Numero tessera</label><input type="text" id="p-card" placeholder="es. AIS-2024-00123"></div>
+      </div>
+      <div class="frow">
+        <div class="fg">
+          <label>Delegazione</label>
+          <select id="p-delegazione">
+            <option value="">— Seleziona associazione prima —</option>
+          </select>
+        </div>
+        <div class="fg"><label>Delegazione (testo libero)</label><input type="text" id="p-delegazione-custom" placeholder="es. Delegazione di Milano"></div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">Puoi selezionare la delegazione dal menu o inserirla manualmente nel campo testo.</div>
+    </div>
+
+    <div style="display:flex;gap:9px;justify-content:flex-end;margin-top:1rem;margin-bottom:.5rem">
+      <button class="btn" onclick="showScreen('screen-list')">Annulla</button>
+      <button class="btn primary" onclick="saveProfile()"><i class="ti ti-device-floppy"></i>Salva profilo</button>
+    </div>
+    <div style="text-align:center;margin-top:1rem">
+      <button class="btn sm danger" onclick="doLogout()"><i class="ti ti-logout"></i>Esci dall'account</button>
+    </div>
   </div>
 
   <!-- ══ EXPORT ══ -->
@@ -1241,25 +1322,36 @@ function saveWine() {
     };
   };
   const g = id => document.getElementById(id)?.value || '';
+  const editId = document.getElementById('f-edit-id')?.value;
   const wine = {
-    id: Date.now(), name, producer: g('f-producer'),
+    id: editId ? parseInt(editId) : Date.now(),
+    name, producer: g('f-producer'),
     vintage: +g('f-vintage') || null, type: g('f-type'),
     doc: g('f-doc'), grapes: g('f-grapes'), region: g('f-region'), country: g('f-country') || 'Italia',
     abv: +g('f-abv') || null, format: g('f-format') || '750 ml',
     price: +g('f-price') || null, qty: +g('f-qty') || 1,
     date: g('f-date'), shop: g('f-shop'), drink: g('f-drink'),
+    tastingDate: g('f-tastingdate'), tastingPlace: g('f-tastingplace'),
     degSchema: activeDeg,
-    aisParams: activeDeg === 'ais'   ? getAP() : null,
-    aisScore:  activeDeg === 'ais'   ? aisScore : null,
-    olfNote:   g('ap-olfnote'), gustNote: g('ap-gustnote'),
+    aisParams:   activeDeg === 'ais'   ? getAP() : null,
+    aisScore:    activeDeg === 'ais'   ? aisScore : null,
+    olfNote: g('ap-olfnote'), gustNote: g('ap-gustnote'),
     fisarParams: activeDeg === 'fisar' ? getFP() : null,
     fisarScore:  activeDeg === 'fisar' ? fisarScore : null,
     fpNote: g('fp-note'),
     score: finalScore, notes: g('f-notes'), tags: g('f-tags'),
     frontImg, backImg
   };
-  const w = myWines(); w.unshift(wine); setMyWines(w);
-  toast('Vino aggiunto alla cantina!');
+  let w = myWines();
+  if (editId) {
+    const idx = w.findIndex(x => x.id === parseInt(editId));
+    if (idx !== -1) w[idx] = wine; else w.unshift(wine);
+    toast('Scheda aggiornata!');
+  } else {
+    w.unshift(wine);
+    toast('Vino aggiunto alla cantina!');
+  }
+  setMyWines(w);
   showScreen('screen-list');
 }
 
@@ -1286,7 +1378,8 @@ function showDetail(id) {
     </div>`;
   } else if (w.degSchema === 'fisar' && w.fisarParams) {
     const p = w.fisarParams;
-    const asp = p.limp+p.col+p.flu+p.eff;
+    const asp = Math.max(0,p.limp)+Math.max(0,p.col)+Math.max(0,p.flu)+(p.eff>=0?p.eff:0);
+    const aspMax = p.eff >= 0 ? 20 : 15;
     const pro = p.fr+p.pint+p.pers+p.qual+p.arm+p.tip;
     const gu  = p.gfr+p.gst+p.morb+p.dur+p.pai+p.garm+p.gtip+p.gqual+p.evol+p.ecc;
     degHTML = `<div class="deg-result-card fisar">
@@ -1295,13 +1388,15 @@ function showDetail(id) {
         <span class="deg-score-big fisar">${w.fisarScore || '—'}<span style="font-size:13px;color:var(--muted)">/100</span></span>
       </div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:.75rem">
-        <div style="text-align:center;padding:8px;background:var(--bg);border-radius:8px;border:0.5px solid var(--border)"><div style="font-size:18px;font-weight:500;color:var(--fisar)">${Math.round((asp/20)*20)}</div><div style="font-size:10px;color:var(--muted)">Aspetto /20</div></div>
+        <div style="text-align:center;padding:8px;background:var(--bg);border-radius:8px;border:0.5px solid var(--border)"><div style="font-size:18px;font-weight:500;color:var(--fisar)">${Math.round((asp/aspMax)*20)}</div><div style="font-size:10px;color:var(--muted)">Aspetto /20</div></div>
         <div style="text-align:center;padding:8px;background:var(--bg);border-radius:8px;border:0.5px solid var(--border)"><div style="font-size:18px;font-weight:500;color:var(--fisar)">${Math.round((pro/30)*30)}</div><div style="font-size:10px;color:var(--muted)">Profumo /30</div></div>
         <div style="text-align:center;padding:8px;background:var(--bg);border-radius:8px;border:0.5px solid var(--border)"><div style="font-size:18px;font-weight:500;color:var(--fisar)">${Math.round((gu/50)*50)}</div><div style="font-size:10px;color:var(--muted)">Gusto /50</div></div>
       </div>
       ${w.fpNote ? `<div class="deg-note">${w.fpNote}</div>` : ''}
     </div>`;
   }
+
+  const fmtDate = d => { if (!d) return '—'; try { return new Date(d).toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'}); } catch(e){ return d; } };
 
   document.getElementById('detail-content').innerHTML = `
     <div class="dhero">
@@ -1321,14 +1416,26 @@ function showDetail(id) {
         <div class="dchips">${chips.map(c => `<span class="dchip">${c}</span>`).join('')}</div>
       </div>
     </div>
+
     <div class="dgrid">
       <div class="dfield"><div class="fl">Denominazione</div><div class="fv">${w.doc || '—'}</div></div>
       <div class="dfield"><div class="fl">Formato</div><div class="fv">${w.format || '750 ml'}</div></div>
-      <div class="dfield"><div class="fl">Bottiglie</div><div class="fv">${w.qty || 1}</div></div>
+      <div class="dfield">
+        <div class="fl">Bottiglie in cantina</div>
+        <div class="fv" style="display:flex;align-items:center;gap:8px">
+          <button onclick="adjustQty(${w.id},-1)" style="width:26px;height:26px;border-radius:50%;border:0.5px solid var(--border);background:var(--surf);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--ink)">−</button>
+          <span id="qty-display-${w.id}" style="font-size:16px;font-weight:500;min-width:20px;text-align:center">${w.qty || 1}</span>
+          <button onclick="adjustQty(${w.id},+1)" style="width:26px;height:26px;border-radius:50%;border:0.5px solid var(--border);background:var(--surf);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--ink)">+</button>
+        </div>
+      </div>
       <div class="dfield"><div class="fl">Prezzo pagato</div><div class="fv">${w.price ? '€' + w.price.toFixed(2) : '—'}</div></div>
-      <div class="dfield"><div class="fl">Acquistato il</div><div class="fv">${w.date || '—'}</div></div>
+      <div class="dfield"><div class="fl">Acquistato il</div><div class="fv">${fmtDate(w.date)}</div></div>
+      <div class="dfield"><div class="fl">Luogo acquisto</div><div class="fv">${w.shop || '—'}</div></div>
       <div class="dfield"><div class="fl">Da bere</div><div class="fv">${w.drink || '—'}</div></div>
+      <div class="dfield"><div class="fl">Data degustazione</div><div class="fv">${fmtDate(w.tastingDate)}</div></div>
+      ${w.tastingPlace ? `<div class="dfield" style="grid-column:1/-1"><div class="fl">Luogo degustazione</div><div class="fv">${w.tastingPlace}</div></div>` : ''}
     </div>
+
     ${degHTML}
     ${w.notes ? `<div class="dfield" style="margin-bottom:.9rem"><div class="fl">Note di degustazione</div><div class="fv" style="font-style:italic;margin-top:4px;line-height:1.7;font-size:13px;color:var(--muted)">${w.notes}</div></div>` : ''}
     ${w.tags ? `<div class="tag-list">${w.tags.split(',').map(t => `<span class="tag">#${t.trim()}</span>`).join('')}</div>` : ''}
@@ -1336,10 +1443,148 @@ function showDetail(id) {
   showScreen('screen-detail');
 }
 
+function adjustQty(id, delta) {
+  const w = myWines().find(x => x.id === id); if (!w) return;
+  const newQty = Math.max(0, (w.qty || 1) + delta);
+  w.qty = newQty;
+  setMyWines(myWines().map(x => x.id === id ? w : x));
+  const el = document.getElementById('qty-display-' + id);
+  if (el) el.textContent = newQty;
+  if (newQty === 0) toast('Bottiglia esaurita — considera di aggiornare l\'archivio');
+}
+
+function editWine() {
+  const w = myWines().find(x => x.id === currentDetailId); if (!w) return;
+  // Pre-fill edit id
+  document.getElementById('f-edit-id').value = w.id;
+  document.getElementById('form-title').textContent = 'Modifica vino';
+  document.getElementById('form-save-label').textContent = 'Salva modifiche';
+  frontImg = w.frontImg || ''; backImg = w.backImg || '';
+  // Restore image previews
+  if (w.frontImg) document.getElementById('prev-front').innerHTML = `<img src="${w.frontImg}" style="width:100%;height:80px;object-fit:cover;border-radius:6px" alt="">`;
+  if (w.backImg)  document.getElementById('prev-back').innerHTML  = `<img src="${w.backImg}"  style="width:100%;height:80px;object-fit:cover;border-radius:6px" alt="">`;
+  // Fill all fields
+  const set = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.value = v; };
+  set('f-name', w.name); set('f-producer', w.producer); set('f-vintage', w.vintage);
+  set('f-type', w.type); set('f-doc', w.doc); set('f-grapes', w.grapes);
+  set('f-region', w.region); set('f-country', w.country); set('f-abv', w.abv);
+  set('f-format', w.format); set('f-price', w.price); set('f-qty', w.qty || 1);
+  set('f-date', w.date); set('f-shop', w.shop); set('f-drink', w.drink);
+  set('f-tastingdate', w.tastingDate); set('f-tastingplace', w.tastingPlace);
+  set('f-notes', w.notes); set('f-tags', w.tags);
+  // Degustazione
+  renderDegTabs();
+  const deg = w.degSchema || 'free';
+  switchDeg(deg);
+  if (deg === 'ais' && w.aisParams) {
+    const p = w.aisParams;
+    const r = [...document.querySelectorAll('.ais-r')];
+    const vals = [p.limp,p.col||p.colore,p.cons,p.oint,p.ocomp,p.oqual,p.gstr,p.geq,p.gigo,p.gpai,p.gqual,p.arm||p.armonia];
+    vals.forEach((v,i) => { if (r[i] && v) r[i].value = v; });
+    set('ap-stato', p.stato); set('ap-olfnote', w.olfNote); set('ap-gustnote', w.gustNote);
+    calcAIS();
+  } else if (deg === 'fisar' && w.fisarParams) {
+    const p = w.fisarParams;
+    const fmap = { 'fp-limp':p.limp,'fp-col':p.col,'fp-flu':p.flu,'fp-eff':p.eff,'fp-fr':p.fr,'fp-pint':p.pint,'fp-pers':p.pers,'fp-qual':p.qual,'fp-arm':p.arm,'fp-tip':p.tip,'fp-gfr':p.gfr,'fp-gst':p.gst,'fp-morb':p.morb,'fp-dur':p.dur,'fp-pai':p.pai,'fp-garm':p.garm,'fp-gtip':p.gtip,'fp-gqual':p.gqual,'fp-evol':p.evol,'fp-ecc':p.ecc };
+    Object.entries(fmap).forEach(([id, v]) => { const el = document.getElementById(id); if (el && v != null) { el.value = v; el.classList.toggle('filled', v > 0); } });
+    set('fp-note', w.fpNote);
+    calcFISAR();
+  } else if (deg === 'free') {
+    set('f-score', w.score);
+    document.getElementById('score-free').textContent = w.score || 88;
+  }
+  showScreen('screen-add');
+}
+
+function cancelForm() {
+  document.getElementById('f-edit-id').value = '';
+  document.getElementById('form-title').textContent = 'Aggiungi vino';
+  document.getElementById('form-save-label').textContent = 'Salva in cantina';
+  showScreen('screen-list');
+}
+
 function deleteWine() {
   if (!confirm('Rimuovere questo vino dalla cantina?')) return;
   setMyWines(myWines().filter(w => w.id !== currentDetailId));
   toast('Vino eliminato');
+  showScreen('screen-list');
+}
+
+/* ── PROFILE ── */
+const DELEGAZIONI = {
+  AIS: ['Abruzzo','Basilicata','Calabria','Campania','Emilia Romagna','Friuli Venezia Giulia','Lazio','Liguria','Lombardia','Marche','Molise','Piemonte','Puglia','Sardegna','Sicilia','Toscana','Trentino Alto Adige','Umbria','Valle d\'Aosta','Veneto'],
+  FISAR: ['Delegazione di Bari','Delegazione di Bologna','Delegazione di Firenze','Delegazione di Genova','Delegazione di Milano','Delegazione di Napoli','Delegazione di Palermo','Delegazione di Roma','Delegazione di Torino','Delegazione di Venezia','Delegazione di Verona'],
+  ONAV: ['Sezione di Bologna','Sezione di Firenze','Sezione di Milano','Sezione di Napoli','Sezione di Padova','Sezione di Roma','Sezione di Torino','Sezione di Venezia'],
+  FIS: ['Fondazione Roma','Fondazione Milano','Fondazione Napoli','Fondazione Torino']
+};
+
+function updateDelegazioniList() {
+  const assoc = document.getElementById('p-assoc')?.value;
+  const sel = document.getElementById('p-delegazione');
+  if (!sel) return;
+  const list = DELEGAZIONI[assoc] || [];
+  sel.innerHTML = list.length
+    ? `<option value="">— Seleziona delegazione —</option>` + list.map(d => `<option value="${d}">${d}</option>`).join('')
+    : `<option value="">— Seleziona associazione prima —</option>`;
+}
+
+function showProfileScreen() {
+  const u = currentUser;
+  const parts = u.name.trim().split(' ');
+  document.getElementById('p-firstname').value = parts[0] || '';
+  document.getElementById('p-lastname').value  = parts.slice(1).join(' ') || '';
+  document.getElementById('p-email').value  = u.email || '';
+  document.getElementById('p-assoc').value  = u.assoc || '';
+  document.getElementById('p-card').value   = u.card  || '';
+  document.getElementById('p-pwd-old').value = '';
+  document.getElementById('p-pwd-new').value = '';
+  document.getElementById('p-pwd-confirm').value = '';
+  updateDelegazioniList();
+  // Set delegazione
+  const del = document.getElementById('p-delegazione');
+  if (del && u.delegazione) del.value = u.delegazione;
+  const delCustom = document.getElementById('p-delegazione-custom');
+  if (delCustom) delCustom.value = u.delegazioneCustom || '';
+  showScreen('screen-profile');
+}
+
+function saveProfile() {
+  const firstname = document.getElementById('p-firstname')?.value.trim();
+  const lastname  = document.getElementById('p-lastname')?.value.trim();
+  const email     = document.getElementById('p-email')?.value.trim().toLowerCase();
+  const pwdOld    = document.getElementById('p-pwd-old')?.value;
+  const pwdNew    = document.getElementById('p-pwd-new')?.value;
+  const pwdConf   = document.getElementById('p-pwd-confirm')?.value;
+  if (!firstname || !email) { toast('Nome e email sono obbligatori'); return; }
+  // Check email not taken by another user
+  if (users.some(u => u.email.toLowerCase() === email && u.id !== currentUser.id)) {
+    toast('Email già in uso da un altro account'); return;
+  }
+  // Password change
+  if (pwdNew) {
+    if (pwdOld !== currentUser.pwd) { toast('Password attuale non corretta'); return; }
+    if (pwdNew.length < 4)          { toast('La nuova password deve avere almeno 4 caratteri'); return; }
+    if (pwdNew !== pwdConf)         { toast('Le password non coincidono'); return; }
+    currentUser.pwd = pwdNew;
+  }
+  currentUser.name  = [firstname, lastname].filter(Boolean).join(' ');
+  currentUser.email = email;
+  currentUser.assoc = document.getElementById('p-assoc')?.value || '';
+  currentUser.card  = document.getElementById('p-card')?.value.trim() || '';
+  currentUser.delegazione       = document.getElementById('p-delegazione')?.value || '';
+  currentUser.delegazioneCustom = document.getElementById('p-delegazione-custom')?.value.trim() || '';
+  // Update in users array
+  const idx = users.findIndex(u => u.id === currentUser.id);
+  if (idx !== -1) users[idx] = currentUser;
+  persist();
+  // Refresh nav
+  const initials = currentUser.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  document.getElementById('nav-avatar').textContent = initials;
+  document.getElementById('nav-name').textContent   = currentUser.name.split(' ')[0];
+  const bc = document.getElementById('nav-badge');
+  if (currentUser.assoc) { bc.textContent = currentUser.assoc; bc.className = 'assoc-badge badge-' + currentUser.assoc.toLowerCase(); bc.style.display = ''; }
+  else bc.style.display = 'none';
+  toast('Profilo aggiornato!');
   showScreen('screen-list');
 }
 
