@@ -967,74 +967,200 @@
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script>
-/* ── DATA ── */
-const DEMO_USERS = [
-  { id:'u1', name:'Mario Bianchi', email:'mario@ais.it', pwd:'1234', assoc:'AIS', card:'AIS-2024-00041' },
-  { id:'u2', name:'Laura Verdi', email:'laura@fisar.it', pwd:'1234', assoc:'FISAR', card:'FISAR-2023-00892' }
-];
-const DEMO_WINES = {
-  u1: [
-    { id:1, name:'Barolo Brunate', producer:'Giuseppe Rinaldi', vintage:2016, type:'Rosso', doc:'DOCG Barolo', grapes:'Nebbiolo 100%', region:'Piemonte', country:'Italia', abv:14, format:'750 ml', price:85, qty:1, date:'2022-11-20', shop:'Vinoetà Milano', drink:'2026–2038', degSchema:'ais', aisParams:{ limp:5, col:4, cons:4, oint:5, ocomp:5, oqual:5, gstr:5, geq:4, gigo:5, gpai:5, gqual:5, stato:'Al culmine', arm:9 }, aisScore:95, olfNote:'Rosa appassita, tabacco, liquirizia, spezie orientali', gustNote:'Tannini potenti ma vellutati, acidità vibrante, finale lunghissimo', score:95, notes:'', tags:'top,barolo', frontImg:'', backImg:'' },
-    { id:2, name:'Amarone della Valpolicella Classico', producer:'Masi Agricola', vintage:2018, type:'Rosso', doc:'DOCG Amarone', grapes:'Corvina, Corvinone, Rondinella', region:'Veneto', country:'Italia', abv:17, format:'750 ml', price:45, qty:2, date:'2023-03-15', shop:'Enoteca Venezia', drink:'2025–2040', degSchema:'ais', aisParams:{ limp:5, col:5, cons:5, oint:5, ocomp:4, oqual:5, gstr:5, geq:5, gigo:5, gpai:4, gqual:5, stato:'Al culmine', arm:9 }, aisScore:93, olfNote:'Ciliegia matura, prugna secca, cioccolato fondente, caffè', gustNote:'Caldo, avvolgente, tannini vellutati, lunga persistenza', score:93, notes:'', tags:'eccellente,veneto', frontImg:'', backImg:'' },
-    { id:3, name:'Vernaccia di San Gimignano Riserva', producer:'Teruzzi', vintage:2021, type:'Bianco', doc:'DOCG Vernaccia', grapes:'Vernaccia 100%', region:'Toscana', country:'Italia', abv:13, format:'750 ml', price:18, qty:3, date:'2023-07-01', shop:'Supermercato', drink:'2023–2026', degSchema:'free', score:86, notes:'Fresco, floreale, note di pesca e mandorla amara. Finale sapido.', tags:'estate,bianco', frontImg:'', backImg:'' }
-  ],
-  u2: [
-    { id:10, name:'Franciacorta Satèn', producer:'Bellavista', vintage:2019, type:'Spumante', doc:'DOCG Franciacorta', grapes:'Chardonnay 100%', region:'Lombardia', country:'Italia', abv:12.5, format:'750 ml', price:32, qty:1, date:'2023-12-28', shop:'Wine bar Brescia', drink:'2024–2028', degSchema:'fisar', fisarParams:{ limp:5, col:5, flu:4, eff:5, fr:5, pint:4, pers:5, qual:5, arm:4, tip:4, gfr:5, gst:4, morb:5, dur:4, pai:5, garm:5, gtip:4, gqual:5, evol:4, ecc:3 }, fisarScore:91, fpNote:'Perlage fine e persistente. Brioche, agrumi canditi, fiori bianchi. Cremoso ed elegante.', score:91, notes:'', tags:'bollicine,top', frontImg:'', backImg:'' }
-  ]
-};
+<script type="module">
+/* ══════════════════════════════════════════════
+   ENOSFERA — Supabase backend layer
+   Sostituisci i valori SUPABASE_URL e SUPABASE_ANON_KEY
+   con quelli del tuo progetto Supabase.
+   Settings → API → Project URL / anon public key
+   ══════════════════════════════════════════════ */
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-let users = JSON.parse(localStorage.getItem('enosfera-users') || 'null') || DEMO_USERS;
-let allWines = JSON.parse(localStorage.getItem('enosfera-wines') || 'null') || DEMO_WINES;
-let currentUser = null;
-let currentFilter = 'all';
-let currentDetailId = null;
+const SUPABASE_URL      = 'https://atzzcjvqulyakpmlaqkm.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_YrVlnX6Lg36fW3JwmVybzA_QN2wSVU5';
+
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ── STATE ── */
+let currentUser  = null;   // { id, email, name, assoc, card, delegazione, delegazioneCustom }
+let winesCache   = [];     // array locale per render veloce
+let currentFilter    = 'all';
+let currentDetailId  = null;
 let frontImg = '', backImg = '';
 let activeDeg = 'ais';
-
-/* ── STORAGE ── */
-function persist() {
-  try { localStorage.setItem('enosfera-users', JSON.stringify(users)); localStorage.setItem('enosfera-wines', JSON.stringify(allWines)); } catch(e) {}
-}
-function myWines() { return allWines[currentUser.id] || []; }
-function setMyWines(w) { allWines[currentUser.id] = w; persist(); }
 
 /* ── TOAST ── */
 function toast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2500);
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+function toastErr(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = '⚠️ ' + msg;
+  t.style.background = '#8B1A1A';
+  t.classList.add('show');
+  setTimeout(() => { t.classList.remove('show'); t.style.background = ''; }, 3500);
 }
 
-/* ── LOGIN ── */
+/* ══ AUTH ══ */
 function switchLTab(t) {
   document.getElementById('ltab-login').classList.toggle('active', t === 'login');
   document.getElementById('ltab-reg').classList.toggle('active', t === 'reg');
   document.getElementById('lform-login').style.display = t === 'login' ? '' : 'none';
-  document.getElementById('lform-reg').style.display  = t === 'reg'   ? '' : 'none';
+  document.getElementById('lform-reg').style.display   = t === 'reg'   ? '' : 'none';
 }
-function doLogin() {
-  const em = document.getElementById('l-email').value.trim().toLowerCase();
-  const pw = document.getElementById('l-pwd').value;
-  const u  = users.find(x => x.email.toLowerCase() === em && x.pwd === pw);
-  if (!u) { document.getElementById('lerr').style.display = 'block'; return; }
-  document.getElementById('lerr').style.display = 'none';
-  currentUser = u; initApp();
-}
-function doRegister() {
-  const name = document.getElementById('r-name').value.trim();
-  const email = document.getElementById('r-email').value.trim().toLowerCase();
-  const pwd  = document.getElementById('r-pwd').value;
-  const err  = document.getElementById('rerr');
-  if (!name || !email || pwd.length < 4) { err.textContent = 'Compila tutti i campi obbligatori'; err.style.display = 'block'; return; }
-  if (users.find(u => u.email.toLowerCase() === email)) { err.textContent = 'Email già registrata'; err.style.display = 'block'; return; }
-  err.style.display = 'none';
-  const u = { id: 'u' + Date.now(), name, email, pwd, assoc: document.getElementById('r-assoc').value, card: document.getElementById('r-card').value.trim() };
-  users.push(u); allWines[u.id] = []; currentUser = u; persist(); initApp();
-}
-function doLogout() { currentUser = null; showScreen('screen-login'); }
 
-function initApp() {
+async function doLogin() {
+  const email = document.getElementById('l-email').value.trim();
+  const pwd   = document.getElementById('l-pwd').value;
+  const err   = document.getElementById('lerr');
+  err.style.display = 'none';
+  const btn = document.querySelector('#lform-login .lbtn');
+  btn.textContent = 'Accesso in corso…'; btn.disabled = true;
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pwd });
+  btn.textContent = 'Accedi'; btn.disabled = false;
+  if (error) { err.textContent = 'Email o password non corretti'; err.style.display = 'block'; return; }
+  await loadProfile(data.user);
+}
+
+async function doRegister() {
+  const firstname = document.getElementById('r-name').value.trim();
+  const email     = document.getElementById('r-email').value.trim();
+  const pwd       = document.getElementById('r-pwd').value;
+  const assoc     = document.getElementById('r-assoc').value;
+  const card      = document.getElementById('r-card').value.trim();
+  const err       = document.getElementById('rerr');
+  err.style.display = 'none';
+  if (!firstname || !email || pwd.length < 6) {
+    err.textContent = 'Compila tutti i campi (password min. 6 caratteri)';
+    err.style.display = 'block'; return;
+  }
+  const btn = document.querySelector('#lform-reg .lbtn');
+  btn.textContent = 'Creazione account…'; btn.disabled = true;
+  const { data, error } = await sb.auth.signUp({
+    email, password: pwd,
+    options: { data: { full_name: firstname, assoc, card } }
+  });
+  btn.textContent = 'Crea account'; btn.disabled = false;
+  if (error) { err.textContent = error.message; err.style.display = 'block'; return; }
+  // Upsert profile
+  await sb.from('profiles').upsert({
+    id: data.user.id, full_name: firstname,
+    assoc, card, delegazione: '', delegazione_custom: ''
+  });
+  await loadProfile(data.user);
+}
+
+async function doLogout() {
+  await sb.auth.signOut();
+  currentUser = null; winesCache = [];
+  showScreen('screen-login');
+}
+
+async function loadProfile(authUser) {
+  const { data: profile } = await sb.from('profiles').select('*').eq('id', authUser.id).single();
+  currentUser = {
+    id:                authUser.id,
+    email:             authUser.email,
+    name:              profile?.full_name || authUser.email.split('@')[0],
+    assoc:             profile?.assoc || '',
+    card:              profile?.card  || '',
+    delegazione:       profile?.delegazione || '',
+    delegazioneCustom: profile?.delegazione_custom || ''
+  };
+  await initApp();
+}
+
+/* ══ WINES — DB layer ══ */
+async function loadWines() {
+  const { data, error } = await sb
+    .from('wines')
+    .select('*')
+    .eq('user_id', currentUser.id)
+    .order('created_at', { ascending: false });
+  if (error) { toastErr('Errore caricamento vini'); return []; }
+  // Deserializza i campi JSON
+  return (data || []).map(row => ({
+    ...row,
+    aisParams:   row.ais_params,
+    fisarParams: row.fisar_params,
+    aisScore:    row.ais_score,
+    fisarScore:  row.fisar_score,
+    olfNote:     row.olf_note,
+    gustNote:    row.gust_note,
+    fpNote:      row.fp_note,
+    degSchema:   row.deg_schema,
+    tastingDate:  row.tasting_date,
+    tastingPlace: row.tasting_place,
+    frontImg:    row.front_img,
+    backImg:     row.back_img,
+  }));
+}
+
+function myWines() { return winesCache; }
+
+async function dbSaveWine(wine) {
+  const row = {
+    user_id:      currentUser.id,
+    name:         wine.name,
+    producer:     wine.producer     || null,
+    vintage:      wine.vintage      || null,
+    type:         wine.type         || null,
+    doc:          wine.doc          || null,
+    grapes:       wine.grapes       || null,
+    region:       wine.region       || null,
+    country:      wine.country      || null,
+    abv:          wine.abv          || null,
+    format:       wine.format       || '750 ml',
+    price:        wine.price        || null,
+    qty:          wine.qty          || 1,
+    date:         wine.date         || null,
+    shop:         wine.shop         || null,
+    drink:        wine.drink        || null,
+    tasting_date:  wine.tastingDate  || null,
+    tasting_place: wine.tastingPlace || null,
+    deg_schema:   wine.degSchema    || 'free',
+    ais_params:   wine.aisParams    || null,
+    ais_score:    wine.aisScore     || null,
+    olf_note:     wine.olfNote      || null,
+    gust_note:    wine.gustNote     || null,
+    fisar_params: wine.fisarParams  || null,
+    fisar_score:  wine.fisarScore   || null,
+    fp_note:      wine.fpNote       || null,
+    score:        wine.score        || null,
+    notes:        wine.notes        || null,
+    tags:         wine.tags         || null,
+    front_img:    wine.frontImg     || null,
+    back_img:     wine.backImg      || null,
+  };
+  if (wine.id && typeof wine.id === 'string' && wine.id.length > 10) {
+    // update existing (uuid)
+    const { error } = await sb.from('wines').update(row).eq('id', wine.id);
+    if (error) { toastErr('Errore salvataggio'); return null; }
+    return wine.id;
+  } else {
+    // insert new
+    const { data, error } = await sb.from('wines').insert(row).select('id').single();
+    if (error) { toastErr('Errore salvataggio'); return null; }
+    return data.id;
+  }
+}
+
+async function dbDeleteWine(id) {
+  const { error } = await sb.from('wines').delete().eq('id', id);
+  if (error) { toastErr('Errore eliminazione'); return false; }
+  return true;
+}
+
+async function dbUpdateQty(id, qty) {
+  const { error } = await sb.from('wines').update({ qty }).eq('id', id);
+  if (error) { toastErr('Errore aggiornamento'); return false; }
+  return true;
+}
+
+/* ══ APP INIT ══ */
+async function initApp() {
   const u = currentUser;
   const initials = u.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
   document.getElementById('nav-avatar').textContent = initials;
@@ -1042,8 +1168,42 @@ function initApp() {
   const bc = document.getElementById('nav-badge');
   if (u.assoc) { bc.textContent = u.assoc; bc.className = 'assoc-badge badge-' + u.assoc.toLowerCase(); bc.style.display = ''; }
   else bc.style.display = 'none';
+  // Carica vini dal DB
+  showLoadingOverlay(true);
+  winesCache = await loadWines();
+  showLoadingOverlay(false);
   showScreen('screen-list');
 }
+
+function showLoadingOverlay(show) {
+  let el = document.getElementById('loading-overlay');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'loading-overlay';
+    el.innerHTML = '<div class="spin" style="width:32px;height:32px;border-width:3px"></div>';
+    el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:9998';
+    document.body.appendChild(el);
+  }
+  el.style.display = show ? 'flex' : 'none';
+}
+
+/* ── SESSION RESTORE on page load ── */
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) {
+    await loadProfile(session.user);
+  } else {
+    showScreen('screen-login');
+  }
+})();
+
+/* ── AUTH STATE CHANGE (token refresh, logout from another tab) ── */
+sb.auth.onAuthStateChange(async (event, session) => {
+  if (event === 'SIGNED_OUT') {
+    currentUser = null; winesCache = [];
+    showScreen('screen-login');
+  }
+});
 
 /* ── SCREENS ── */
 function showScreen(id) {
@@ -1305,7 +1465,7 @@ function fillForm(d) {
 }
 
 /* ── SAVE ── */
-function saveWine() {
+async function saveWine() {
   const name = (document.getElementById('f-name')?.value || '').trim();
   if (!name) { toast('Inserisci il nome del vino'); return; }
   const aisScore   = recalcAIS();
@@ -1322,9 +1482,9 @@ function saveWine() {
     };
   };
   const g = id => document.getElementById(id)?.value || '';
-  const editId = document.getElementById('f-edit-id')?.value;
+  const editId = document.getElementById('f-edit-id')?.value || null;
   const wine = {
-    id: editId ? parseInt(editId) : Date.now(),
+    id: editId || null,
     name, producer: g('f-producer'),
     vintage: +g('f-vintage') || null, type: g('f-type'),
     doc: g('f-doc'), grapes: g('f-grapes'), region: g('f-region'), country: g('f-country') || 'Italia',
@@ -1342,16 +1502,13 @@ function saveWine() {
     score: finalScore, notes: g('f-notes'), tags: g('f-tags'),
     frontImg, backImg
   };
-  let w = myWines();
-  if (editId) {
-    const idx = w.findIndex(x => x.id === parseInt(editId));
-    if (idx !== -1) w[idx] = wine; else w.unshift(wine);
-    toast('Scheda aggiornata!');
-  } else {
-    w.unshift(wine);
-    toast('Vino aggiunto alla cantina!');
+  showLoadingOverlay(true);
+  const savedId = await dbSaveWine(wine);
+  if (savedId) {
+    winesCache = await loadWines();
+    toast(editId ? 'Scheda aggiornata!' : 'Vino aggiunto alla cantina!');
   }
-  setMyWines(w);
+  showLoadingOverlay(false);
   showScreen('screen-list');
 }
 
@@ -1443,17 +1600,29 @@ function showDetail(id) {
   showScreen('screen-detail');
 }
 
-function adjustQty(id, delta) {
-  const w = myWines().find(x => x.id === id); if (!w) return;
+async function adjustQty(id, delta) {
+  const w = winesCache.find(x => x.id === id); if (!w) return;
   const newQty = Math.max(0, (w.qty || 1) + delta);
-  w.qty = newQty;
-  setMyWines(myWines().map(x => x.id === id ? w : x));
-  const el = document.getElementById('qty-display-' + id);
-  if (el) el.textContent = newQty;
-  if (newQty === 0) toast('Bottiglia esaurita — considera di aggiornare l\'archivio');
+  const ok = await dbUpdateQty(id, newQty);
+  if (ok) {
+    w.qty = newQty;
+    const el = document.getElementById('qty-display-' + id);
+    if (el) el.textContent = newQty;
+    if (newQty === 0) toast('Bottiglia esaurita — considera di aggiornare l\'archivio');
+  }
 }
 
-function editWine() {
+async function deleteWine() {
+  if (!confirm('Rimuovere questo vino dalla cantina?')) return;
+  showLoadingOverlay(true);
+  const ok = await dbDeleteWine(currentDetailId);
+  if (ok) {
+    winesCache = winesCache.filter(w => w.id !== currentDetailId);
+    toast('Vino eliminato');
+  }
+  showLoadingOverlay(false);
+  showScreen('screen-list');
+}function editWine() {
   const w = myWines().find(x => x.id === currentDetailId); if (!w) return;
   // Pre-fill edit id
   document.getElementById('f-edit-id').value = w.id;
@@ -1548,36 +1717,42 @@ function showProfileScreen() {
   showScreen('screen-profile');
 }
 
-function saveProfile() {
+async function saveProfile() {
   const firstname = document.getElementById('p-firstname')?.value.trim();
   const lastname  = document.getElementById('p-lastname')?.value.trim();
   const email     = document.getElementById('p-email')?.value.trim().toLowerCase();
-  const pwdOld    = document.getElementById('p-pwd-old')?.value;
   const pwdNew    = document.getElementById('p-pwd-new')?.value;
   const pwdConf   = document.getElementById('p-pwd-confirm')?.value;
   if (!firstname || !email) { toast('Nome e email sono obbligatori'); return; }
-  // Check email not taken by another user
-  if (users.some(u => u.email.toLowerCase() === email && u.id !== currentUser.id)) {
-    toast('Email già in uso da un altro account'); return;
-  }
-  // Password change
   if (pwdNew) {
-    if (pwdOld !== currentUser.pwd) { toast('Password attuale non corretta'); return; }
-    if (pwdNew.length < 4)          { toast('La nuova password deve avere almeno 4 caratteri'); return; }
-    if (pwdNew !== pwdConf)         { toast('Le password non coincidono'); return; }
-    currentUser.pwd = pwdNew;
+    if (pwdNew.length < 6)  { toast('La nuova password deve avere almeno 6 caratteri'); return; }
+    if (pwdNew !== pwdConf) { toast('Le password non coincidono'); return; }
   }
-  currentUser.name  = [firstname, lastname].filter(Boolean).join(' ');
-  currentUser.email = email;
-  currentUser.assoc = document.getElementById('p-assoc')?.value || '';
-  currentUser.card  = document.getElementById('p-card')?.value.trim() || '';
+  showLoadingOverlay(true);
+  const fullName = [firstname, lastname].filter(Boolean).join(' ');
+  const authUpdates = {};
+  if (email !== currentUser.email) authUpdates.email = email;
+  if (pwdNew) authUpdates.password = pwdNew;
+  if (Object.keys(authUpdates).length) {
+    const { error } = await sb.auth.updateUser(authUpdates);
+    if (error) { showLoadingOverlay(false); toastErr(error.message); return; }
+  }
+  const { error: profErr } = await sb.from('profiles').upsert({
+    id:                 currentUser.id,
+    full_name:          fullName,
+    assoc:              document.getElementById('p-assoc')?.value || '',
+    card:               document.getElementById('p-card')?.value.trim() || '',
+    delegazione:        document.getElementById('p-delegazione')?.value || '',
+    delegazione_custom: document.getElementById('p-delegazione-custom')?.value.trim() || ''
+  });
+  showLoadingOverlay(false);
+  if (profErr) { toastErr('Errore salvataggio profilo'); return; }
+  currentUser.name              = fullName;
+  currentUser.email             = email;
+  currentUser.assoc             = document.getElementById('p-assoc')?.value || '';
+  currentUser.card              = document.getElementById('p-card')?.value.trim() || '';
   currentUser.delegazione       = document.getElementById('p-delegazione')?.value || '';
   currentUser.delegazioneCustom = document.getElementById('p-delegazione-custom')?.value.trim() || '';
-  // Update in users array
-  const idx = users.findIndex(u => u.id === currentUser.id);
-  if (idx !== -1) users[idx] = currentUser;
-  persist();
-  // Refresh nav
   const initials = currentUser.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
   document.getElementById('nav-avatar').textContent = initials;
   document.getElementById('nav-name').textContent   = currentUser.name.split(' ')[0];
