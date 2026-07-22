@@ -1622,7 +1622,9 @@ async function deleteWine() {
   }
   showLoadingOverlay(false);
   showScreen('screen-list');
-}function editWine() {
+}
+
+function editWine() {
   const w = myWines().find(x => x.id === currentDetailId); if (!w) return;
   // Pre-fill edit id
   document.getElementById('f-edit-id').value = w.id;
@@ -1669,13 +1671,6 @@ function cancelForm() {
   document.getElementById('f-edit-id').value = '';
   document.getElementById('form-title').textContent = 'Aggiungi vino';
   document.getElementById('form-save-label').textContent = 'Salva in cantina';
-  showScreen('screen-list');
-}
-
-function deleteWine() {
-  if (!confirm('Rimuovere questo vino dalla cantina?')) return;
-  setMyWines(myWines().filter(w => w.id !== currentDetailId));
-  toast('Vino eliminato');
   showScreen('screen-list');
 }
 
@@ -1822,6 +1817,17 @@ function exportInventory() {
 
 /* ── INIT ── */
 calcAIS(); calcFISAR();
+
+/* ── EXPOSE TO WINDOW ──
+   Necessario perché questo script è un modulo ES6 (per l'import di Supabase):
+   le funzioni dichiarate qui non sono automaticamente globali,
+   ma gli onclick="..." nell'HTML devono poterle richiamare. */
+Object.assign(window, {
+  adjustQty, calcAIS, calcFISAR, cancelForm, deleteWine, doLogin, doLogout, doRegister,
+  editWine, exportCSV, exportInventory, exportJSON, exportTasting, previewImg,
+  renderGrid, saveProfile, saveWine, scanLabel, setFilter, showAdd, showDetail,
+  showProfileScreen, showScreen, switchDeg, switchLTab, updateDelegazioniList
+});
 </script>
 </body>
 </html>
