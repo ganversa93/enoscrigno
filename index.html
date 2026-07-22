@@ -3,45 +3,49 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Enosfera — Archivio personale vini per sommelier</title>
-  <meta name="description" content="Archivio personale vini per sommelier professionisti. Schede di degustazione AIS e FISAR, scansione etichette AI, export inventario.">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
+  <meta name="theme-color" content="#6B1839">
+  <title>Enosfera — Salva. Ricorda. Degusta. Condividi.</title>
+  <meta name="description" content="Enosfera è il diario digitale delle degustazioni di vino, pensato per sommelier e appassionati.">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="assets/favicon-192.png">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --wine: #6B1E2E;
-      --wine-l: #A0354A;
-      --wine-pale: #F5ECE8;
-      --gold: #B8892A;
-      --gold-l: #D4A94A;
+      --wine: #6B1839;      /* Bordeaux — colore primario brand */
+      --wine-l: #8A2A4E;
+      --wine-pale: #F5E9EE;
+      --gold: #B7924A;      /* Oro Champagne — colore secondario brand */
+      --gold-l: #C9A968;
       --ais: #1A3A6B;
       --ais-pale: #EAF0FB;
       --fisar: #1A5C3A;
       --fisar-pale: #E8F5EE;
-      --ink: #1A1410;
-      --muted: #7A6B5E;
-      --border: rgba(107,30,46,0.15);
-      --border2: rgba(107,30,46,0.3);
+      --ink: #2F3133;       /* Grafite — testo primario brand */
+      --muted: #6B6E72;
+      --border: rgba(107,24,57,0.15);
+      --border2: rgba(107,24,57,0.3);
       --bg: #FFFFFF;
-      --surf: #FAF7F2;
-      --cream: #FAF7F2;
+      --surf: #F8F5F1;      /* Avorio — sfondo brand */
+      --cream: #F8F5F1;
+      --mist: #D8D8D8;      /* Grigio Nebbia — brand */
     }
 
     @media (prefers-color-scheme: dark) {
       :root {
-        --ink: #F0EAE4;
-        --muted: #9A8B80;
-        --border: rgba(240,210,200,0.15);
-        --border2: rgba(240,210,200,0.3);
-        --bg: #1A1210;
-        --surf: #251A16;
-        --cream: #251A16;
-        --wine-pale: #2A0F18;
+        --ink: #F0EEEC;
+        --muted: #A8ABAE;
+        --border: rgba(215,190,200,0.15);
+        --border2: rgba(215,190,200,0.3);
+        --bg: #201519;
+        --surf: #2A1B21;
+        --cream: #2A1B21;
+        --wine-pale: #3A1826;
         --ais-pale: #0A1528;
         --fisar-pale: #0A1F14;
       }
@@ -49,7 +53,7 @@
 
     html { font-size: 16px; }
     body {
-      font-family: 'DM Sans', sans-serif;
+      font-family: 'Inter', sans-serif;
       background: var(--surf);
       color: var(--ink);
       min-height: 100vh;
@@ -62,7 +66,7 @@
 
     /* ── BUTTONS ── */
     .btn {
-      font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+      font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500;
       padding: 7px 16px; border-radius: 8px;
       border: 0.5px solid var(--border2); background: var(--bg);
       color: var(--ink); cursor: pointer; transition: background .15s, opacity .15s;
@@ -83,12 +87,8 @@
       margin-bottom: 1.25rem;
     }
     .logo { display: flex; align-items: center; gap: 10px; }
-    .logo-icon {
-      width: 36px; height: 36px; background: var(--wine); border-radius: 9px;
-      display: flex; align-items: center; justify-content: center;
-      color: #fff; font-size: 18px; flex-shrink: 0;
-    }
-    .logo-text { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--ink); }
+    .nav-logo-img { width: 34px; height: 34px; object-fit: contain; flex-shrink: 0; }
+    .logo-text { font-family: 'Cormorant Garamond', serif; font-size: 21px; color: var(--wine); letter-spacing: .01em; }
     .logo-text em { color: var(--wine); font-style: italic; }
     .nav-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
@@ -112,13 +112,13 @@
     /* ── STATS BAR ── */
     .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.25rem; }
     .stat { background: var(--bg); border: 0.5px solid var(--border); border-radius: 10px; padding: 10px 13px; }
-    .stat-n { font-size: 22px; font-weight: 500; font-family: 'Playfair Display', serif; color: var(--wine); }
+    .stat-n { font-size: 22px; font-weight: 500; font-family: 'Cormorant Garamond', serif; color: var(--wine); }
     .stat-l { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
     /* ── FILTERS ── */
     .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.25rem; align-items: center; }
     .filter-bar input {
-      flex: 1; min-width: 140px; font-family: 'DM Sans', sans-serif;
+      flex: 1; min-width: 140px; font-family: 'Inter', sans-serif;
       font-size: 13px; padding: 7px 12px; border-radius: 8px;
       border: 0.5px solid var(--border); background: var(--bg); color: var(--ink);
     }
@@ -151,7 +151,7 @@
     .bro { background: rgba(200,100,120,.15); color: #A04050; }
     .bs  { background: rgba(60,100,180,.15);  color: #2A5A9A; }
     .winfo { padding: 11px 13px; }
-    .wname { font-family: 'Playfair Display', serif; font-size: 14px; font-weight: 500; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .wname { font-family: 'Cormorant Garamond', serif; font-size: 14px; font-weight: 500; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .wprod { font-size: 11px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .wmeta { display: flex; justify-content: space-between; margin-top: 7px; font-size: 11px; color: var(--muted); align-items: center; }
     .wscore { font-weight: 500; color: var(--gold); }
@@ -164,10 +164,13 @@
     /* ── LOGIN ── */
     #screen-login { padding-top: 3rem; }
     .login-wrap { max-width: 360px; margin: 0 auto; }
-    .login-logo { text-align: center; margin-bottom: 2rem; }
-    .login-logo .logo-icon { width: 56px; height: 56px; font-size: 28px; margin: 0 auto 12px; }
-    .login-logo h1 { font-family: 'Playfair Display', serif; font-size: 24px; color: var(--ink); }
-    .login-logo p { font-size: 13px; color: var(--muted); margin-top: 5px; }
+    .login-logo { text-align: center; margin-bottom: 1.5rem; }
+    .brand-logo-img { width: 180px; height: auto; margin: 0 auto; display: block; }
+    .brand-tagline {
+      font-family: 'Cormorant Garamond', serif; font-style: italic;
+      font-size: 13px; letter-spacing: .08em; color: var(--gold);
+      text-transform: uppercase; margin-top: -18px;
+    }
     .ltabs { display: flex; margin-bottom: 1.25rem; border: 0.5px solid var(--border); border-radius: 9px; overflow: hidden; }
     .ltab { flex: 1; padding: 9px; text-align: center; font-size: 13px; cursor: pointer; color: var(--muted); background: var(--surf); transition: all .15s; }
     .ltab.active { background: var(--wine); color: #fff; font-weight: 500; }
@@ -176,14 +179,14 @@
     .lfield:last-of-type { margin-bottom: 0; }
     .lfield label { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 5px; }
     .lfield input, .lfield select {
-      width: 100%; font-family: 'DM Sans', sans-serif; font-size: 13px;
+      width: 100%; font-family: 'Inter', sans-serif; font-size: 13px;
       padding: 9px 12px; border-radius: 8px;
       border: 0.5px solid var(--border); background: var(--bg); color: var(--ink);
     }
     .lfield input:focus, .lfield select:focus { outline: none; border-color: var(--wine); }
     .lbtn {
       width: 100%; padding: 10px; font-size: 14px; font-weight: 500;
-      font-family: 'DM Sans', sans-serif; background: var(--wine);
+      font-family: 'Inter', sans-serif; background: var(--wine);
       color: #fff; border: none; border-radius: 8px; cursor: pointer; margin-top: 1rem;
       transition: background .15s;
     }
@@ -194,7 +197,7 @@
 
     /* ── FORM ── */
     .fhdr { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; }
-    .fhdr h2 { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--ink); }
+    .fhdr h2 { font-family: 'Cormorant Garamond', serif; font-size: 20px; color: var(--ink); }
     .fsec { background: var(--bg); border: 0.5px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: .9rem; }
     .stitle { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: .9rem; display: flex; align-items: center; gap: 5px; }
     .frow { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
@@ -202,7 +205,7 @@
     .fg:last-child { margin-bottom: 0; }
     .fg label { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 5px; }
     .fg input, .fg select, .fg textarea {
-      width: 100%; font-family: 'DM Sans', sans-serif; font-size: 13px;
+      width: 100%; font-family: 'Inter', sans-serif; font-size: 13px;
       padding: 8px 12px; border-radius: 8px;
       border: 0.5px solid var(--border); background: var(--bg); color: var(--ink);
     }
@@ -267,7 +270,7 @@
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       margin: 0 auto 10px;
     }
-    .score-n { font-size: 24px; font-weight: 500; font-family: 'Playfair Display', serif; color: var(--wine); line-height: 1; }
+    .score-n { font-size: 24px; font-weight: 500; font-family: 'Cormorant Garamond', serif; color: var(--wine); line-height: 1; }
     .score-max { font-size: 10px; color: var(--muted); }
     .score-circle.fisar { border-color: var(--fisar); background: var(--fisar-pale); }
     .score-circle.fisar .score-n { color: var(--fisar); }
@@ -288,7 +291,7 @@
       font-size: 28px; overflow: hidden; flex-shrink: 0;
     }
     .dvintage { font-size: 12px; color: var(--wine); font-weight: 500; margin-bottom: 3px; }
-    .dname { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 500; color: var(--ink); margin-bottom: 3px; line-height: 1.2; }
+    .dname { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 500; color: var(--ink); margin-bottom: 3px; line-height: 1.2; }
     .dprod { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
     .dchips { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
     .dchip { font-size: 11px; padding: 3px 9px; border-radius: 20px; background: rgba(107,30,46,.1); color: var(--wine); }
@@ -304,7 +307,7 @@
     .deg-result-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; display: flex; align-items: center; gap: 4px; }
     .deg-result-label.ais { color: var(--ais); }
     .deg-result-label.fisar { color: var(--fisar); }
-    .deg-score-big { font-size: 24px; font-family: 'Playfair Display', serif; font-weight: 500; }
+    .deg-score-big { font-size: 24px; font-family: 'Cormorant Garamond', serif; font-weight: 500; }
     .deg-score-big.ais { color: var(--ais); }
     .deg-score-big.fisar { color: var(--fisar); }
     .deg-bar-wrap { margin-bottom: 5px; }
@@ -332,7 +335,7 @@
     /* ── PROFILE ── */
     .profile-avatar-big {
       width: 64px; height: 64px; border-radius: 50%; background: var(--wine);
-      color: #fff; font-size: 24px; font-weight: 500; font-family: 'Playfair Display', serif;
+      color: #fff; font-size: 24px; font-weight: 500; font-family: 'Cormorant Garamond', serif;
       display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;
     }
 
@@ -349,7 +352,7 @@
       white-space: nowrap; flex-shrink: 0; margin-left: 6px;
     }
     .fisar-sel {
-      width: 100%; font-family: 'DM Sans', sans-serif; font-size: 12px;
+      width: 100%; font-family: 'Inter', sans-serif; font-size: 12px;
       padding: 7px 10px; border-radius: 8px;
       border: 0.5px solid var(--border); background: var(--bg); color: var(--ink);
       cursor: pointer;
@@ -385,9 +388,8 @@
   <div id="screen-login" class="screen active">
     <div class="login-wrap">
       <div class="login-logo">
-        <div class="logo-icon"><i class="ti ti-wine" aria-hidden="true"></i></div>
-        <h1><em style="color:var(--wine);font-style:italic">Enosfera</em></h1>
-        <p>Il tuo archivio personale da sommelier</p>
+        <img src="assets/enosfera-logo.png" alt="Enosfera" class="brand-logo-img">
+        <p class="brand-tagline">Salva. Ricorda. Degusta. Condividi.</p>
       </div>
       <div class="ltabs">
         <div class="ltab active" id="ltab-login" onclick="switchLTab('login')">Accedi</div>
@@ -427,8 +429,8 @@
   <div id="screen-list" class="screen">
     <div class="nav">
       <div class="logo">
-        <div class="logo-icon"><i class="ti ti-wine" aria-hidden="true"></i></div>
-        <div class="logo-text"><em>Enosfera</em></div>
+        <img src="assets/favicon-48.png" alt="Enosfera" class="nav-logo-img">
+        <div class="logo-text">Enosfera</div>
       </div>
       <div class="nav-right">
         <div class="user-pill" onclick="showProfileScreen()" style="cursor:pointer" title="Modifica profilo">
@@ -846,7 +848,7 @@
         <div class="param-row" style="margin-bottom:14px">
           <span class="param-label">Punteggio personale</span>
           <input type="range" min="1" max="100" value="88" step="1" id="f-score" oninput="document.getElementById('score-free').textContent=this.value" style="flex:1;accent-color:var(--wine)">
-          <span style="font-size:20px;font-family:'Playfair Display',serif;color:var(--wine);min-width:38px;text-align:right" id="score-free">88</span>
+          <span style="font-size:20px;font-family:'Cormorant Garamond',serif;color:var(--wine);min-width:38px;text-align:right" id="score-free">88</span>
         </div>
         <div class="fg"><label>Note di degustazione</label><textarea id="f-notes" placeholder="Colore, profumo, gusto, persistenza, abbinamenti suggeriti…"></textarea></div>
         <div class="fg" style="margin-top:8px"><label>Tag personali</label><input type="text" id="f-tags" placeholder="es. compleanno, regalo, da ricomprare"></div>
@@ -875,7 +877,7 @@
   <div id="screen-profile" class="screen">
     <div class="nav" style="margin-bottom:1.25rem">
       <button class="btn sm" onclick="showScreen('screen-list')"><i class="ti ti-arrow-left"></i>Cantina</button>
-      <span style="font-family:'Playfair Display',serif;font-size:18px;color:var(--ink)">Il mio profilo</span>
+      <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--ink)">Il mio profilo</span>
     </div>
 
     <!-- Dati personali -->
@@ -940,7 +942,7 @@
   <div id="screen-export" class="screen">
     <div class="nav" style="margin-bottom:.9rem">
       <button class="btn sm" onclick="showScreen('screen-list')"><i class="ti ti-arrow-left"></i>Cantina</button>
-      <span style="font-family:'Playfair Display',serif;font-size:18px;color:var(--ink)">Export archivio</span>
+      <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--ink)">Export archivio</span>
     </div>
     <div class="export-card">
       <div class="export-row">
@@ -1594,7 +1596,7 @@ function showDetail(id) {
         <div class="dprod">${w.producer || ''}</div>
         <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px">
           <span style="font-size:15px;color:var(--gold);letter-spacing:-1px">${st(w.score)}</span>
-          <span style="font-size:20px;font-family:'Playfair Display',serif;color:var(--wine);font-weight:500">${w.score || '—'}</span>
+          <span style="font-size:20px;font-family:'Cormorant Garamond',serif;color:var(--wine);font-weight:500">${w.score || '—'}</span>
           <span style="font-size:11px;color:var(--muted)">/100</span>
         </div>
         <div class="dchips">${chips.map(c => `<span class="dchip">${c}</span>`).join('')}</div>
