@@ -634,8 +634,23 @@
         <div class="fg"><label>Vitigni</label><input type="text" id="f-grapes" placeholder="es. Nebbiolo 100%"></div>
       </div>
       <div class="frow">
-        <div class="fg"><label>Regione</label><input type="text" id="f-region" placeholder="es. Piemonte"></div>
-        <div class="fg"><label>Paese</label><input type="text" id="f-country" placeholder="es. Italia"></div>
+        <div class="fg">
+          <label>Paese</label>
+          <select id="f-country" onchange="updateRegionOptions()">
+            <option value="">Seleziona…</option>
+            <option>Italia</option><option>Francia</option><option>Germania</option><option>Spagna</option><option>Altro</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Regione</label>
+          <input type="text" id="f-region" list="region-datalist" placeholder="es. Piemonte" onchange="updateProvinceOptions()">
+          <datalist id="region-datalist"></datalist>
+        </div>
+      </div>
+      <div class="fg">
+        <label>Provincia <span style="font-weight:400;color:var(--muted)">(se applicabile)</span></label>
+        <input type="text" id="f-province" list="province-datalist" placeholder="es. Cuneo">
+        <datalist id="province-datalist"></datalist>
       </div>
       </div>
     </div>
@@ -1307,6 +1322,7 @@ async function dbSaveWine(wine) {
     grapes:       wine.grapes       || null,
     region:       wine.region       || null,
     country:      wine.country      || null,
+    province:     wine.province     || null,
     abv:          wine.abv          || null,
     format:       wine.format       || '750 ml',
     price:        wine.price        || null,
@@ -1481,8 +1497,9 @@ function showAdd() {
   // Reset accordion: Foto + Identità aperte, il resto chiuso (nuovo inserimento)
   resetSections();
   const clear = ids => ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  clear(['f-name','f-producer','f-doc','f-grapes','f-region','f-country','f-shop','f-drink','f-notes','f-tags','ap-olfnote','ap-gustnote','fp-note','f-pairing-custom']);
+  clear(['f-name','f-producer','f-doc','f-grapes','f-region','f-country','f-province','f-shop','f-drink','f-notes','f-tags','ap-olfnote','ap-gustnote','fp-note','f-pairing-custom']);
   clear(['f-vintage','f-abv','f-price']);
+  updateRegionOptions(); // resetta datalist regione/provincia e stato campo
   document.querySelectorAll('.p-chip').forEach(chip => chip.classList.remove('active'));
   const qty = document.getElementById('f-qty'); if (qty) qty.value = 1;
   const fd  = document.getElementById('f-date'); if (fd) fd.value = new Date().toISOString().split('T')[0];
@@ -1762,8 +1779,11 @@ async function scanBothLabels() {
 function fillForm(d) {
   const set = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; };
   set('f-name', d.name); set('f-producer', d.producer); set('f-vintage', d.vintage);
-  set('f-doc', d.doc); set('f-grapes', d.grapes); set('f-region', d.region);
-  set('f-country', d.country || 'Italia'); set('f-abv', d.abv); set('f-drink', d.drink);
+  set('f-doc', d.doc); set('f-grapes', d.grapes);
+  set('f-country', d.country || 'Italia'); updateRegionOptions();
+  set('f-region', d.region); updateProvinceOptions();
+  set('f-province', d.province);
+  set('f-abv', d.abv); set('f-drink', d.drink);
   if (d.type) { const el = document.getElementById('f-type'); if (el) el.value = d.type; }
   if (d.notes) { const el = document.getElementById('f-notes'); if (el) el.value = d.notes; }
   toast('Etichetta letta! Controlla e completa i dati.');
@@ -1792,7 +1812,7 @@ async function saveWine() {
     id: editId || null,
     name, producer: g('f-producer'),
     vintage: +g('f-vintage') || null, type: g('f-type'),
-    doc: g('f-doc'), grapes: g('f-grapes'), region: g('f-region'), country: g('f-country') || 'Italia',
+    doc: g('f-doc'), grapes: g('f-grapes'), region: g('f-region'), country: g('f-country') || 'Italia', province: g('f-province'),
     abv: +g('f-abv') || null, format: g('f-format') || '750 ml',
     price: +g('f-price') || null, qty: (g('f-qty') === '' ? 1 : +g('f-qty')),
     date: g('f-date'), shop: g('f-shop'), drink: g('f-drink'),
@@ -1822,7 +1842,7 @@ async function saveWine() {
 function showDetail(id) {
   currentDetailId = id;
   const w = myWines().find(x => x.id === id); if (!w) return;
-  const chips = [w.region, w.country, w.grapes, w.abv ? w.abv + '% alc.' : null].filter(Boolean);
+  const chips = [w.region, w.province ? 'Prov. ' + w.province : null, w.country, w.grapes, w.abv ? w.abv + '% alc.' : null].filter(Boolean);
   const st = s => { const n = Math.round((s || 80) / 20); return '★'.repeat(n) + '☆'.repeat(5 - n); };
 
   let degHTML = '';
@@ -1944,10 +1964,16 @@ function editWine() {
   if (w.frontImg) document.getElementById('prev-front').innerHTML = `<img src="${w.frontImg}" style="width:100%;height:80px;object-fit:cover;border-radius:6px" alt="">`;
   if (w.backImg)  document.getElementById('prev-back').innerHTML  = `<img src="${w.backImg}"  style="width:100%;height:80px;object-fit:cover;border-radius:6px" alt="">`;
   // Fill all fields
+  document.getElementById('f-country').value = '';
+  document.getElementById('f-region').value = '';
+  document.getElementById('f-province').value = '';
   const set = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.value = v; };
   set('f-name', w.name); set('f-producer', w.producer); set('f-vintage', w.vintage);
   set('f-type', w.type); set('f-doc', w.doc); set('f-grapes', w.grapes);
-  set('f-region', w.region); set('f-country', w.country); set('f-abv', w.abv);
+  set('f-country', w.country); updateRegionOptions();
+  set('f-region', w.region); updateProvinceOptions();
+  set('f-province', w.province);
+  set('f-abv', w.abv);
   set('f-format', w.format); set('f-price', w.price); set('f-qty', w.qty ?? 1);
   set('f-date', w.date); set('f-shop', w.shop); set('f-drink', w.drink);
   set('f-tastingdate', w.tastingDate); set('f-tastingplace', w.tastingPlace);
@@ -1985,6 +2011,62 @@ function cancelForm() {
 }
 
 /* ── PROFILE ── */
+/* ══ GEOGRAFIA VINO — Paese → Regioni (→ Provincie solo per l'Italia) ══
+   Le regioni sono quelle enologiche di riferimento, non sempre coincidenti
+   con le suddivisioni amministrative ufficiali (più utili per un archivio
+   vini). La provincia è gestita solo per l'Italia, dove è terminologia
+   comune nelle denominazioni (es. "Provincia di Cuneo" per il Barolo). */
+const GEO_REGIONS = {
+  Italia: ['Piemonte','Valle d\'Aosta','Lombardia','Trentino-Alto Adige','Veneto','Friuli-Venezia Giulia','Liguria','Emilia-Romagna','Toscana','Umbria','Marche','Lazio','Abruzzo','Molise','Campania','Puglia','Basilicata','Calabria','Sicilia','Sardegna'],
+  Francia: ['Alsazia','Beaujolais','Bordeaux','Borgogna','Champagne','Corsica','Jura','Languedoc-Roussillon','Valle della Loira','Provenza','Valle del Rodano','Savoia','Sud-Ovest'],
+  Germania: ['Ahr','Baden','Franconia','Hessische Bergstraße','Mittelrhein','Mosella','Nahe','Palatinato','Rheingau','Rheinhessen','Saale-Unstrut','Sassonia','Württemberg'],
+  Spagna: ['Rioja','Ribera del Duero','Priorat','Penedès','Rías Baixas','Jerez','Navarra','Rueda','Toro','Bierzo','La Mancha','Jumilla','Somontano','Catalogna','Galizia','Andalusia','Castiglia e León','Aragona','Paesi Baschi','Canarie']
+};
+
+const GEO_PROVINCES_ITALIA = {
+  'Piemonte': ['Alessandria','Asti','Biella','Cuneo','Novara','Torino','Verbano-Cusio-Ossola','Vercelli'],
+  'Valle d\'Aosta': ['Aosta'],
+  'Lombardia': ['Bergamo','Brescia','Como','Cremona','Lecco','Lodi','Mantova','Milano','Monza e Brianza','Pavia','Sondrio','Varese'],
+  'Trentino-Alto Adige': ['Trento','Bolzano'],
+  'Veneto': ['Belluno','Padova','Rovigo','Treviso','Venezia','Verona','Vicenza'],
+  'Friuli-Venezia Giulia': ['Gorizia','Pordenone','Trieste','Udine'],
+  'Liguria': ['Genova','Imperia','La Spezia','Savona'],
+  'Emilia-Romagna': ['Bologna','Ferrara','Forlì-Cesena','Modena','Parma','Piacenza','Ravenna','Reggio Emilia','Rimini'],
+  'Toscana': ['Arezzo','Firenze','Grosseto','Livorno','Lucca','Massa-Carrara','Pisa','Pistoia','Prato','Siena'],
+  'Umbria': ['Perugia','Terni'],
+  'Marche': ['Ancona','Ascoli Piceno','Fermo','Macerata','Pesaro e Urbino'],
+  'Lazio': ['Frosinone','Latina','Rieti','Roma','Viterbo'],
+  'Abruzzo': ['Chieti','L\'Aquila','Pescara','Teramo'],
+  'Molise': ['Campobasso','Isernia'],
+  'Campania': ['Avellino','Benevento','Caserta','Napoli','Salerno'],
+  'Puglia': ['Bari','Barletta-Andria-Trani','Brindisi','Foggia','Lecce','Taranto'],
+  'Basilicata': ['Matera','Potenza'],
+  'Calabria': ['Catanzaro','Cosenza','Crotone','Reggio Calabria','Vibo Valentia'],
+  'Sicilia': ['Agrigento','Caltanissetta','Catania','Enna','Messina','Palermo','Ragusa','Siracusa','Trapani'],
+  'Sardegna': ['Cagliari','Nuoro','Oristano','Sassari','Sud Sardegna']
+};
+
+function updateRegionOptions() {
+  const country = document.getElementById('f-country')?.value;
+  const dl = document.getElementById('region-datalist');
+  if (!dl) return;
+  const regions = GEO_REGIONS[country] || [];
+  dl.innerHTML = regions.map(r => `<option value="${r}">`).join('');
+  updateProvinceOptions();
+}
+
+function updateProvinceOptions() {
+  const country = document.getElementById('f-country')?.value;
+  const region  = document.getElementById('f-region')?.value;
+  const dl = document.getElementById('province-datalist');
+  const provinceField = document.getElementById('f-province')?.closest('.fg');
+  if (!dl) return;
+  const provinces = (country === 'Italia' && GEO_PROVINCES_ITALIA[region]) ? GEO_PROVINCES_ITALIA[region] : [];
+  dl.innerHTML = provinces.map(p => `<option value="${p}">`).join('');
+  // Nascondi il campo provincia se non applicabile (paese diverso dall'Italia)
+  if (provinceField) provinceField.style.display = (country === 'Italia' || !country) ? '' : 'none';
+}
+
 const DELEGAZIONI = {
   AIS: ['Abruzzo','Basilicata','Calabria','Campania','Emilia Romagna','Friuli Venezia Giulia','Lazio','Liguria','Lombardia','Marche','Molise','Piemonte','Puglia','Sardegna','Sicilia','Toscana','Trentino Alto Adige','Umbria','Valle d\'Aosta','Veneto'],
   FISAR: ['Delegazione di Bari','Delegazione di Bologna','Delegazione di Firenze','Delegazione di Genova','Delegazione di Milano','Delegazione di Napoli','Delegazione di Palermo','Delegazione di Roma','Delegazione di Torino','Delegazione di Venezia','Delegazione di Verona'],
@@ -2082,8 +2164,8 @@ function dl(filename, content, type) {
 }
 function exportCSV() {
   const w = myWines();
-  const hdr = 'Nome,Produttore,Annata,Tipo,DOC,Vitigni,Regione,Paese,Gradazione,Formato,Prezzo,Bottiglie,Data acquisto,Luogo,Da bere,Abbinamento,Schema degustazione,Punteggio,Note';
-  const rows = w.map(x => [x.name,x.producer,x.vintage||'',x.type,x.doc,x.grapes,x.region,x.country,x.abv||'',x.format,x.price||'',x.qty,x.date,x.shop,x.drink,'"'+(x.pairing||'').replace(/"/g,"''")+'"',x.degSchema||'',x.score||'','"'+(x.notes||x.olfNote||'').replace(/"/g,"''")+'"'].join(','));
+  const hdr = 'Nome,Produttore,Annata,Tipo,DOC,Vitigni,Regione,Provincia,Paese,Gradazione,Formato,Prezzo,Bottiglie,Data acquisto,Luogo,Da bere,Abbinamento,Schema degustazione,Punteggio,Note';
+  const rows = w.map(x => [x.name,x.producer,x.vintage||'',x.type,x.doc,x.grapes,x.region,x.province||'',x.country,x.abv||'',x.format,x.price||'',x.qty,x.date,x.shop,x.drink,'"'+(x.pairing||'').replace(/"/g,"''")+'"',x.degSchema||'',x.score||'','"'+(x.notes||x.olfNote||'').replace(/"/g,"''")+'"'].join(','));
   dl('cantina_' + currentUser.name.replace(/\s/g,'_') + '.csv', [hdr, ...rows].join('\n'), 'text/csv');
   showExportMsg('✓ CSV esportato con successo');
 }
@@ -2137,7 +2219,7 @@ Object.assign(window, {
   editWine, exportCSV, exportInventory, exportJSON, exportTasting, previewImg,
   renderGrid, saveProfile, saveWine, scanBothLabels, setFilter, setQtyFilter, showAdd, showDetail,
   showProfileScreen, showScreen, stepQty, switchDeg, switchLTab, toast,
-  togglePairing, toggleSection, updateDelegazioniList
+  togglePairing, toggleSection, updateDelegazioniList, updateRegionOptions, updateProvinceOptions
 });
 </script>
 </body>

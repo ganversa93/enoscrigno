@@ -32,6 +32,7 @@ create table if not exists public.wines (
 
   -- provenienza
   region        text,
+  province      text,             -- solo Italia (es. 'Cuneo' per il Barolo)
   country       text default 'Italia',
 
   -- tecnico
@@ -203,3 +204,9 @@ alter table public.profiles add column if not exists ai_scan_enabled boolean not
 -- l'email con la tua:
 -- update public.profiles set ai_scan_enabled = true
 --   where id = (select id from auth.users where email = 'TUA_EMAIL@esempio.it');
+
+-- ════════════════════════════════════════════
+-- PROVINCIA — se il database esiste già, esegui questa riga per
+-- aggiungere il campo provincia (rilevante solo per l'Italia)
+-- ════════════════════════════════════════════
+alter table public.wines add column if not exists province text;
