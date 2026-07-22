@@ -221,6 +221,21 @@
     .fg input:focus, .fg select:focus, .fg textarea:focus { outline: none; border-color: var(--wine); }
     .fg textarea { resize: vertical; min-height: 75px; }
 
+    .qty-stepper { display: flex; align-items: center; gap: 10px; }
+    .qty-btn {
+      width: 40px; height: 40px; flex-shrink: 0; border-radius: 10px;
+      border: 0.5px solid var(--border); background: var(--surf);
+      color: var(--wine); font-size: 20px; font-weight: 500;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background .15s;
+    }
+    .qty-btn:hover { background: var(--wine-pale); }
+    .qty-btn:active { background: var(--wine-pale); transform: scale(0.96); }
+    .qty-stepper input {
+      flex: 1; text-align: center; font-size: 16px; font-weight: 500;
+      padding: 8px 6px;
+    }
+
     .upload-z {
       border: 1.5px dashed var(--border); border-radius: 10px;
       padding: 1.25rem; text-align: center; cursor: pointer;
@@ -602,7 +617,14 @@
       </div>
       <div class="frow">
         <div class="fg"><label>Prezzo pagato (€)</label><input type="number" id="f-price" placeholder="28.00" step="0.5" min="0"></div>
-        <div class="fg"><label>N° bottiglie in cantina</label><input type="number" id="f-qty" value="1" min="1"></div>
+        <div class="fg">
+          <label>N° bottiglie in cantina</label>
+          <div class="qty-stepper">
+            <button type="button" class="qty-btn" onclick="stepQty(-1)" aria-label="Diminuisci">−</button>
+            <input type="number" id="f-qty" value="1" min="0" inputmode="numeric" onchange="if(this.value<0)this.value=0">
+            <button type="button" class="qty-btn" onclick="stepQty(1)" aria-label="Aumenta">+</button>
+          </div>
+        </div>
       </div>
       <div class="frow">
         <div class="fg"><label>Data acquisto</label><input type="date" id="f-date"></div>
@@ -1512,6 +1534,13 @@ function calcFISAR() {
 function recalcFISAR() { return calcFISAR(); }
 
 /* ── IMAGES ── */
+function stepQty(delta) {
+  const input = document.getElementById('f-qty');
+  if (!input) return;
+  const newVal = Math.max(0, (parseInt(input.value) || 0) + delta);
+  input.value = newVal;
+}
+
 function previewImg(input, previewId, side) {
   const file = input.files[0]; if (!file) return;
   const r = new FileReader();
@@ -1925,7 +1954,7 @@ Object.assign(window, {
   adjustQty, calcAIS, calcFISAR, cancelForm, deleteWine, doLogin, doLogout, doRegister,
   editWine, exportCSV, exportInventory, exportJSON, exportTasting, previewImg,
   renderGrid, saveProfile, saveWine, scanLabel, setFilter, showAdd, showDetail,
-  showProfileScreen, showScreen, switchDeg, switchLTab, updateDelegazioniList
+  showProfileScreen, showScreen, stepQty, switchDeg, switchLTab, updateDelegazioniList
 });
 </script>
 </body>
