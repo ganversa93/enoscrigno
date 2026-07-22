@@ -12,6 +12,7 @@ create table if not exists public.profiles (
   card               text,                     -- numero tessera
   delegazione        text,                     -- delegazione da menu
   delegazione_custom text,                     -- delegazione testo libero
+  ai_scan_enabled    boolean not null default false,  -- accesso alla scansione AI (funzione premium)
   created_at         timestamptz default now(),
   updated_at         timestamptz default now()
 );
@@ -189,3 +190,16 @@ create table if not exists public.scan_usage (
 alter table public.scan_usage enable row level security;
 -- Nessuna policy = nessun accesso dal client (anon/authenticated).
 -- Solo la Edge Function, che usa la service role key, può leggere/scrivere.
+
+-- ════════════════════════════════════════════
+-- AI SCAN — flag premium per abilitare la scansione etichette
+-- Se il database esiste già, esegui questa riga per aggiungere la
+-- colonna senza perdere i dati esistenti. Di default è FALSE per
+-- tutti (anche gli utenti già registrati).
+-- ════════════════════════════════════════════
+alter table public.profiles add column if not exists ai_scan_enabled boolean not null default false;
+
+-- Poi abilita la scansione AI solo per il tuo account, sostituendo
+-- l'email con la tua:
+-- update public.profiles set ai_scan_enabled = true
+--   where id = (select id from auth.users where email = 'TUA_EMAIL@esempio.it');

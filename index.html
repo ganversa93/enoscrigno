@@ -279,6 +279,13 @@
     }
     .ai-txt { font-size: 12px; color: var(--muted); flex: 1; min-width: 120px; }
 
+    .ai-banner.locked { background: var(--surf); border-color: var(--border); }
+    .premium-pill {
+      background: var(--gold); color: #fff; font-size: 10px;
+      font-weight: 500; padding: 3px 10px; border-radius: 20px; white-space: nowrap;
+      display: inline-flex; align-items: center; gap: 3px;
+    }
+
     .spin-wrap { display: none; align-items: center; gap: 9px; padding: 8px 0; }
     .spin-wrap.show { display: flex; }
     .spin {
@@ -570,7 +577,7 @@
     </div>
     <input type="hidden" id="f-edit-id" value="">
 
-    <div class="ai-banner">
+    <div class="ai-banner" id="ai-banner">
       <span class="ai-pill"><i class="ti ti-sparkles" style="font-size:10px"></i> AI</span>
       <span class="ai-txt">Scatta una foto all'etichetta — l'AI compila il form automaticamente</span>
       <button class="btn gold sm" onclick="document.getElementById('cam-inp').click()">
@@ -1243,7 +1250,8 @@ async function loadProfile(authUser) {
     assoc:             profile?.assoc || '',
     card:              profile?.card  || '',
     delegazione:       profile?.delegazione || '',
-    delegazioneCustom: profile?.delegazione_custom || ''
+    delegazioneCustom: profile?.delegazione_custom || '',
+    aiScanEnabled:     profile?.ai_scan_enabled || false
   };
   // Se non esiste ancora un profilo (caso raro, es. trigger non installato),
   // lo creiamo ora che l'utente è sicuramente autenticato.
@@ -1353,6 +1361,7 @@ async function initApp() {
   const bc = document.getElementById('nav-badge');
   if (u.assoc) { bc.textContent = u.assoc; bc.className = 'assoc-badge badge-' + u.assoc.toLowerCase(); bc.style.display = ''; }
   else bc.style.display = 'none';
+  renderAiBanner();
   // Carica vini dal DB
   showLoadingOverlay(true);
   winesCache = await loadWines();
@@ -1601,6 +1610,31 @@ function calcFISAR() {
 function recalcFISAR() { return calcFISAR(); }
 
 /* ── IMAGES ── */
+function renderAiBanner() {
+  const el = document.getElementById('ai-banner');
+  if (!el) return;
+  if (currentUser?.aiScanEnabled) {
+    el.className = 'ai-banner';
+    el.innerHTML = `
+      <span class="ai-pill"><i class="ti ti-sparkles" style="font-size:10px"></i> AI</span>
+      <span class="ai-txt">Scatta una foto all'etichetta — l'AI compila il form automaticamente</span>
+      <button class="btn gold sm" onclick="document.getElementById('cam-inp').click()">
+        <i class="ti ti-camera"></i>Scansiona etichetta
+      </button>
+      <input type="file" id="cam-inp" accept="image/*" capture="environment" style="display:none" onchange="scanLabel(this)">
+    `;
+  } else {
+    el.className = 'ai-banner locked';
+    el.innerHTML = `
+      <span class="premium-pill"><i class="ti ti-crown" style="font-size:10px"></i> Premium</span>
+      <span class="ai-txt">Scansione etichette con AI — funzione premium non ancora attiva sul tuo account</span>
+      <button class="btn sm" onclick="toast('Scrivici per attivare la scansione AI sul tuo account')">
+        <i class="ti ti-lock"></i>Bloccata
+      </button>
+    `;
+  }
+}
+
 function toggleSection(sectionId) {
   const sec = document.getElementById(sectionId);
   if (sec) sec.classList.toggle('collapsed');
@@ -2077,7 +2111,7 @@ Object.assign(window, {
   adjustQty, calcAIS, calcFISAR, cancelForm, deleteWine, doLogin, doLogout, doRegister,
   editWine, exportCSV, exportInventory, exportJSON, exportTasting, previewImg,
   renderGrid, saveProfile, saveWine, scanLabel, setFilter, showAdd, showDetail,
-  showProfileScreen, showScreen, stepQty, switchDeg, switchLTab,
+  showProfileScreen, showScreen, stepQty, switchDeg, switchLTab, toast,
   togglePairing, toggleSection, updateDelegazioniList
 });
 </script>

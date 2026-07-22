@@ -54,7 +54,17 @@ Deno.serve(async (req) => {
     const userId = userData.user.id;
     const period = currentPeriod();
 
-    // ── 2. Controlla i due limiti PRIMA di chiamare Anthropic ──
+    // ── 2. Verifica che l'utente abbia accesso alla funzione (flag premium) ──
+    const { data: profile, error: profileErr } = await sbAdmin
+      .from('profiles').select('ai_scan_enabled').eq('id', userId).maybeSingle();
+    if (profileErr || !profile?.ai_scan_enabled) {
+      return json({
+        error: 'not_enabled',
+        message: 'La scansione etichette con AI è una funzione premium non ancora attiva per il tuo account.'
+      }, 403);
+    }
+
+    // ── 3. Controlla i due limiti PRIMA di chiamare Anthropic ──
     const { data: globalRow } = await sbAdmin
       .from('scan_usage').select('count').eq('scope', 'global').eq('period', period).maybeSingle();
     const globalCount = globalRow?.count || 0;
@@ -75,13 +85,13 @@ Deno.serve(async (req) => {
       }, 429);
     }
 
-    // ── 3. Leggi l'immagine dal body della richiesta ──
+    // ── 4. Leggi l'immagine dal body della richiesta ──
     const { image_base64, media_type } = await req.json();
     if (!image_base64 || !media_type) {
       return json({ error: 'Immagine mancante' }, 400);
     }
 
-    // ── 4. Chiama Anthropic (chiave segreta, mai esposta al client) ──
+    // ── 5. Chiama Anthropic (chiave segreta, mai esposta al client) ──
     const aiResp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -117,7 +127,7 @@ Deno.serve(async (req) => {
       return json({ error: 'parse_error', message: 'Non sono riuscito a interpretare l\'etichetta. Riprova con una foto più nitida.' }, 502);
     }
 
-    // ── 5. Incrementa i contatori SOLO dopo una chiamata riuscita ──
+    // ── 6. Incrementa i contatori SOLO dopo una chiamata riuscita ──
     await sbAdmin.from('scan_usage').upsert({
       scope: 'global', period, count: globalCount + 1, updated_at: new Date().toISOString()
     });
