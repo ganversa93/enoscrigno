@@ -241,6 +241,14 @@
       -webkit-appearance: none; margin: 0;
     }
 
+    .pairing-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+    .p-chip {
+      font-size: 12px; padding: 6px 12px; border-radius: 20px;
+      border: 0.5px solid var(--border); background: var(--bg);
+      color: var(--muted); cursor: pointer; transition: all .15s; white-space: nowrap;
+    }
+    .p-chip.active { background: var(--wine); color: #fff; border-color: var(--wine); font-weight: 500; }
+
     .upload-z {
       border: 1.5px dashed var(--border); border-radius: 10px;
       padding: 1.25rem; text-align: center; cursor: pointer;
@@ -530,7 +538,7 @@
     </div>
     <div class="stat-row" id="stats-bar"></div>
     <div class="filter-bar">
-      <input type="text" id="search-input" placeholder="Cerca nome, produttore, regione…" oninput="renderGrid()">
+      <input type="text" id="search-input" placeholder="Cerca nome, produttore, regione, abbinamento…" oninput="renderGrid()">
       <div class="chip active" data-f="all" onclick="setFilter('all',this)">Tutti</div>
       <div class="chip" data-f="Rosso"     onclick="setFilter('Rosso',this)">Rosso</div>
       <div class="chip" data-f="Bianco"    onclick="setFilter('Bianco',this)">Bianco</div>
@@ -642,6 +650,35 @@
         <div class="fg"><label>Data degustazione</label><input type="date" id="f-tastingdate"></div>
         <div class="fg"><label>Luogo degustazione</label><input type="text" id="f-tastingplace" placeholder="es. Ristorante Da Marco, Roma"></div>
       </div>
+    </div>
+
+    <!-- ABBINAMENTO -->
+    <div class="fsec">
+      <div class="stitle"><i class="ti ti-tag" aria-hidden="true"></i>Abbinamento cibo</div>
+      <div class="fg">
+        <label>Categorie di abbinamento</label>
+        <div class="pairing-chips" id="pairing-chips">
+          <div class="p-chip" data-p="Carni rosse" onclick="togglePairing(this)">Carni rosse</div>
+          <div class="p-chip" data-p="Carni bianche" onclick="togglePairing(this)">Carni bianche</div>
+          <div class="p-chip" data-p="Pesce" onclick="togglePairing(this)">Pesce</div>
+          <div class="p-chip" data-p="Crudi di mare" onclick="togglePairing(this)">Crudi di mare</div>
+          <div class="p-chip" data-p="Formaggi stagionati" onclick="togglePairing(this)">Formaggi stagionati</div>
+          <div class="p-chip" data-p="Formaggi freschi" onclick="togglePairing(this)">Formaggi freschi</div>
+          <div class="p-chip" data-p="Salumi" onclick="togglePairing(this)">Salumi</div>
+          <div class="p-chip" data-p="Primi piatti" onclick="togglePairing(this)">Primi piatti</div>
+          <div class="p-chip" data-p="Verdure" onclick="togglePairing(this)">Verdure</div>
+          <div class="p-chip" data-p="Fritti" onclick="togglePairing(this)">Fritti</div>
+          <div class="p-chip" data-p="Dolci" onclick="togglePairing(this)">Dolci</div>
+          <div class="p-chip" data-p="Cioccolato" onclick="togglePairing(this)">Cioccolato</div>
+          <div class="p-chip" data-p="Aperitivo" onclick="togglePairing(this)">Aperitivo</div>
+          <div class="p-chip" data-p="Cucina piccante" onclick="togglePairing(this)">Cucina piccante</div>
+        </div>
+      </div>
+      <div class="fg" style="margin-top:10px">
+        <label>Altri abbinamenti / piatti specifici</label>
+        <input type="text" id="f-pairing-custom" placeholder="es. Tagliata di manzo, risotto ai funghi porcini…">
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">Questo campo sarà usato per cercare i tuoi vini per abbinamento — e in futuro per scoprire cosa hanno degustato altri sommelier con lo stesso piatto.</div>
     </div>
 
     <!-- DEGUSTAZIONE -->
@@ -943,7 +980,7 @@
           <input type="range" min="1" max="100" value="88" step="1" id="f-score" oninput="document.getElementById('score-free').textContent=this.value" style="flex:1;accent-color:var(--wine)">
           <span style="font-size:20px;font-family:'Cormorant Garamond',serif;color:var(--wine);min-width:38px;text-align:right" id="score-free">88</span>
         </div>
-        <div class="fg"><label>Note di degustazione</label><textarea id="f-notes" placeholder="Colore, profumo, gusto, persistenza, abbinamenti suggeriti…"></textarea></div>
+        <div class="fg"><label>Note di degustazione</label><textarea id="f-notes" placeholder="Colore, profumo, gusto, persistenza…"></textarea></div>
         <div class="fg" style="margin-top:8px"><label>Tag personali</label><input type="text" id="f-tags" placeholder="es. compleanno, regalo, da ricomprare"></div>
       </div>
     </div>
@@ -1248,6 +1285,7 @@ async function dbSaveWine(wine) {
     drink:        wine.drink        || null,
     tasting_date:  wine.tastingDate  || null,
     tasting_place: wine.tastingPlace || null,
+    pairing:       wine.pairing      || null,
     deg_schema:   wine.degSchema    || 'free',
     ais_params:   wine.aisParams    || null,
     ais_score:    wine.aisScore     || null,
@@ -1367,7 +1405,7 @@ function renderGrid() {
   const q    = (document.getElementById('search-input')?.value || '').toLowerCase();
   const list = myWines().filter(w => {
     if (currentFilter !== 'all' && w.type !== currentFilter) return false;
-    if (q && ![(w.name||''),(w.producer||''),(w.region||'')].join(' ').toLowerCase().includes(q)) return false;
+    if (q && ![(w.name||''),(w.producer||''),(w.region||''),(w.pairing||'')].join(' ').toLowerCase().includes(q)) return false;
     return true;
   });
   const g = document.getElementById('wine-grid');
@@ -1392,8 +1430,9 @@ function renderGrid() {
 function showAdd() {
   frontImg = ''; backImg = '';
   const clear = ids => ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  clear(['f-name','f-producer','f-doc','f-grapes','f-region','f-country','f-shop','f-drink','f-notes','f-tags','ap-olfnote','ap-gustnote','fp-note']);
+  clear(['f-name','f-producer','f-doc','f-grapes','f-region','f-country','f-shop','f-drink','f-notes','f-tags','ap-olfnote','ap-gustnote','fp-note','f-pairing-custom']);
   clear(['f-vintage','f-abv','f-price']);
+  document.querySelectorAll('.p-chip').forEach(chip => chip.classList.remove('active'));
   const qty = document.getElementById('f-qty'); if (qty) qty.value = 1;
   const fd  = document.getElementById('f-date'); if (fd) fd.value = new Date().toISOString().split('T')[0];
   document.querySelectorAll('.ais-r').forEach(r => r.value = 3);
@@ -1548,6 +1587,37 @@ function stepQty(delta) {
   input.value = newVal;
 }
 
+function togglePairing(el) {
+  el.classList.toggle('active');
+}
+
+function getSelectedPairings() {
+  return [...document.querySelectorAll('.p-chip.active')].map(c => c.dataset.p);
+}
+
+// Ricostruisce lo stato dei chip + campo libero a partire dalla stringa salvata
+function applyPairingToForm(pairingStr) {
+  const tokens = (pairingStr || '').split(',').map(s => s.trim()).filter(Boolean);
+  const chipEls = [...document.querySelectorAll('.p-chip')];
+  const matched = [];
+  const leftover = [];
+  tokens.forEach(t => {
+    const chip = chipEls.find(c => c.dataset.p.toLowerCase() === t.toLowerCase());
+    if (chip) matched.push(chip.dataset.p); else leftover.push(t);
+  });
+  chipEls.forEach(chip => chip.classList.toggle('active', matched.includes(chip.dataset.p)));
+  const customEl = document.getElementById('f-pairing-custom');
+  if (customEl) customEl.value = leftover.join(', ');
+}
+
+// Combina i chip selezionati + il testo libero in un'unica stringa da salvare
+function computePairingValue() {
+  const chips = getSelectedPairings();
+  const customRaw = document.getElementById('f-pairing-custom')?.value || '';
+  const customTokens = customRaw.split(',').map(s => s.trim()).filter(Boolean);
+  return [...chips, ...customTokens].join(', ');
+}
+
 function previewImg(input, previewId, side) {
   const file = input.files[0]; if (!file) return;
   const r = new FileReader();
@@ -1627,6 +1697,7 @@ async function saveWine() {
     price: +g('f-price') || null, qty: (g('f-qty') === '' ? 1 : +g('f-qty')),
     date: g('f-date'), shop: g('f-shop'), drink: g('f-drink'),
     tastingDate: g('f-tastingdate'), tastingPlace: g('f-tastingplace'),
+    pairing: computePairingValue(),
     degSchema: activeDeg,
     aisParams:   activeDeg === 'ais'   ? getAP() : null,
     aisScore:    activeDeg === 'ais'   ? aisScore : null,
@@ -1729,6 +1800,7 @@ function showDetail(id) {
     </div>
 
     ${degHTML}
+    ${w.pairing ? `<div class="dfield" style="margin-bottom:.9rem"><div class="fl"><i class="ti ti-tag" style="font-size:11px;vertical-align:-1px;margin-right:3px"></i>Abbinamento cibo</div><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">${w.pairing.split(',').map(p => `<span class="tag" style="background:var(--gold-l);color:#fff">${p.trim()}</span>`).join('')}</div></div>` : ''}
     ${w.notes ? `<div class="dfield" style="margin-bottom:.9rem"><div class="fl">Note di degustazione</div><div class="fv" style="font-style:italic;margin-top:4px;line-height:1.7;font-size:13px;color:var(--muted)">${w.notes}</div></div>` : ''}
     ${w.tags ? `<div class="tag-list">${w.tags.split(',').map(t => `<span class="tag">#${t.trim()}</span>`).join('')}</div>` : ''}
   `;
@@ -1777,6 +1849,7 @@ function editWine() {
   set('f-format', w.format); set('f-price', w.price); set('f-qty', w.qty ?? 1);
   set('f-date', w.date); set('f-shop', w.shop); set('f-drink', w.drink);
   set('f-tastingdate', w.tastingDate); set('f-tastingplace', w.tastingPlace);
+  applyPairingToForm(w.pairing);
   set('f-notes', w.notes); set('f-tags', w.tags);
   // Degustazione
   renderDegTabs();
@@ -1907,8 +1980,8 @@ function dl(filename, content, type) {
 }
 function exportCSV() {
   const w = myWines();
-  const hdr = 'Nome,Produttore,Annata,Tipo,DOC,Vitigni,Regione,Paese,Gradazione,Formato,Prezzo,Bottiglie,Data acquisto,Luogo,Da bere,Schema degustazione,Punteggio,Note';
-  const rows = w.map(x => [x.name,x.producer,x.vintage||'',x.type,x.doc,x.grapes,x.region,x.country,x.abv||'',x.format,x.price||'',x.qty,x.date,x.shop,x.drink,x.degSchema||'',x.score||'','"'+(x.notes||x.olfNote||'').replace(/"/g,"''")+'"'].join(','));
+  const hdr = 'Nome,Produttore,Annata,Tipo,DOC,Vitigni,Regione,Paese,Gradazione,Formato,Prezzo,Bottiglie,Data acquisto,Luogo,Da bere,Abbinamento,Schema degustazione,Punteggio,Note';
+  const rows = w.map(x => [x.name,x.producer,x.vintage||'',x.type,x.doc,x.grapes,x.region,x.country,x.abv||'',x.format,x.price||'',x.qty,x.date,x.shop,x.drink,'"'+(x.pairing||'').replace(/"/g,"''")+'"',x.degSchema||'',x.score||'','"'+(x.notes||x.olfNote||'').replace(/"/g,"''")+'"'].join(','));
   dl('cantina_' + currentUser.name.replace(/\s/g,'_') + '.csv', [hdr, ...rows].join('\n'), 'text/csv');
   showExportMsg('✓ CSV esportato con successo');
 }
@@ -1961,7 +2034,8 @@ Object.assign(window, {
   adjustQty, calcAIS, calcFISAR, cancelForm, deleteWine, doLogin, doLogout, doRegister,
   editWine, exportCSV, exportInventory, exportJSON, exportTasting, previewImg,
   renderGrid, saveProfile, saveWine, scanLabel, setFilter, showAdd, showDetail,
-  showProfileScreen, showScreen, stepQty, switchDeg, switchLTab, updateDelegazioniList
+  showProfileScreen, showScreen, stepQty, switchDeg, switchLTab,
+  togglePairing, updateDelegazioniList
 });
 </script>
 </body>

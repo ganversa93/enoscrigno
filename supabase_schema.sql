@@ -47,6 +47,7 @@ create table if not exists public.wines (
   -- degustazione
   tasting_date  date,
   tasting_place text,
+  pairing       text,             -- abbinamenti cibo (chip predefiniti + testo libero, separati da virgola)
   deg_schema    text default 'free',   -- ais | fisar | free
 
   -- scheda AIS
@@ -163,3 +164,10 @@ create trigger on_auth_user_created
 -- FATTO! Ora vai in Authentication → Email Templates
 -- e personalizza il template di conferma email se vuoi.
 -- ════════════════════════════════════════════
+
+-- ════════════════════════════════════════════
+-- MIGRAZIONE — se il database esiste già (tabelle già create in
+-- precedenza), esegui SOLO questa riga per aggiungere il nuovo
+-- campo "abbinamento cibo" senza perdere i dati esistenti:
+-- ════════════════════════════════════════════
+alter table public.wines add column if not exists pairing text;
