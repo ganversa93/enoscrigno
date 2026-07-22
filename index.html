@@ -460,7 +460,8 @@
          un campo con font-size sotto 16px, e spesso non torna indietro da
          solo: l'utente deve zoomare manualmente per rivedere tutto lo schermo.
          Forzando 16px su ogni campo, l'autozoom non si attiva più. */
-      input, select, textarea { font-size: 16px !important; }
+      input:not([type="date"]):not([type="file"]):not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+      select, textarea { font-size: 16px !important; }
     }
   </style>
 </head>
@@ -629,6 +630,7 @@
             <input type="number" id="f-qty" value="1" min="0" inputmode="numeric" onchange="if(this.value<0)this.value=0">
             <button type="button" class="qty-btn" onclick="stepQty(1)" aria-label="Aumenta">+</button>
           </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:5px">0 = degustato ma non posseduto (es. a un evento o al ristorante)</div>
         </div>
       </div>
       <div class="frow">
@@ -1343,10 +1345,10 @@ function showScreen(id) {
 function renderAll() {
   const w = myWines();
   const tot = w.length;
-  const bot = w.reduce((s, x) => s + (x.qty || 1), 0);
+  const bot = w.reduce((s, x) => s + (x.qty ?? 1), 0);
   const sc  = w.filter(x => x.score);
   const avg = sc.length ? Math.round(sc.reduce((s, x) => s + x.score, 0) / sc.length) : null;
-  const val = w.reduce((s, x) => s + ((x.price || 0) * (x.qty || 1)), 0);
+  const val = w.reduce((s, x) => s + ((x.price || 0) * (x.qty ?? 1)), 0);
   document.getElementById('stats-bar').innerHTML = `
     <div class="stat"><div class="stat-n">${tot}</div><div class="stat-l">Etichette</div></div>
     <div class="stat"><div class="stat-n">${bot}</div><div class="stat-l">Bottiglie</div></div>
@@ -1622,7 +1624,7 @@ async function saveWine() {
     vintage: +g('f-vintage') || null, type: g('f-type'),
     doc: g('f-doc'), grapes: g('f-grapes'), region: g('f-region'), country: g('f-country') || 'Italia',
     abv: +g('f-abv') || null, format: g('f-format') || '750 ml',
-    price: +g('f-price') || null, qty: +g('f-qty') || 1,
+    price: +g('f-price') || null, qty: (g('f-qty') === '' ? 1 : +g('f-qty')),
     date: g('f-date'), shop: g('f-shop'), drink: g('f-drink'),
     tastingDate: g('f-tastingdate'), tastingPlace: g('f-tastingplace'),
     degSchema: activeDeg,
@@ -1714,7 +1716,7 @@ function showDetail(id) {
         <div class="fl">Bottiglie in cantina</div>
         <div class="fv" style="display:flex;align-items:center;gap:8px">
           <button onclick="adjustQty(${w.id},-1)" style="width:36px;height:36px;border-radius:50%;border:0.5px solid var(--border);background:var(--surf);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:var(--ink)">−</button>
-          <span id="qty-display-${w.id}" style="font-size:16px;font-weight:500;min-width:20px;text-align:center">${w.qty || 1}</span>
+          <span id="qty-display-${w.id}" style="font-size:16px;font-weight:500;min-width:20px;text-align:center">${w.qty ?? 1}</span>
           <button onclick="adjustQty(${w.id},+1)" style="width:36px;height:36px;border-radius:50%;border:0.5px solid var(--border);background:var(--surf);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:var(--ink)">+</button>
         </div>
       </div>
@@ -1735,7 +1737,7 @@ function showDetail(id) {
 
 async function adjustQty(id, delta) {
   const w = winesCache.find(x => x.id === id); if (!w) return;
-  const newQty = Math.max(0, (w.qty || 1) + delta);
+  const newQty = Math.max(0, (w.qty ?? 1) + delta);
   const ok = await dbUpdateQty(id, newQty);
   if (ok) {
     w.qty = newQty;
@@ -1772,7 +1774,7 @@ function editWine() {
   set('f-name', w.name); set('f-producer', w.producer); set('f-vintage', w.vintage);
   set('f-type', w.type); set('f-doc', w.doc); set('f-grapes', w.grapes);
   set('f-region', w.region); set('f-country', w.country); set('f-abv', w.abv);
-  set('f-format', w.format); set('f-price', w.price); set('f-qty', w.qty || 1);
+  set('f-format', w.format); set('f-price', w.price); set('f-qty', w.qty ?? 1);
   set('f-date', w.date); set('f-shop', w.shop); set('f-drink', w.drink);
   set('f-tastingdate', w.tastingDate); set('f-tastingplace', w.tastingPlace);
   set('f-notes', w.notes); set('f-tags', w.tags);
@@ -1939,11 +1941,11 @@ function exportTasting() {
 }
 function exportInventory() {
   const w = myWines();
-  const tot = w.reduce((s, x) => s + (x.qty || 1), 0);
-  const val = w.reduce((s, x) => s + ((x.price||0)*(x.qty||1)), 0);
+  const tot = w.reduce((s, x) => s + (x.qty ?? 1), 0);
+  const val = w.reduce((s, x) => s + ((x.price||0)*(x.qty ?? 1)), 0);
   let txt = `INVENTARIO CANTINA\n${currentUser.name}\nAssociazione: ${currentUser.assoc||'—'} | Tessera: ${currentUser.card||'—'}\nData: ${new Date().toLocaleDateString('it-IT')}\n\n`;
   txt += `RIEPILOGO: ${w.length} etichette · ${tot} bottiglie · valore stimato €${val.toFixed(2)}\n\n${'─'.repeat(60)}\n\n`;
-  w.forEach(x => { txt += `${x.name}${x.vintage?' '+x.vintage:''}\n${x.producer||'—'} | ${x.type||'—'} | ${x.doc||'—'}\nBottiglie: ${x.qty||1} | Prezzo: ${x.price?'€'+x.price.toFixed(2):'—'} | Totale: ${x.price?'€'+(x.price*(x.qty||1)).toFixed(2):'—'}\nDa bere: ${x.drink||'—'} | Schema: ${x.degSchema?.toUpperCase()||'—'} | Punteggio: ${x.score||'—'}/100\n${'─'.repeat(40)}\n\n`; });
+  w.forEach(x => { txt += `${x.name}${x.vintage?' '+x.vintage:''}\n${x.producer||'—'} | ${x.type||'—'} | ${x.doc||'—'}\nBottiglie: ${x.qty ?? 1} | Prezzo: ${x.price?'€'+x.price.toFixed(2):'—'} | Totale: ${x.price?'€'+(x.price*(x.qty ?? 1)).toFixed(2):'—'}\nDa bere: ${x.drink||'—'} | Schema: ${x.degSchema?.toUpperCase()||'—'} | Punteggio: ${x.score||'—'}/100\n${'─'.repeat(40)}\n\n`; });
   dl('inventario_cantina.txt', txt, 'text/plain');
   showExportMsg('✓ Inventario esportato');
 }
