@@ -377,11 +377,40 @@
 
     /* ── RESPONSIVE ── */
     @media (max-width: 520px) {
-      .stat-row { grid-template-columns: repeat(2, 1fr); }
+      .app-shell { padding: 1rem .75rem; }
+      .stat-row { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .stat { padding: 8px 10px; }
+      .stat-n { font-size: 18px; }
+      .stat-l { font-size: 10px; }
       .frow { grid-template-columns: 1fr; }
       .dgrid { grid-template-columns: 1fr; }
       .dhero { flex-direction: column; }
-      .logo-text { font-size: 17px; }
+      .logo-text { font-size: 16px; }
+
+      /* Nav: logo compatto in alto, azioni utente sotto su riga propria */
+      .nav {
+        flex-wrap: wrap; gap: 8px; margin-bottom: 1rem;
+      }
+      .nav-right {
+        width: 100%; justify-content: space-between; gap: 6px;
+      }
+      .user-pill {
+        flex: 1; min-width: 0; overflow: hidden;
+        padding: 5px 10px;
+      }
+      .user-pill span#nav-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60px; }
+      .user-pill .ti-chevron-right { display: none; }
+      .user-pill .assoc-badge { flex-shrink: 0; }
+      .nav-right .btn.sm { padding: 5px 9px; font-size: 11px; white-space: nowrap; }
+
+      /* Filtri: ricerca a piena larghezza, chip compatte, Aggiungi sempre full-width */
+      .filter-bar { gap: 6px; margin-bottom: 1rem; }
+      .filter-bar input { min-width: 100%; order: -1; margin-bottom: 4px; }
+      .chip { padding: 5px 10px; font-size: 11px; }
+      .filter-bar .btn.primary.sm {
+        margin-left: 0 !important; width: 100%; order: 99;
+        justify-content: center; padding: 9px 12px; margin-top: 4px;
+      }
     }
   </style>
 </head>
