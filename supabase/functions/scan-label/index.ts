@@ -85,13 +85,22 @@ Deno.serve(async (req) => {
       }, 429);
     }
 
-    // ── 4. Leggi l'immagine dal body della richiesta ──
-    const { image_base64, media_type } = await req.json();
-    if (!image_base64 || !media_type) {
+    // ── 4. Leggi le immagini dal body della richiesta (fronte + eventuale retro) ──
+    const { images } = await req.json();
+    if (!Array.isArray(images) || images.length === 0) {
       return json({ error: 'Immagine mancante' }, 400);
     }
+    // images[i] = { media_type, base64 } — al massimo 2 (fronte + retro)
+    const imageBlocks = images.slice(0, 2).map((img: { media_type: string; base64: string }) => ({
+      type: 'image',
+      source: { type: 'base64', media_type: img.media_type, data: img.base64 }
+    }));
 
     // ── 5. Chiama Anthropic (chiave segreta, mai esposta al client) ──
+    const promptText = images.length > 1
+      ? 'Analizza queste due foto della stessa bottiglia di vino (fronte etichetta e controetichetta) ed estrai tutte le informazioni visibili, combinando i dati da entrambe le immagini — la controetichetta spesso contiene dettagli aggiuntivi come importatore, gradazione esatta, annata o denominazione estesa non presenti sul fronte. Rispondi SOLO con JSON valido, zero testo extra, zero markdown. Schema: {"name":"","producer":"","vintage":null,"type":"Rosso|Bianco|Rosato|Spumante|Dolce|Passito|Altro","doc":"","grapes":"","region":"","country":"","abv":null,"drink":"","notes":""}. Campi non visibili in nessuna delle due foto: stringa vuota o null.'
+      : 'Analizza questa etichetta di vino ed estrai tutte le informazioni visibili. Rispondi SOLO con JSON valido, zero testo extra, zero markdown. Schema: {"name":"","producer":"","vintage":null,"type":"Rosso|Bianco|Rosato|Spumante|Dolce|Passito|Altro","doc":"","grapes":"","region":"","country":"","abv":null,"drink":"","notes":""}. Campi non visibili: stringa vuota o null.';
+
     const aiResp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -105,8 +114,8 @@ Deno.serve(async (req) => {
         messages: [{
           role: 'user',
           content: [
-            { type: 'image', source: { type: 'base64', media_type, data: image_base64 } },
-            { type: 'text', text: 'Analizza questa etichetta di vino ed estrai tutte le informazioni visibili. Rispondi SOLO con JSON valido, zero testo extra, zero markdown. Schema: {"name":"","producer":"","vintage":null,"type":"Rosso|Bianco|Rosato|Spumante|Dolce|Passito|Altro","doc":"","grapes":"","region":"","country":"","abv":null,"drink":"","notes":""}. Campi non visibili: stringa vuota o null.' }
+            ...imageBlocks,
+            { type: 'text', text: promptText }
           ]
         }]
       })

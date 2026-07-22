@@ -577,16 +577,6 @@
     </div>
     <input type="hidden" id="f-edit-id" value="">
 
-    <div class="ai-banner" id="ai-banner">
-      <span class="ai-pill"><i class="ti ti-sparkles" style="font-size:10px"></i> AI</span>
-      <span class="ai-txt">Scatta una foto all'etichetta — l'AI compila il form automaticamente</span>
-      <button class="btn gold sm" onclick="document.getElementById('cam-inp').click()">
-        <i class="ti ti-camera"></i>Scansiona etichetta
-      </button>
-      <input type="file" id="cam-inp" accept="image/*" capture="environment" style="display:none" onchange="scanLabel(this)">
-    </div>
-    <div class="spin-wrap" id="ai-spin"><div class="spin"></div><span style="font-size:12px;color:var(--muted)">Lettura etichetta in corso…</span></div>
-
     <div class="fsec collapsible" id="fsec-photo">
       <div class="stitle fsec-header" onclick="toggleSection('fsec-photo')"><i class="ti ti-photo" aria-hidden="true"></i>Foto etichette<i class="ti ti-chevron-down fsec-chevron"></i></div>
       <div class="fsec-body">
@@ -594,18 +584,20 @@
         <div>
           <div style="font-size:11px;color:var(--muted);margin-bottom:5px">Fronte etichetta</div>
           <div class="upload-z" onclick="document.getElementById('img-front').click()">
-            <input type="file" id="img-front" accept="image/*" style="display:none" onchange="previewImg(this,'prev-front','front')">
+            <input type="file" id="img-front" accept="image/*" capture="environment" style="display:none" onchange="previewImg(this,'prev-front','front')">
             <div id="prev-front"><i class="ti ti-photo-up" aria-hidden="true"></i><p><b>Carica</b> o scatta foto</p></div>
           </div>
         </div>
         <div>
           <div style="font-size:11px;color:var(--muted);margin-bottom:5px">Controetichetta</div>
           <div class="upload-z" onclick="document.getElementById('img-back').click()">
-            <input type="file" id="img-back" accept="image/*" style="display:none" onchange="previewImg(this,'prev-back','back')">
+            <input type="file" id="img-back" accept="image/*" capture="environment" style="display:none" onchange="previewImg(this,'prev-back','back')">
             <div id="prev-back"><i class="ti ti-photo-up" aria-hidden="true"></i><p><b>Carica</b> o scatta foto</p></div>
           </div>
         </div>
       </div>
+      <div class="ai-banner" id="ai-banner" style="margin-top:12px;margin-bottom:0"></div>
+      <div class="spin-wrap" id="ai-spin"><div class="spin"></div><span style="font-size:12px;color:var(--muted)">Lettura etichette in corso…</span></div>
       </div>
     </div>
 
@@ -1457,6 +1449,7 @@ function renderGrid() {
 /* ── ADD FORM ── */
 function showAdd() {
   frontImg = ''; backImg = '';
+  renderAiBanner();
   // Reset accordion: Foto + Identità aperte, il resto chiuso (nuovo inserimento)
   resetSections();
   const clear = ids => ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
@@ -1615,19 +1608,19 @@ function renderAiBanner() {
   if (!el) return;
   if (currentUser?.aiScanEnabled) {
     el.className = 'ai-banner';
+    const hasImg = !!(frontImg || backImg);
     el.innerHTML = `
       <span class="ai-pill"><i class="ti ti-sparkles" style="font-size:10px"></i> AI</span>
-      <span class="ai-txt">Scatta una foto all'etichetta — l'AI compila il form automaticamente</span>
-      <button class="btn gold sm" onclick="document.getElementById('cam-inp').click()">
-        <i class="ti ti-camera"></i>Scansiona etichetta
+      <span class="ai-txt">${hasImg ? "Carica anche la controetichetta se vuoi più dettagli, poi analizza" : "Carica almeno la foto del fronte, poi analizza l'etichetta"}</span>
+      <button class="btn gold sm" onclick="scanBothLabels()" ${hasImg ? '' : 'disabled'}>
+        <i class="ti ti-sparkles"></i>Analizza con AI
       </button>
-      <input type="file" id="cam-inp" accept="image/*" capture="environment" style="display:none" onchange="scanLabel(this)">
     `;
   } else {
     el.className = 'ai-banner locked';
     el.innerHTML = `
       <span class="premium-pill"><i class="ti ti-crown" style="font-size:10px"></i> Premium</span>
-      <span class="ai-txt">Scansione etichette con AI — funzione premium non ancora attiva sul tuo account</span>
+      <span class="ai-txt">Lettura automatica etichette con AI — funzione premium non ancora attiva sul tuo account</span>
       <button class="btn sm" onclick="toast('Scrivici per attivare la scansione AI sul tuo account')">
         <i class="ti ti-lock"></i>Bloccata
       </button>
@@ -1698,42 +1691,45 @@ function previewImg(input, previewId, side) {
   r.onload = e => {
     document.getElementById(previewId).innerHTML = `<img src="${e.target.result}" style="width:100%;height:80px;object-fit:cover;border-radius:6px" alt="">`;
     if (side === 'front') frontImg = e.target.result; else backImg = e.target.result;
+    renderAiBanner();
   };
   r.readAsDataURL(file);
 }
 
 /* ── AI SCAN ── */
-async function scanLabel(input) {
-  const file = input.files[0]; if (!file) return;
-  const r = new FileReader();
-  r.onload = async e => {
-    frontImg = e.target.result;
-    document.getElementById('prev-front').innerHTML = `<img src="${e.target.result}" style="width:100%;height:80px;object-fit:cover;border-radius:6px" alt="">`;
-    document.getElementById('ai-spin').classList.add('show');
-    showScreen('screen-add');
-    try {
-      // Chiama la Edge Function di Supabase, che tiene la chiave AI al
-      // sicuro lato server e applica i limiti di utilizzo mensili.
-      const { data: result, error } = await sb.functions.invoke('scan-label', {
-        body: {
-          image_base64: e.target.result.split(',')[1],
-          media_type: file.type
-        }
-      });
-      if (error) {
-        toast('Lettura etichetta non riuscita — riprova o inserisci i dati a mano');
-      } else if (result?.error) {
-        toast(result.message || 'Limite scansioni raggiunto');
-      } else if (result?.data) {
-        fillForm(result.data);
+// Helper: estrae media_type e base64 puro da una data URL "data:image/...;base64,...."
+function parseDataUrl(dataUrl) {
+  const match = /^data:([^;]+);base64,(.+)$/.exec(dataUrl || '');
+  return match ? { media_type: match[1], base64: match[2] } : null;
+}
+
+async function scanBothLabels() {
+  const front = parseDataUrl(frontImg);
+  const back  = parseDataUrl(backImg);
+  if (!front && !back) { toast('Carica almeno una foto dell\'etichetta prima di analizzare'); return; }
+
+  document.getElementById('ai-spin').classList.add('show');
+  try {
+    // Chiama la Edge Function di Supabase, che tiene la chiave AI al
+    // sicuro lato server, applica i limiti di utilizzo mensili e legge
+    // entrambe le immagini insieme (fronte + eventuale retro).
+    const { data: result, error } = await sb.functions.invoke('scan-label', {
+      body: {
+        images: [front, back].filter(Boolean)
       }
-    } catch(err) {
-      toast('Lettura etichetta non riuscita — riprova o inserisci i dati a mano');
+    });
+    if (error) {
+      toast('Lettura etichette non riuscita — riprova o inserisci i dati a mano');
+    } else if (result?.error) {
+      toast(result.message || 'Limite scansioni raggiunto');
+    } else if (result?.data) {
+      fillForm(result.data);
+      toast('Etichette analizzate! Controlla e completa i dati.');
     }
-    document.getElementById('ai-spin').classList.remove('show');
-    input.value = '';
-  };
-  r.readAsDataURL(file);
+  } catch(err) {
+    toast('Lettura etichette non riuscita — riprova o inserisci i dati a mano');
+  }
+  document.getElementById('ai-spin').classList.remove('show');
 }
 function fillForm(d) {
   const set = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; };
@@ -1915,6 +1911,7 @@ function editWine() {
   document.getElementById('form-title').textContent = 'Modifica vino';
   document.getElementById('form-save-label').textContent = 'Salva modifiche';
   frontImg = w.frontImg || ''; backImg = w.backImg || '';
+  renderAiBanner();
   // Restore image previews
   if (w.frontImg) document.getElementById('prev-front').innerHTML = `<img src="${w.frontImg}" style="width:100%;height:80px;object-fit:cover;border-radius:6px" alt="">`;
   if (w.backImg)  document.getElementById('prev-back').innerHTML  = `<img src="${w.backImg}"  style="width:100%;height:80px;object-fit:cover;border-radius:6px" alt="">`;
@@ -2110,7 +2107,7 @@ calcAIS(); calcFISAR();
 Object.assign(window, {
   adjustQty, calcAIS, calcFISAR, cancelForm, deleteWine, doLogin, doLogout, doRegister,
   editWine, exportCSV, exportInventory, exportJSON, exportTasting, previewImg,
-  renderGrid, saveProfile, saveWine, scanLabel, setFilter, showAdd, showDetail,
+  renderGrid, saveProfile, saveWine, scanBothLabels, setFilter, showAdd, showDetail,
   showProfileScreen, showScreen, stepQty, switchDeg, switchLTab, toast,
   togglePairing, toggleSection, updateDelegazioniList
 });
