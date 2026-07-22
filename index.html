@@ -362,8 +362,9 @@
     .toast {
       position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
       background: var(--ink); color: var(--bg); font-size: 13px;
-      padding: 10px 20px; border-radius: 20px; opacity: 0;
-      transition: all .3s; pointer-events: none; z-index: 9999; white-space: nowrap;
+      padding: 10px 20px; border-radius: 14px; opacity: 0;
+      transition: all .3s; pointer-events: none; z-index: 9999;
+      max-width: min(90vw, 420px); text-align: center; line-height: 1.5;
     }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
@@ -1044,11 +1045,28 @@ async function doRegister() {
   });
   btn.textContent = 'Crea account'; btn.disabled = false;
   if (error) { err.textContent = error.message; err.style.display = 'block'; return; }
-  // Upsert profile
-  await sb.from('profiles').upsert({
-    id: data.user.id, full_name: firstname,
-    assoc, card, delegazione: '', delegazione_custom: ''
-  });
+
+  // Il profilo (nome, associazione, tessera) viene creato automaticamente
+  // lato database da un trigger su auth.users — funziona anche se la
+  // conferma email è attiva e non c'è ancora una sessione autenticata.
+  // Questo upsert è solo un tentativo "best effort" nel caso ci sia già sessione;
+  // se fallisce (nessuna sessione) non è un problema: il trigger ha già fatto il lavoro.
+  try {
+    await sb.from('profiles').upsert({
+      id: data.user.id, full_name: firstname,
+      assoc, card, delegazione: '', delegazione_custom: ''
+    });
+  } catch(_) { /* ignorato: il trigger DB copre già questo caso */ }
+
+  if (!data.session) {
+    // Conferma email attiva: nessuna sessione ancora disponibile
+    err.style.color = 'var(--fisar)';
+    err.textContent = '✓ Account creato! Controlla la tua email per confermare, poi accedi.';
+    err.style.display = 'block';
+    switchLTab('login');
+    document.getElementById('l-email').value = email;
+    return;
+  }
   await loadProfile(data.user);
 }
 
@@ -1059,7 +1077,8 @@ async function doLogout() {
 }
 
 async function loadProfile(authUser) {
-  const { data: profile } = await sb.from('profiles').select('*').eq('id', authUser.id).single();
+  const { data: profile, error } = await sb.from('profiles').select('*').eq('id', authUser.id).maybeSingle();
+  if (error) { toastErr('Errore caricamento profilo: ' + error.message); }
   currentUser = {
     id:                authUser.id,
     email:             authUser.email,
@@ -1069,6 +1088,14 @@ async function loadProfile(authUser) {
     delegazione:       profile?.delegazione || '',
     delegazioneCustom: profile?.delegazione_custom || ''
   };
+  // Se non esiste ancora un profilo (caso raro, es. trigger non installato),
+  // lo creiamo ora che l'utente è sicuramente autenticato.
+  if (!profile) {
+    await sb.from('profiles').upsert({
+      id: authUser.id, full_name: currentUser.name,
+      assoc: '', card: '', delegazione: '', delegazione_custom: ''
+    });
+  }
   await initApp();
 }
 
@@ -1079,7 +1106,7 @@ async function loadWines() {
     .select('*')
     .eq('user_id', currentUser.id)
     .order('created_at', { ascending: false });
-  if (error) { toastErr('Errore caricamento vini'); return []; }
+  if (error) { toastErr('Errore caricamento vini: ' + error.message); console.error('loadWines error:', error); return []; }
   // Deserializza i campi JSON
   return (data || []).map(row => ({
     ...row,
@@ -1137,25 +1164,25 @@ async function dbSaveWine(wine) {
   if (wine.id && typeof wine.id === 'string' && wine.id.length > 10) {
     // update existing (uuid)
     const { error } = await sb.from('wines').update(row).eq('id', wine.id);
-    if (error) { toastErr('Errore salvataggio'); return null; }
+    if (error) { toastErr('Errore salvataggio: ' + error.message); console.error('dbSaveWine update error:', error); return null; }
     return wine.id;
   } else {
     // insert new
     const { data, error } = await sb.from('wines').insert(row).select('id').single();
-    if (error) { toastErr('Errore salvataggio'); return null; }
+    if (error) { toastErr('Errore salvataggio: ' + error.message); console.error('dbSaveWine insert error:', error); return null; }
     return data.id;
   }
 }
 
 async function dbDeleteWine(id) {
   const { error } = await sb.from('wines').delete().eq('id', id);
-  if (error) { toastErr('Errore eliminazione'); return false; }
+  if (error) { toastErr('Errore eliminazione: ' + error.message); console.error('dbDeleteWine error:', error); return false; }
   return true;
 }
 
 async function dbUpdateQty(id, qty) {
   const { error } = await sb.from('wines').update({ qty }).eq('id', id);
-  if (error) { toastErr('Errore aggiornamento'); return false; }
+  if (error) { toastErr('Errore aggiornamento: ' + error.message); console.error('dbUpdateQty error:', error); return false; }
   return true;
 }
 
@@ -1741,7 +1768,7 @@ async function saveProfile() {
     delegazione_custom: document.getElementById('p-delegazione-custom')?.value.trim() || ''
   });
   showLoadingOverlay(false);
-  if (profErr) { toastErr('Errore salvataggio profilo'); return; }
+  if (profErr) { toastErr('Errore salvataggio profilo: ' + profErr.message); console.error('saveProfile error:', profErr); return; }
   currentUser.name              = fullName;
   currentUser.email             = email;
   currentUser.assoc             = document.getElementById('p-assoc')?.value || '';

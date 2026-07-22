@@ -127,6 +127,38 @@ create trigger profiles_updated_at
   before update on public.profiles
   for each row execute function public.set_updated_at();
 
+-- ── TRIGGER: crea automaticamente il profilo alla registrazione ──
+-- Questo è FONDAMENTALE: se la conferma email è attiva, il client
+-- non ha ancora una sessione autenticata subito dopo la registrazione,
+-- quindi un salvataggio del profilo fatto dal browser verrebbe bloccato
+-- dalla Row Level Security. Questo trigger gira lato server con
+-- privilegi elevati (SECURITY DEFINER) e quindi funziona sempre,
+-- indipendentemente dalla conferma email.
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.profiles (id, full_name, assoc, card, delegazione, delegazione_custom)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
+    coalesce(new.raw_user_meta_data->>'assoc', ''),
+    coalesce(new.raw_user_meta_data->>'card', ''),
+    '', ''
+  )
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
+
 -- ════════════════════════════════════════════
 -- FATTO! Ora vai in Authentication → Email Templates
 -- e personalizza il template di conferma email se vuoi.
