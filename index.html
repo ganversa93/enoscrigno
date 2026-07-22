@@ -209,6 +209,15 @@
     .fhdr h2 { font-family: 'Cormorant Garamond', serif; font-size: 20px; color: var(--ink); }
     .fsec { background: var(--bg); border: 0.5px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: .9rem; }
     .stitle { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: .9rem; display: flex; align-items: center; gap: 5px; }
+
+    /* ── ACCORDION (sezioni del form vino) ── */
+    .fsec-header { cursor: pointer; user-select: none; margin-bottom: 0; padding: 2px 0; transition: opacity .15s; }
+    .fsec-header:hover { opacity: .75; }
+    .fsec-chevron { margin-left: auto; font-size: 15px; transition: transform .2s; color: var(--muted); }
+    .fsec.collapsed .fsec-chevron { transform: rotate(-90deg); }
+    .fsec.collapsible .fsec-body { margin-top: .9rem; }
+    .fsec.collapsible.collapsed .fsec-body { display: none; }
+    .fsec.collapsible.collapsed { padding-bottom: 1.25rem; }
     .frow { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
     .fg { margin-bottom: 11px; }
     .fg:last-child { margin-bottom: 0; }
@@ -571,8 +580,9 @@
     </div>
     <div class="spin-wrap" id="ai-spin"><div class="spin"></div><span style="font-size:12px;color:var(--muted)">Lettura etichetta in corso…</span></div>
 
-    <div class="fsec">
-      <div class="stitle"><i class="ti ti-photo" aria-hidden="true"></i>Foto etichette</div>
+    <div class="fsec collapsible" id="fsec-photo">
+      <div class="stitle fsec-header" onclick="toggleSection('fsec-photo')"><i class="ti ti-photo" aria-hidden="true"></i>Foto etichette<i class="ti ti-chevron-down fsec-chevron"></i></div>
+      <div class="fsec-body">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div>
           <div style="font-size:11px;color:var(--muted);margin-bottom:5px">Fronte etichetta</div>
@@ -589,10 +599,12 @@
           </div>
         </div>
       </div>
+      </div>
     </div>
 
-    <div class="fsec">
-      <div class="stitle"><i class="ti ti-id-badge" aria-hidden="true"></i>Identità del vino</div>
+    <div class="fsec collapsible" id="fsec-identity">
+      <div class="stitle fsec-header" onclick="toggleSection('fsec-identity')"><i class="ti ti-id-badge" aria-hidden="true"></i>Identità del vino<i class="ti ti-chevron-down fsec-chevron"></i></div>
+      <div class="fsec-body">
       <div class="frow">
         <div class="fg"><label>Nome vino *</label><input type="text" id="f-name" placeholder="es. Amarone della Valpolicella"></div>
         <div class="fg"><label>Produttore / Cantina</label><input type="text" id="f-producer" placeholder="es. Masi Agricola"></div>
@@ -615,10 +627,12 @@
         <div class="fg"><label>Regione</label><input type="text" id="f-region" placeholder="es. Piemonte"></div>
         <div class="fg"><label>Paese</label><input type="text" id="f-country" placeholder="es. Italia"></div>
       </div>
+      </div>
     </div>
 
-    <div class="fsec">
-      <div class="stitle"><i class="ti ti-flask" aria-hidden="true"></i>Dati tecnici &amp; cantina</div>
+    <div class="fsec collapsible collapsed" id="fsec-technical">
+      <div class="stitle fsec-header" onclick="toggleSection('fsec-technical')"><i class="ti ti-flask" aria-hidden="true"></i>Dati tecnici &amp; cantina<i class="ti ti-chevron-down fsec-chevron"></i></div>
+      <div class="fsec-body">
       <div class="frow">
         <div class="fg"><label>Gradazione alcolica (%)</label><input type="number" id="f-abv" placeholder="14.5" step="0.1" min="0" max="25"></div>
         <div class="fg"><label>Formato bottiglia</label>
@@ -650,11 +664,13 @@
         <div class="fg"><label>Data degustazione</label><input type="date" id="f-tastingdate"></div>
         <div class="fg"><label>Luogo degustazione</label><input type="text" id="f-tastingplace" placeholder="es. Ristorante Da Marco, Roma"></div>
       </div>
+      </div>
     </div>
 
     <!-- ABBINAMENTO -->
-    <div class="fsec">
-      <div class="stitle"><i class="ti ti-tag" aria-hidden="true"></i>Abbinamento cibo</div>
+    <div class="fsec collapsible collapsed" id="fsec-pairing">
+      <div class="stitle fsec-header" onclick="toggleSection('fsec-pairing')"><i class="ti ti-tag" aria-hidden="true"></i>Abbinamento cibo<i class="ti ti-chevron-down fsec-chevron"></i></div>
+      <div class="fsec-body">
       <div class="fg">
         <label>Categorie di abbinamento</label>
         <div class="pairing-chips" id="pairing-chips">
@@ -679,11 +695,13 @@
         <input type="text" id="f-pairing-custom" placeholder="es. Tagliata di manzo, risotto ai funghi porcini…">
       </div>
       <div style="font-size:11px;color:var(--muted);margin-top:6px">Questo campo sarà usato per cercare i tuoi vini per abbinamento — e in futuro per scoprire cosa hanno degustato altri sommelier con lo stesso piatto.</div>
+      </div>
     </div>
 
     <!-- DEGUSTAZIONE -->
-    <div class="fsec">
-      <div class="stitle"><i class="ti ti-stars" aria-hidden="true"></i>Scheda di degustazione</div>
+    <div class="fsec collapsible collapsed" id="fsec-tasting">
+      <div class="stitle fsec-header" onclick="toggleSection('fsec-tasting')"><i class="ti ti-stars" aria-hidden="true"></i>Scheda di degustazione<i class="ti ti-chevron-down fsec-chevron"></i></div>
+      <div class="fsec-body">
       <div class="deg-tabs" id="deg-tabs-container"></div>
 
       <!-- AIS -->
@@ -982,6 +1000,7 @@
         </div>
         <div class="fg"><label>Note di degustazione</label><textarea id="f-notes" placeholder="Colore, profumo, gusto, persistenza…"></textarea></div>
         <div class="fg" style="margin-top:8px"><label>Tag personali</label><input type="text" id="f-tags" placeholder="es. compleanno, regalo, da ricomprare"></div>
+      </div>
       </div>
     </div>
 
@@ -1429,6 +1448,8 @@ function renderGrid() {
 /* ── ADD FORM ── */
 function showAdd() {
   frontImg = ''; backImg = '';
+  // Reset accordion: Foto + Identità aperte, il resto chiuso (nuovo inserimento)
+  resetSections();
   const clear = ids => ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   clear(['f-name','f-producer','f-doc','f-grapes','f-region','f-country','f-shop','f-drink','f-notes','f-tags','ap-olfnote','ap-gustnote','fp-note','f-pairing-custom']);
   clear(['f-vintage','f-abv','f-price']);
@@ -1580,6 +1601,25 @@ function calcFISAR() {
 function recalcFISAR() { return calcFISAR(); }
 
 /* ── IMAGES ── */
+function toggleSection(sectionId) {
+  const sec = document.getElementById(sectionId);
+  if (sec) sec.classList.toggle('collapsed');
+}
+
+// Stato di default per un nuovo inserimento: Foto + Identità aperte, resto chiuso
+function resetSections() {
+  const open = ['fsec-photo', 'fsec-identity'];
+  const closed = ['fsec-technical', 'fsec-pairing', 'fsec-tasting'];
+  open.forEach(id => document.getElementById(id)?.classList.remove('collapsed'));
+  closed.forEach(id => document.getElementById(id)?.classList.add('collapsed'));
+}
+
+// In modifica: apri tutte le sezioni così l'utente vede subito tutti i dati esistenti
+function openAllSections() {
+  ['fsec-photo', 'fsec-identity', 'fsec-technical', 'fsec-pairing', 'fsec-tasting']
+    .forEach(id => document.getElementById(id)?.classList.remove('collapsed'));
+}
+
 function stepQty(delta) {
   const input = document.getElementById('f-qty');
   if (!input) return;
@@ -1833,6 +1873,7 @@ async function deleteWine() {
 
 function editWine() {
   const w = myWines().find(x => x.id === currentDetailId); if (!w) return;
+  openAllSections(); // in modifica mostra subito tutte le sezioni con i dati esistenti
   // Pre-fill edit id
   document.getElementById('f-edit-id').value = w.id;
   document.getElementById('form-title').textContent = 'Modifica vino';
@@ -2035,7 +2076,7 @@ Object.assign(window, {
   editWine, exportCSV, exportInventory, exportJSON, exportTasting, previewImg,
   renderGrid, saveProfile, saveWine, scanLabel, setFilter, showAdd, showDetail,
   showProfileScreen, showScreen, stepQty, switchDeg, switchLTab,
-  togglePairing, updateDelegazioniList
+  togglePairing, toggleSection, updateDelegazioniList
 });
 </script>
 </body>
