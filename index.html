@@ -630,7 +630,11 @@
         </div>
       </div>
       <div class="frow">
-        <div class="fg"><label>DOC / DOCG / IGT</label><input type="text" id="f-doc" placeholder="es. DOCG Barolo"></div>
+        <div class="fg">
+          <label>DOC / DOCG / IGT</label>
+          <input type="text" id="f-doc" list="doc-datalist" placeholder="es. DOCG Barolo">
+          <datalist id="doc-datalist"></datalist>
+        </div>
         <div class="fg"><label>Vitigni</label><input type="text" id="f-grapes" placeholder="es. Nebbiolo 100%"></div>
       </div>
       <div class="frow">
@@ -2046,6 +2050,88 @@ const GEO_PROVINCES_ITALIA = {
   'Sardegna': ['Cagliari','Nuoro','Oristano','Sassari','Sud Sardegna']
 };
 
+/* ══ DOC / DOCG / AOC — suggerimenti per uniformare il campo denominazione ══
+   Non è un elenco esaustivo (l'Italia da sola ha oltre 400 DOC/DOCG):
+   copre le DOCG italiane (elenco chiuso, ~78) organizzate per regione,
+   più le denominazioni principali per Francia, Germania e Spagna.
+   Il campo resta di testo libero — questi sono solo suggerimenti. */
+const ITALY_DOCG = {
+  'Piemonte': ['Alta Langa','Asti / Moscato d\'Asti','Barbaresco','Barbera d\'Asti','Barbera del Monferrato Superiore','Barolo','Brachetto d\'Acqui','Canelli / Moscato di Canelli','Gavi (Cortese di Gavi)','Diano d\'Alba (Dolcetto di Diano d\'Alba)','Dogliani (Dolcetto di Dogliani Superiore)','Ovada (Dolcetto di Ovada Superiore)','Erbaluce di Caluso (Caluso)','Gattinara','Ghemme','Nizza','Ruché di Castagnole Monferrato','Roero','Terre Alfieri'],
+  'Valle d\'Aosta': [],
+  'Lombardia': ['Franciacorta','Moscato di Scanzo','Oltrepò Pavese Metodo Classico','Sforzato di Valtellina','Valtellina Superiore'],
+  'Trentino-Alto Adige': [],
+  'Veneto': ['Amarone della Valpolicella','Recioto della Valpolicella','Bardolino Superiore','Soave Superiore','Recioto di Soave','Conegliano Valdobbiadene Prosecco Superiore','Colli Asolani Prosecco Superiore (Asolo Prosecco)','Colli di Conegliano','Piave Malanotte (Malanotte del Piave)','Lison','Montello Rosso','Recioto di Gambellara'],
+  'Friuli-Venezia Giulia': ['Ramandolo','Colli Orientali del Friuli Picolit','Rosazzo'],
+  'Liguria': [],
+  'Emilia-Romagna': ['Albana di Romagna','Colli Bolognesi Pignoletto'],
+  'Toscana': ['Brunello di Montalcino','Carmignano','Chianti Classico','Chianti','Elba Aleatico Passito','Montecucco Sangiovese','Morellino di Scansano','Suvereto','Val di Cornia Rosso','Vernaccia di San Gimignano','Vino Nobile di Montepulciano'],
+  'Umbria': ['Montefalco Sagrantino','Torgiano Rosso Riserva'],
+  'Marche': ['Conero (Conero Riserva)','Offida','Verdicchio dei Castelli di Jesi Riserva','Vernaccia di Serrapetrona'],
+  'Lazio': ['Cesanese del Piglio (Piglio)','Cannellino di Frascati','Frascati Superiore'],
+  'Abruzzo': ['Colline Teramane Montepulciano d\'Abruzzo','Tullum'],
+  'Molise': [],
+  'Campania': ['Taurasi','Fiano di Avellino','Greco di Tufo'],
+  'Puglia': ['Castel del Monte Bombino Nero','Castel del Monte Nero di Troia Riserva','Castel del Monte Rosso Riserva','Primitivo di Manduria Dolce Naturale'],
+  'Basilicata': ['Aglianico del Vulture Superiore'],
+  'Calabria': [],
+  'Sicilia': ['Cerasuolo di Vittoria'],
+  'Sardegna': ['Vermentino di Gallura Superiore']
+};
+
+const FRANCE_AOC = {
+  'Alsazia': ['Alsace','Alsace Grand Cru','Crémant d\'Alsace'],
+  'Beaujolais': ['Beaujolais','Beaujolais-Villages','Morgon','Fleurie','Moulin-à-Vent','Chiroubles','Brouilly','Saint-Amour'],
+  'Bordeaux': ['Bordeaux','Bordeaux Supérieur','Médoc','Haut-Médoc','Margaux','Pauillac','Saint-Émilion','Pomerol','Graves','Sauternes','Pessac-Léognan'],
+  'Borgogna': ['Bourgogne','Chablis','Gevrey-Chambertin','Vosne-Romanée','Meursault','Puligny-Montrachet','Pommard','Mâcon'],
+  'Champagne': ['Champagne'],
+  'Corsica': ['Ajaccio','Patrimonio','Vin de Corse'],
+  'Jura': ['Côtes du Jura','Château-Chalon','Arbois'],
+  'Languedoc-Roussillon': ['Languedoc','Corbières','Minervois','Faugères','Fitou','Collioure'],
+  'Valle della Loira': ['Sancerre','Pouilly-Fumé','Vouvray','Chinon','Muscadet','Saumur-Champigny'],
+  'Provenza': ['Côtes de Provence','Bandol','Cassis'],
+  'Valle del Rodano': ['Côtes du Rhône','Châteauneuf-du-Pape','Hermitage','Côte-Rôtie','Gigondas','Vacqueyras'],
+  'Savoia': ['Vin de Savoie','Roussette de Savoie'],
+  'Sud-Ovest': ['Cahors','Madiran','Jurançon','Bergerac']
+};
+
+const GERMANY_DESIGNATIONS = ['Qualitätswein','Kabinett','Spätlese','Auslese','Beerenauslese (BA)','Trockenbeerenauslese (TBA)','Eiswein','Prädikatswein','Erste Lage','Grosses Gewächs (GG)','Classic','Selection'];
+
+const SPAIN_DO = {
+  'Rioja': ['Rioja DOCa'],
+  'Ribera del Duero': ['Ribera del Duero DO'],
+  'Priorat': ['Priorat DOQ'],
+  'Penedès': ['Penedès DO'],
+  'Rías Baixas': ['Rías Baixas DO'],
+  'Jerez': ['Jerez-Xérès-Sherry DO'],
+  'Navarra': ['Navarra DO'],
+  'Rueda': ['Rueda DO'],
+  'Toro': ['Toro DO'],
+  'Bierzo': ['Bierzo DO'],
+  'La Mancha': ['La Mancha DO'],
+  'Jumilla': ['Jumilla DO'],
+  'Somontano': ['Somontano DO'],
+  'Catalogna': ['DO Catalunya','Montsant DO','Empordà DO'],
+  'Galizia': ['Valdeorras DO','Ribeiro DO','Monterrei DO'],
+  'Andalusia': ['Montilla-Moriles DO','Málaga DO'],
+  'Castiglia e León': ['Cigales DO','Arribes DO'],
+  'Aragona': ['Cariñena DO','Campo de Borja DO'],
+  'Paesi Baschi': ['Getariako Txakolina DO'],
+  'Canarie': ['Ycoden-Daute-Isora DO','Abona DO']
+};
+
+function updateDocOptions() {
+  const country = document.getElementById('f-country')?.value;
+  const region  = document.getElementById('f-region')?.value;
+  const dl = document.getElementById('doc-datalist');
+  if (!dl) return;
+  let list = [];
+  if (country === 'Italia')       list = ITALY_DOCG[region] || [];
+  else if (country === 'Francia') list = FRANCE_AOC[region] || [];
+  else if (country === 'Germania') list = GERMANY_DESIGNATIONS;
+  else if (country === 'Spagna')  list = SPAIN_DO[region] || [];
+  dl.innerHTML = list.map(d => `<option value="${d}">`).join('');
+}
+
 function updateRegionOptions() {
   const country = document.getElementById('f-country')?.value;
   const dl = document.getElementById('region-datalist');
@@ -2065,6 +2151,7 @@ function updateProvinceOptions() {
   dl.innerHTML = provinces.map(p => `<option value="${p}">`).join('');
   // Nascondi il campo provincia se non applicabile (paese diverso dall'Italia)
   if (provinceField) provinceField.style.display = (country === 'Italia' || !country) ? '' : 'none';
+  updateDocOptions();
 }
 
 const DELEGAZIONI = {
