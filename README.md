@@ -80,21 +80,36 @@ Trascina la cartella su [netlify.com/drop](https://app.netlify.com/drop) per un 
 
 ---
 
-## ⚙️ Configurazione API (opzionale)
+## ⚙️ Configurazione scansione etichette AI
 
-La funzione di **scansione etichette con AI** richiede accesso all'API di Anthropic. Nell'implementazione corrente, la chiave viene gestita tramite il proxy di Claude.ai.
+La funzione di **scansione etichette con AI** passa attraverso una **Supabase Edge Function** (`supabase/functions/scan-label`), che tiene la chiave Anthropic al sicuro lato server — non è mai esposta nel codice del browser.
 
-Per un deploy autonomo, modifica la sezione `scanLabel()` in `index.html` aggiungendo la tua chiave API:
+La funzione applica anche due limiti di sicurezza per evitare costi imprevisti:
+- **Per utente**: 40 scansioni/mese (modificabile in `PER_USER_MONTHLY_LIMIT`)
+- **Globale**: 800 scansioni/mese per tutta l'app (modificabile in `GLOBAL_MONTHLY_LIMIT`)
 
-```javascript
-headers: {
-  'Content-Type': 'application/json',
-  'x-api-key': 'TUA_CHIAVE_ANTHROPIC', // ← aggiungi qui
-  'anthropic-version': '2023-06-01'
-}
-```
+Oltre questi limiti, la funzione risponde con un errore **senza chiamare Anthropic** — quindi non genera alcun costo aggiuntivo.
 
-> ⚠️ Non esporre mai la chiave API in un file pubblico. Per produzione, usa un backend proxy.
+### Deploy della Edge Function
+
+1. Installa la [Supabase CLI](https://supabase.com/docs/guides/cli) e accedi:
+   ```bash
+   supabase login
+   supabase link --project-ref TUO_PROJECT_REF
+   ```
+2. Imposta la chiave Anthropic come secret (mai nel codice):
+   ```bash
+   supabase secrets set ANTHROPIC_API_KEY=sk-ant-xxxxxxxx
+   ```
+3. Pubblica la funzione:
+   ```bash
+   supabase functions deploy scan-label
+   ```
+4. Esegui `supabase_schema.sql` (sezione `scan_usage`) nel SQL Editor per creare la tabella dei contatori.
+
+In alternativa, la funzione può essere creata/incollata direttamente dalla Dashboard Supabase (**Edge Functions → Deploy a new function**), senza CLI.
+
+> ⚠️ Non esporre mai la chiave API Anthropic nel codice del frontend (`index.html`) — deve esistere solo come secret della Edge Function.
 
 ---
 

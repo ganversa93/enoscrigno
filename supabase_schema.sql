@@ -171,3 +171,21 @@ create trigger on_auth_user_created
 -- campo "abbinamento cibo" senza perdere i dati esistenti:
 -- ════════════════════════════════════════════
 alter table public.wines add column if not exists pairing text;
+
+-- ════════════════════════════════════════════
+-- SCAN USAGE — contatore per limitare la scansione etichette AI
+-- Tiene traccia di quante scansioni sono state fatte, per utente
+-- e in totale, in ogni mese ('2026-07' ecc). Scritto SOLO dalla
+-- Edge Function tramite la service role key: nessun accesso diretto
+-- dal client, quindi RLS resta abilitata senza policy (deny-all).
+-- ════════════════════════════════════════════
+create table if not exists public.scan_usage (
+  scope  text not null,   -- 'global' oppure lo user_id del sommelier
+  period text not null,   -- mese in formato 'YYYY-MM'
+  count  integer not null default 0,
+  updated_at timestamptz default now(),
+  primary key (scope, period)
+);
+alter table public.scan_usage enable row level security;
+-- Nessuna policy = nessun accesso dal client (anon/authenticated).
+-- Solo la Edge Function, che usa la service role key, può leggere/scrivere.

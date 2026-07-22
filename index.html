@@ -1678,22 +1678,24 @@ async function scanLabel(input) {
     document.getElementById('ai-spin').classList.add('show');
     showScreen('screen-add');
     try {
-      const resp = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          messages: [{ role: 'user', content: [
-            { type: 'image', source: { type: 'base64', media_type: file.type, data: e.target.result.split(',')[1] } },
-            { type: 'text', text: 'Analizza questa etichetta di vino ed estrai tutte le informazioni visibili. Rispondi SOLO con JSON valido, zero testo extra, zero markdown. Schema: {"name":"","producer":"","vintage":null,"type":"Rosso|Bianco|Rosato|Spumante|Dolce|Passito|Altro","doc":"","grapes":"","region":"","country":"","abv":null,"drink":"","notes":""}. Campi non visibili: stringa vuota o null.' }
-          ]}]
-        })
+      // Chiama la Edge Function di Supabase, che tiene la chiave AI al
+      // sicuro lato server e applica i limiti di utilizzo mensili.
+      const { data: result, error } = await sb.functions.invoke('scan-label', {
+        body: {
+          image_base64: e.target.result.split(',')[1],
+          media_type: file.type
+        }
       });
-      const data = await resp.json();
-      const txt  = (data.content || []).map(b => b.text || '').join('');
-      try { fillForm(JSON.parse(txt.replace(/```json|```/g, '').trim())); } catch(_) {}
-    } catch(err) { toast('Lettura etichetta non riuscita'); }
+      if (error) {
+        toast('Lettura etichetta non riuscita — riprova o inserisci i dati a mano');
+      } else if (result?.error) {
+        toast(result.message || 'Limite scansioni raggiunto');
+      } else if (result?.data) {
+        fillForm(result.data);
+      }
+    } catch(err) {
+      toast('Lettura etichetta non riuscita — riprova o inserisci i dati a mano');
+    }
     document.getElementById('ai-spin').classList.remove('show');
     input.value = '';
   };
