@@ -1378,7 +1378,7 @@ function renderGrid() {
   const st = s => { const n = Math.round((s || 80) / 20); return '★'.repeat(n) + '☆'.repeat(5 - n); };
   const sTag = w => w.degSchema === 'ais' ? `<span style="font-size:10px;padding:2px 6px;border-radius:10px;background:var(--ais-pale);color:var(--ais)">AIS</span>` : w.degSchema === 'fisar' ? `<span style="font-size:10px;padding:2px 6px;border-radius:10px;background:var(--fisar-pale);color:var(--fisar)">FISAR</span>` : '';
   g.innerHTML = list.map(w => `
-    <div class="wcard" onclick="showDetail(${w.id})">
+    <div class="wcard" onclick="showDetail('${w.id}')">
       <div class="wimg">${w.frontImg ? `<img src="${w.frontImg}" alt="${w.name}" loading="lazy">` : '<div class="ph"><i class="ti ti-bottle" aria-hidden="true"></i></div>'}${w.type ? `<span class="wbadge ${bc(w.type)}">${w.type}</span>` : ''}</div>
       <div class="winfo">
         <div class="wname">${w.name}</div>
@@ -1715,9 +1715,9 @@ function showDetail(id) {
       <div class="dfield">
         <div class="fl">Bottiglie in cantina</div>
         <div class="fv" style="display:flex;align-items:center;gap:8px">
-          <button onclick="adjustQty(${w.id},-1)" style="width:36px;height:36px;border-radius:50%;border:0.5px solid var(--border);background:var(--surf);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:var(--ink)">−</button>
+          <button onclick="adjustQty('${w.id}',-1)" style="width:36px;height:36px;border-radius:50%;border:0.5px solid var(--border);background:var(--surf);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:var(--ink)">−</button>
           <span id="qty-display-${w.id}" style="font-size:16px;font-weight:500;min-width:20px;text-align:center">${w.qty ?? 1}</span>
-          <button onclick="adjustQty(${w.id},+1)" style="width:36px;height:36px;border-radius:50%;border:0.5px solid var(--border);background:var(--surf);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:var(--ink)">+</button>
+          <button onclick="adjustQty('${w.id}',+1)" style="width:36px;height:36px;border-radius:50%;border:0.5px solid var(--border);background:var(--surf);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:var(--ink)">+</button>
         </div>
       </div>
       <div class="dfield"><div class="fl">Prezzo pagato</div><div class="fv">${w.price ? '€' + w.price.toFixed(2) : '—'}</div></div>
