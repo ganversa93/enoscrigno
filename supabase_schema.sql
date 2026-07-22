@@ -1,5 +1,5 @@
 -- ════════════════════════════════════════════
---  ENOSFERA — Schema Supabase
+--  ENOSCRIGNO — Schema Supabase
 --  Esegui questo script nel SQL Editor di Supabase:
 --  supabase.com → progetto → SQL Editor → New query → incolla → Run
 -- ════════════════════════════════════════════

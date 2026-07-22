@@ -1,6 +1,6 @@
-# 🍷 Enosfera
+# 🍷 Enoscrigno
 
-**Enosfera** è un archivio personale vini per sommelier professionisti e appassionati. Una webapp moderna, completamente client-side, che permette di catalogare la propria cantina con schede di degustazione professionali secondo i metodi **AIS** e **FISAR**.
+**Enoscrigno** è un archivio personale vini per sommelier professionisti e appassionati. Una webapp moderna che permette di catalogare la propria cantina con schede di degustazione professionali secondo i metodi **AIS** e **FISAR**.
 
 ---
 
@@ -64,7 +64,7 @@ Per ogni vino è possibile salvare:
 
 ## 🚀 Utilizzo
 
-Enosfera è una **Single Page Application** completamente client-side. Non richiede server, database o installazione.
+Enoscrigno è una **Single Page Application** con backend Supabase (database, autenticazione, Edge Functions). Richiede una connessione internet per login e sincronizzazione dei dati.
 
 ### Opzione 1 — Apri direttamente nel browser
 Scarica `index.html` e aprilo con qualsiasi browser moderno. Funziona offline.
@@ -115,12 +115,13 @@ In alternativa, la funzione può essere creata/incollata direttamente dalla Dash
 
 ## 🗄️ Storage dei dati
 
-Tutti i dati sono salvati in **localStorage** del browser, separati per utente. Nessun dato viene inviato a server esterni (eccetto le chiamate API per la scansione etichette).
+Tutti i dati sono salvati su **Supabase** (PostgreSQL gestito), non nel browser. Ogni utente vede e modifica solo i propri dati grazie alla Row Level Security a livello di database.
 
-| Chiave localStorage | Contenuto |
+| Tabella | Contenuto |
 |---|---|
-| `enosfera-users` | Account utenti (email, hash, associazione) |
-| `enosfera-wines` | Archivio vini per utente (incluse immagini base64) |
+| `profiles` | Dati sommelier: nome, associazione, tessera, delegazione, flag scansione AI |
+| `wines` | Archivio vini per utente (identità, degustazione AIS/FISAR, abbinamenti, immagini) |
+| `scan_usage` | Contatori mensili per il limite di scansioni AI (per utente e globale) |
 
 ---
 
@@ -166,7 +167,7 @@ Pull request e issue sono benvenute! Per modifiche sostanziali, apri prima un'is
 
 ## 📄 Licenza
 
-MIT © Enosfera
+MIT © Enoscrigno
 
 ---
 

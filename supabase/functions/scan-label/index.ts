@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════
-// ENOSFERA — Edge Function: scan-label
+// ENOSCRIGNO — Edge Function: scan-label
 //
 // Riceve la foto di un'etichetta dal frontend, verifica che l'utente
 // non abbia superato i limiti di utilizzo, chiama l'API Anthropic
