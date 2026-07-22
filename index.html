@@ -257,6 +257,20 @@
     }
 
     .pairing-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    /* ── AUTOCOMPLETE personalizzato (sostituisce datalist, poco affidabile su iOS) ── */
+    .ac-box {
+      position: absolute; top: 100%; left: 0; right: 0; z-index: 50;
+      background: var(--bg); border: 0.5px solid var(--border2); border-radius: 8px;
+      margin-top: 3px; max-height: 220px; overflow-y: auto;
+      box-shadow: 0 4px 16px rgba(0,0,0,.12);
+    }
+    .ac-item {
+      padding: 9px 12px; font-size: 13px; color: var(--ink);
+      cursor: pointer; border-bottom: 0.5px solid var(--border);
+    }
+    .ac-item:last-child { border-bottom: none; }
+    .ac-item:hover, .ac-item.hl { background: var(--wine-pale); color: var(--wine); }
     .p-chip {
       font-size: 12px; padding: 6px 12px; border-radius: 20px;
       border: 0.5px solid var(--border); background: var(--bg);
@@ -630,10 +644,9 @@
         </div>
       </div>
       <div class="frow">
-        <div class="fg">
+        <div class="fg" style="position:relative">
           <label>DOC / DOCG / IGT</label>
-          <input type="text" id="f-doc" list="doc-datalist" placeholder="es. DOCG Barolo">
-          <datalist id="doc-datalist"></datalist>
+          <input type="text" id="f-doc" placeholder="es. DOCG Barolo" autocomplete="off">
         </div>
         <div class="fg"><label>Vitigni</label><input type="text" id="f-grapes" placeholder="es. Nebbiolo 100%"></div>
       </div>
@@ -645,16 +658,14 @@
             <option>Italia</option><option>Francia</option><option>Germania</option><option>Spagna</option><option>Altro</option>
           </select>
         </div>
-        <div class="fg">
+        <div class="fg" style="position:relative">
           <label>Regione</label>
-          <input type="text" id="f-region" list="region-datalist" placeholder="es. Piemonte" onchange="updateProvinceOptions()">
-          <datalist id="region-datalist"></datalist>
+          <input type="text" id="f-region" placeholder="es. Piemonte" autocomplete="off" onchange="updateProvinceOptions()">
         </div>
       </div>
-      <div class="fg">
+      <div class="fg" style="position:relative">
         <label>Provincia <span style="font-weight:400;color:var(--muted)">(se applicabile)</span></label>
-        <input type="text" id="f-province" list="province-datalist" placeholder="es. Cuneo">
-        <datalist id="province-datalist"></datalist>
+        <input type="text" id="f-province" placeholder="es. Cuneo" autocomplete="off">
       </div>
       </div>
     </div>
@@ -2119,36 +2130,32 @@ const SPAIN_DO = {
   'Canarie': ['Ycoden-Daute-Isora DO','Abona DO']
 };
 
+let regionSuggestions   = [];
+let provinceSuggestions = [];
+let docSuggestions      = [];
+
 function updateDocOptions() {
   const country = document.getElementById('f-country')?.value;
   const region  = document.getElementById('f-region')?.value;
-  const dl = document.getElementById('doc-datalist');
-  if (!dl) return;
   let list = [];
   if (country === 'Italia')       list = ITALY_DOCG[region] || [];
   else if (country === 'Francia') list = FRANCE_AOC[region] || [];
   else if (country === 'Germania') list = GERMANY_DESIGNATIONS;
   else if (country === 'Spagna')  list = SPAIN_DO[region] || [];
-  dl.innerHTML = list.map(d => `<option value="${d}">`).join('');
+  docSuggestions = list;
 }
 
 function updateRegionOptions() {
   const country = document.getElementById('f-country')?.value;
-  const dl = document.getElementById('region-datalist');
-  if (!dl) return;
-  const regions = GEO_REGIONS[country] || [];
-  dl.innerHTML = regions.map(r => `<option value="${r}">`).join('');
+  regionSuggestions = GEO_REGIONS[country] || [];
   updateProvinceOptions();
 }
 
 function updateProvinceOptions() {
   const country = document.getElementById('f-country')?.value;
   const region  = document.getElementById('f-region')?.value;
-  const dl = document.getElementById('province-datalist');
   const provinceField = document.getElementById('f-province')?.closest('.fg');
-  if (!dl) return;
-  const provinces = (country === 'Italia' && GEO_PROVINCES_ITALIA[region]) ? GEO_PROVINCES_ITALIA[region] : [];
-  dl.innerHTML = provinces.map(p => `<option value="${p}">`).join('');
+  provinceSuggestions = (country === 'Italia' && GEO_PROVINCES_ITALIA[region]) ? GEO_PROVINCES_ITALIA[region] : [];
   // Nascondi il campo provincia se non applicabile (paese diverso dall'Italia)
   if (provinceField) provinceField.style.display = (country === 'Italia' || !country) ? '' : 'none';
   updateDocOptions();
@@ -2293,6 +2300,46 @@ function exportInventory() {
   dl('inventario_cantina.txt', txt, 'text/plain');
   showExportMsg('✓ Inventario esportato');
 }
+
+/* ══ AUTOCOMPLETE personalizzato ══
+   Sostituisce <datalist>, che su Safari iOS ha un comportamento
+   inconsistente e talvolta arriva a coprire il campo di testo con
+   il suggerimento (bug noto su iOS 26). Questo widget fatto a mano
+   si comporta in modo identico e prevedibile su ogni dispositivo. */
+function attachAutocomplete(inputId, getSuggestions) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  let box = null;
+  const close = () => { if (box) { box.remove(); box = null; } };
+  const render = () => {
+    close();
+    const val = input.value.trim().toLowerCase();
+    const all = getSuggestions() || [];
+    const matches = val ? all.filter(s => s.toLowerCase().includes(val)) : all;
+    if (!matches.length) return;
+    box = document.createElement('div');
+    box.className = 'ac-box';
+    matches.slice(0, 10).forEach(s => {
+      const item = document.createElement('div');
+      item.className = 'ac-item';
+      item.textContent = s;
+      item.addEventListener('mousedown', e => {
+        e.preventDefault();
+        input.value = s;
+        close();
+        input.dispatchEvent(new Event('change'));
+      });
+      box.appendChild(item);
+    });
+    input.insertAdjacentElement('afterend', box);
+  };
+  input.addEventListener('input', render);
+  input.addEventListener('focus', render);
+  input.addEventListener('blur', () => setTimeout(close, 150));
+}
+attachAutocomplete('f-region',   () => regionSuggestions);
+attachAutocomplete('f-province', () => provinceSuggestions);
+attachAutocomplete('f-doc',      () => docSuggestions);
 
 /* ── INIT ── */
 calcAIS(); calcFISAR();
