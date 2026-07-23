@@ -1439,6 +1439,122 @@
         <div class="fg"><label>Note di degustazione FISAR</label><textarea id="fp-note" placeholder="Aspetto, profumi, gusto, conclusioni e abbinamenti consigliati…"></textarea></div>
       </div>
 
+      <!-- FISAR DESCRITTIVA (senza punteggio) -->
+      <div class="deg-schema" id="deg-fisar_desc">
+        <div style="text-align:center;margin-bottom:1.1rem">
+          <div style="display:inline-flex;align-items:center;gap:6px;background:var(--fisar-pale);color:var(--fisar);font-size:12px;font-weight:500;padding:6px 14px;border-radius:20px">
+            <i class="ti ti-info-circle" style="font-size:14px"></i>Scheda descrittiva — nessun punteggio numerico
+          </div>
+        </div>
+        <div class="param-group">
+          <div class="pg-title" style="color:var(--fisar)"><i class="ti ti-eye" style="font-size:12px;vertical-align:-1px;margin-right:4px"></i>Esame visivo</div>
+          <div class="fisar-row">
+            <div class="fisar-field">
+              <label class="fisar-label">Limpidezza</label>
+              <select class="fisar-sel" id="fd-limp">
+                <option value="">— Seleziona —</option>
+                <option>Cristallino</option><option>Limpido</option><option>Abbastanza limpido</option><option>Velato</option><option>Torbido</option>
+              </select>
+            </div>
+            <div class="fisar-field">
+              <label class="fisar-label">Colore</label>
+              <input type="text" class="fisar-sel" id="fd-colore" placeholder="es. Rosso rubino con riflessi granata">
+            </div>
+            <div class="fisar-field">
+              <label class="fisar-label">Consistenza</label>
+              <select class="fisar-sel" id="fd-consistenza">
+                <option value="">— Seleziona —</option>
+                <option>Fluida</option><option>Abbastanza fluida</option><option>Consistente</option><option>Viscosa</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="param-group">
+          <div class="pg-title" style="color:var(--fisar)"><i class="ti ti-wind" style="font-size:12px;vertical-align:-1px;margin-right:4px"></i>Esame olfattivo</div>
+          <div class="fisar-row">
+            <div class="fisar-field">
+              <label class="fisar-label">Franchezza</label>
+              <select class="fisar-sel" id="fd-franchezza">
+                <option value="">— Seleziona —</option>
+                <option>Netto</option><option>Abbastanza netto</option><option>Poco netto</option>
+              </select>
+            </div>
+            <div class="fisar-field">
+              <label class="fisar-label">Intensità</label>
+              <select class="fisar-sel" id="fd-intensita">
+                <option value="">— Seleziona —</option>
+                <option>Molto intenso</option><option>Intenso</option><option>Abbastanza intenso</option><option>Poco intenso</option>
+              </select>
+            </div>
+            <div class="fisar-field">
+              <label class="fisar-label">Complessità</label>
+              <select class="fisar-sel" id="fd-complessita">
+                <option value="">— Seleziona —</option>
+                <option>Molto complesso</option><option>Complesso</option><option>Abbastanza complesso</option><option>Semplice</option>
+              </select>
+            </div>
+            <div class="fisar-field">
+              <label class="fisar-label">Qualità</label>
+              <select class="fisar-sel" id="fd-qualita-olf">
+                <option value="">— Seleziona —</option>
+                <option>Eccellente</option><option>Fine</option><option>Abbastanza fine</option><option>Comune</option>
+              </select>
+            </div>
+          </div>
+          <div class="fg" style="margin-top:8px"><label>Descrittori aromatici</label><input type="text" class="fisar-sel" id="fd-descrittori" placeholder="es. ciliegia, viola, spezie dolci, tabacco"></div>
+        </div>
+        <div class="param-group">
+          <div class="pg-title" style="color:var(--fisar)"><i class="ti ti-droplet" style="font-size:12px;vertical-align:-1px;margin-right:4px"></i>Esame gustativo</div>
+          <div class="fisar-row">
+            <div class="fisar-field">
+              <label class="fisar-label">Struttura</label>
+              <select class="fisar-sel" id="fd-struttura">
+                <option value="">— Seleziona —</option>
+                <option>Molto strutturato</option><option>Strutturato</option><option>Abbastanza strutturato</option><option>Leggero</option>
+              </select>
+            </div>
+            <div class="fisar-field">
+              <label class="fisar-label">Equilibrio</label>
+              <select class="fisar-sel" id="fd-equilibrio">
+                <option value="">— Seleziona —</option>
+                <option>Armonico</option><option>Abbastanza armonico</option><option>Poco armonico</option><option>Disarmonico</option>
+              </select>
+            </div>
+            <div class="fisar-field">
+              <label class="fisar-label">Persistenza</label>
+              <select class="fisar-sel" id="fd-persistenza">
+                <option value="">— Seleziona —</option>
+                <option>Molto persistente</option><option>Persistente</option><option>Abbastanza persistente</option><option>Poco persistente</option>
+              </select>
+            </div>
+            <div class="fisar-field">
+              <label class="fisar-label">Qualità</label>
+              <select class="fisar-sel" id="fd-qualita-gust">
+                <option value="">— Seleziona —</option>
+                <option>Eccellente</option><option>Fine</option><option>Abbastanza fine</option><option>Comune</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="param-group">
+          <div class="pg-title" style="color:var(--fisar)"><i class="ti ti-clipboard-check" style="font-size:12px;vertical-align:-1px;margin-right:4px"></i>Considerazioni finali</div>
+          <div class="fisar-row">
+            <div class="fisar-field">
+              <label class="fisar-label">Stato evolutivo</label>
+              <select class="fisar-sel" id="fd-stato">
+                <option value="">— Seleziona —</option>
+                <option>Giovane</option><option>Pronto</option><option>Al culmine</option><option>Maturo</option>
+              </select>
+            </div>
+            <div class="fisar-field">
+              <label class="fisar-label">Abbinamento consigliato</label>
+              <input type="text" class="fisar-sel" id="fd-abbinamento" placeholder="es. Carni rosse, formaggi stagionati">
+            </div>
+          </div>
+        </div>
+        <div class="fg"><label>Giudizio complessivo</label><textarea id="fd-giudizio" placeholder="Impressione generale, punti di forza, eventuali difetti…"></textarea></div>
+      </div>
+
       <!-- LIBERO -->
       <div class="deg-schema" id="deg-free">
         <div class="param-row" style="margin-bottom:14px">
@@ -1578,7 +1694,7 @@
       <div class="frow">
         <div class="fg">
           <label>Associazione</label>
-          <select id="p-assoc" onchange="updateDelegazioniList()">
+          <select id="p-assoc" onchange="updateDelegazioniList();toggleFisarMethodField()">
             <option value="">Nessuna / Appassionato</option>
             <option value="AIS">AIS — Associazione Italiana Sommelier</option>
             <option value="FISAR">FISAR — Fed. Italiana Sommelier Albergatori Ristoratori</option>
@@ -1587,6 +1703,14 @@
           </select>
         </div>
         <div class="fg"><label>Numero tessera</label><input type="text" id="p-card" placeholder="es. AIS-2024-00123"></div>
+      </div>
+      <div class="fg" id="fisar-method-field" style="display:none">
+        <label>Metodo FISAR preferito</label>
+        <select id="p-fisar-method">
+          <option value="punteggio">A punteggio (0-100)</option>
+          <option value="descrittiva">Descrittiva (senza punteggio)</option>
+        </select>
+        <div style="font-size:11px;color:var(--muted);margin-top:5px">Determina quale scheda di degustazione FISAR ti viene proposta quando aggiungi un vino.</div>
       </div>
       <div class="frow">
         <div class="fg">
@@ -1805,6 +1929,7 @@ async function loadProfile(authUser) {
     aiScanEnabled:     profile?.ai_scan_enabled || false,
     avatarBase64:      profile?.avatar_base64 || '',
     isPublic:          profile?.is_public || false,
+    fisarMethod:       profile?.fisar_method || 'punteggio',
     emailConfirmed:    !!authUser.email_confirmed_at
   };
   // Se non esiste ancora un profilo (caso raro, es. trigger non installato),
@@ -1831,6 +1956,7 @@ async function loadWines() {
     ...row,
     aisParams:   row.ais_params,
     fisarParams: row.fisar_params,
+    fisarDescParams: row.fisar_desc_params,
     aisScore:    row.ais_score,
     fisarScore:  row.fisar_score,
     olfNote:     row.olf_note,
@@ -1877,6 +2003,7 @@ async function dbSaveWine(wine) {
     olf_note:     wine.olfNote      || null,
     gust_note:    wine.gustNote     || null,
     fisar_params: wine.fisarParams  || null,
+    fisar_desc_params: wine.fisarDescParams || null,
     fisar_score:  wine.fisarScore   || null,
     fp_note:      wine.fpNote       || null,
     score:        wine.score        || null,
@@ -2151,7 +2278,7 @@ function renderGrid() {
   e.style.display = 'none';
   const bc = t => t === 'Bianco' ? 'bb' : t === 'Rosato' ? 'bro' : t === 'Spumante' ? 'bs' : 'br';
   const st = s => { const n = Math.round((s || 80) / 20); return '★'.repeat(n) + '☆'.repeat(5 - n); };
-  const sTag = w => w.degSchema === 'ais' ? `<span style="font-size:10px;padding:2px 6px;border-radius:10px;background:var(--ais-pale);color:var(--ais)">AIS</span>` : w.degSchema === 'fisar' ? `<span style="font-size:10px;padding:2px 6px;border-radius:10px;background:var(--fisar-pale);color:var(--fisar)">FISAR</span>` : '';
+  const sTag = w => w.degSchema === 'ais' ? `<span style="font-size:10px;padding:2px 6px;border-radius:10px;background:var(--ais-pale);color:var(--ais)">AIS</span>` : w.degSchema === 'fisar' ? `<span style="font-size:10px;padding:2px 6px;border-radius:10px;background:var(--fisar-pale);color:var(--fisar)">FISAR</span>` : w.degSchema === 'fisar_desc' ? `<span style="font-size:10px;padding:2px 6px;border-radius:10px;background:var(--fisar-pale);color:var(--fisar)">FISAR</span>` : '';
   const qtyBadge = w => {
     const qty = w.qty ?? 1;
     return qty > 0
@@ -2176,7 +2303,8 @@ function showAdd() {
   // Reset accordion: Foto + Identità aperte, il resto chiuso (nuovo inserimento)
   resetSections();
   const clear = ids => ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  clear(['f-name','f-producer','f-doc','f-grapes','f-region','f-country','f-province','f-shop','f-shop-category','f-drink','f-notes','f-tags','ap-olfnote','ap-gustnote','fp-note','f-pairing-custom']);
+  clear(['f-name','f-producer','f-doc','f-grapes','f-region','f-country','f-province','f-shop','f-shop-category','f-drink','f-notes','f-tags','ap-olfnote','ap-gustnote','fp-note','f-pairing-custom',
+    'fd-limp','fd-colore','fd-consistenza','fd-franchezza','fd-intensita','fd-complessita','fd-qualita-olf','fd-descrittori','fd-struttura','fd-equilibrio','fd-persistenza','fd-qualita-gust','fd-stato','fd-abbinamento','fd-giudizio']);
   const visToggle = document.getElementById('f-visibility'); if (visToggle) visToggle.checked = true;
   selectedGrapes = []; renderGrapeTags();
   const grapesInput = document.getElementById('f-grapes-input'); if (grapesInput) grapesInput.value = '';
@@ -2203,13 +2331,14 @@ function showAdd() {
 function availableDegTabs() {
   const assoc = (currentUser?.assoc || '').toUpperCase();
   const assocTab = assoc === 'AIS'   ? 'ais'
-                 : assoc === 'FISAR' ? 'fisar'
+                 : assoc === 'FISAR' ? (currentUser?.fisarMethod === 'descrittiva' ? 'fisar_desc' : 'fisar')
                  : assoc === 'ONAV'  ? 'ais'   // ONAV usa metodo simile ad AIS
                  : assoc === 'FIS'   ? 'ais'
                  : null;
   // Always show the association tab (if any) + free; never show the other association tab
-  if (assocTab === 'ais')   return ['ais',   'free'];
-  if (assocTab === 'fisar') return ['fisar', 'free'];
+  if (assocTab === 'ais')        return ['ais',        'free'];
+  if (assocTab === 'fisar')      return ['fisar',       'free'];
+  if (assocTab === 'fisar_desc') return ['fisar_desc',  'free'];
   // Nessuna associazione: solo degustazione libera (AIS/FISAR riservate ai rispettivi iscritti)
   return ['free'];
 }
@@ -2220,6 +2349,7 @@ function renderDegTabs() {
   const labels = {
     ais:   { icon: 'ti-award', label: assoc === 'ONAV' ? 'Metodo ONAV' : assoc === 'FIS' ? 'Metodo FIS' : 'Metodo AIS',   cls: 'ais-act'   },
     fisar: { icon: 'ti-award', label: 'Metodo FISAR', cls: 'fisar-act' },
+    fisar_desc: { icon: 'ti-note', label: 'Metodo FISAR (descrittiva)', cls: 'fisar-act' },
     free:  { icon: 'ti-note',  label: 'Libero',       cls: 'free-act'  }
   };
   const container = document.getElementById('deg-tabs-container');
@@ -2234,14 +2364,14 @@ function renderDegTabs() {
 
 function switchDeg(t) {
   activeDeg = t;
-  const map = { ais: 'ais-act', fisar: 'fisar-act', free: 'free-act' };
+  const map = { ais: 'ais-act', fisar: 'fisar-act', fisar_desc: 'fisar-act', free: 'free-act' };
   // Update tab buttons (only those rendered)
   availableDegTabs().forEach(tab => {
     const btn = document.getElementById('dtab-' + tab);
     if (btn) btn.className = 'deg-tab' + (tab === t ? ' ' + map[tab] : '');
   });
   // Show/hide panels
-  ['ais','fisar','free'].forEach(tab => {
+  ['ais','fisar','fisar_desc','free'].forEach(tab => {
     const pnl = document.getElementById('deg-' + tab);
     if (pnl) pnl.className = 'deg-schema' + (tab === t ? ' active' : '');
   });
@@ -2477,8 +2607,14 @@ async function saveWine() {
   if (!name) { toast('Inserisci il nome del vino'); return; }
   const aisScore   = recalcAIS();
   const fisarScore = recalcFISAR();
-  const finalScore = activeDeg === 'ais' ? aisScore : activeDeg === 'fisar' ? fisarScore : +document.getElementById('f-score')?.value || 88;
+  const finalScore = activeDeg === 'ais' ? aisScore : activeDeg === 'fisar' ? fisarScore : activeDeg === 'fisar_desc' ? null : +document.getElementById('f-score')?.value || 88;
   const getAP = () => { const r = [...document.querySelectorAll('.ais-r')]; return { limp:+r[0]?.value, col:+r[1]?.value, cons:+r[2]?.value, oint:+r[3]?.value, ocomp:+r[4]?.value, oqual:+r[5]?.value, gstr:+r[6]?.value, geq:+r[7]?.value, gigo:+r[8]?.value, gpai:+r[9]?.value, gqual:+r[10]?.value, stato: document.getElementById('ap-stato')?.value, arm:+r[11]?.value }; };
+  const getFPDesc = () => ({
+    limp: g('fd-limp'), colore: g('fd-colore'), consistenza: g('fd-consistenza'),
+    franchezza: g('fd-franchezza'), intensita: g('fd-intensita'), complessita: g('fd-complessita'), qualitaOlf: g('fd-qualita-olf'), descrittori: g('fd-descrittori'),
+    struttura: g('fd-struttura'), equilibrio: g('fd-equilibrio'), persistenza: g('fd-persistenza'), qualitaGust: g('fd-qualita-gust'),
+    stato: g('fd-stato'), abbinamento: g('fd-abbinamento'), giudizio: g('fd-giudizio')
+  });
   const getFP = () => {
     const fv = id => Math.max(0, parseInt(document.getElementById(id)?.value) || 0);
     return {
@@ -2507,6 +2643,7 @@ async function saveWine() {
     olfNote:  activeDeg === 'ais'   ? g('ap-olfnote') : '',
     gustNote: activeDeg === 'ais'   ? g('ap-gustnote') : '',
     fisarParams: activeDeg === 'fisar' ? getFP() : null,
+    fisarDescParams: activeDeg === 'fisar_desc' ? getFPDesc() : null,
     fisarScore:  activeDeg === 'fisar' ? fisarScore : null,
     fpNote:   activeDeg === 'fisar' ? g('fp-note') : '',
     score: finalScore, notes: activeDeg === 'free' ? g('f-notes') : '', tags: g('f-tags'),
@@ -2560,6 +2697,25 @@ function showDetail(id) {
         <div style="text-align:center;padding:8px;background:var(--bg);border-radius:8px;border:0.5px solid var(--border)"><div style="font-size:18px;font-weight:500;color:var(--fisar)">${Math.round((gu/50)*50)}</div><div style="font-size:10px;color:var(--muted)">Gusto /50</div></div>
       </div>
       ${w.fpNote ? `<div class="deg-note">${w.fpNote}</div>` : ''}
+    </div>`;
+  } else if (w.degSchema === 'fisar_desc' && w.fisarDescParams) {
+    const p = w.fisarDescParams;
+    const rows = [
+      ['Limpidezza', p.limp], ['Colore', p.colore], ['Consistenza', p.consistenza],
+      ['Franchezza', p.franchezza], ['Intensità', p.intensita], ['Complessità', p.complessita], ['Qualità olfattiva', p.qualitaOlf],
+      ['Struttura', p.struttura], ['Equilibrio', p.equilibrio], ['Persistenza', p.persistenza], ['Qualità gustativa', p.qualitaGust],
+      ['Stato evolutivo', p.stato]
+    ].filter(([,v]) => v);
+    degHTML = `<div class="deg-result-card fisar">
+      <div class="deg-result-header">
+        <span class="deg-result-label fisar"><i class="ti ti-award"></i>Scheda FISAR — descrittiva</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:.75rem">
+        ${rows.map(([l,v]) => `<div style="font-size:12px;color:var(--muted)"><b style="color:var(--ink)">${l}:</b> ${v}</div>`).join('')}
+      </div>
+      ${p.descrittori ? `<div class="deg-note">Descrittori: ${p.descrittori}</div>` : ''}
+      ${p.abbinamento ? `<div class="deg-note">Abbinamento consigliato: ${p.abbinamento}</div>` : ''}
+      ${p.giudizio ? `<div class="deg-note">${p.giudizio}</div>` : ''}
     </div>`;
   }
 
@@ -2683,6 +2839,10 @@ function editWine() {
     Object.entries(fmap).forEach(([id, v]) => { const el = document.getElementById(id); if (el && v != null) { el.value = v; el.classList.toggle('filled', v > 0); } });
     set('fp-note', w.fpNote);
     calcFISAR();
+  } else if (deg === 'fisar_desc' && w.fisarDescParams) {
+    const p = w.fisarDescParams;
+    const dmap = { 'fd-limp':p.limp, 'fd-colore':p.colore, 'fd-consistenza':p.consistenza, 'fd-franchezza':p.franchezza, 'fd-intensita':p.intensita, 'fd-complessita':p.complessita, 'fd-qualita-olf':p.qualitaOlf, 'fd-descrittori':p.descrittori, 'fd-struttura':p.struttura, 'fd-equilibrio':p.equilibrio, 'fd-persistenza':p.persistenza, 'fd-qualita-gust':p.qualitaGust, 'fd-stato':p.stato, 'fd-abbinamento':p.abbinamento, 'fd-giudizio':p.giudizio };
+    Object.entries(dmap).forEach(([id, v]) => { const el = document.getElementById(id); if (el && v != null) el.value = v; });
   } else if (deg === 'free') {
     set('f-score', w.score);
     document.getElementById('score-free').textContent = w.score || 88;
@@ -2929,6 +3089,12 @@ function updateDelegazioniList() {
     : `<option value="">— Seleziona associazione prima —</option>`;
 }
 
+function toggleFisarMethodField() {
+  const assoc = document.getElementById('p-assoc')?.value;
+  const field = document.getElementById('fisar-method-field');
+  if (field) field.style.display = (assoc === 'FISAR') ? '' : 'none';
+}
+
 let profileReturnScreen = 'screen-home';
 function goBackFromProfile() { showScreen(profileReturnScreen); }
 function showProfileScreen() {
@@ -2939,6 +3105,8 @@ function showProfileScreen() {
   document.getElementById('p-lastname').value  = parts.slice(1).join(' ') || '';
   document.getElementById('p-email').value  = u.email || '';
   document.getElementById('p-assoc').value  = u.assoc || '';
+  document.getElementById('p-fisar-method').value = u.fisarMethod || 'punteggio';
+  toggleFisarMethodField();
   document.getElementById('p-card').value   = u.card  || '';
   document.getElementById('p-pwd-old').value = '';
   document.getElementById('p-pwd-new').value = '';
@@ -3185,7 +3353,8 @@ async function saveProfile() {
     delegazione:        document.getElementById('p-delegazione')?.value || '',
     delegazione_custom: document.getElementById('p-delegazione-custom')?.value.trim() || '',
     avatar_base64:      pendingAvatarBase64 !== null ? pendingAvatarBase64 : (currentUser.avatarBase64 || null),
-    is_public:          document.getElementById('p-is-public')?.checked || false
+    is_public:          document.getElementById('p-is-public')?.checked || false,
+    fisar_method:       document.getElementById('p-fisar-method')?.value || 'punteggio'
   });
   showLoadingOverlay(false);
   if (profErr) { toastErr('Errore salvataggio profilo: ' + profErr.message); console.error('saveProfile error:', profErr); return; }
@@ -3197,6 +3366,7 @@ async function saveProfile() {
   currentUser.delegazioneCustom = document.getElementById('p-delegazione-custom')?.value.trim() || '';
   if (pendingAvatarBase64 !== null) currentUser.avatarBase64 = pendingAvatarBase64;
   currentUser.isPublic = document.getElementById('p-is-public')?.checked || false;
+  currentUser.fisarMethod = document.getElementById('p-fisar-method')?.value || 'punteggio';
   const initials = currentUser.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
   document.getElementById('nav-avatar').textContent = initials;
   document.getElementById('nav-name').textContent   = currentUser.name.split(' ')[0];
@@ -3323,7 +3493,7 @@ Object.assign(window, {
   scanBothLabels, searchNetworkUsers, sendFollowRequest, setFilter, setQtyFilter, showAdd, showComingSoon, showDetail,
   showNetworkScreen, showNetworkWinePreview, showProfileScreen, showScreen, stepQty, switchDeg, switchLTab, toast,
   showGuideScreen,
-  toggleAdvFilters, toggleNavMenu, togglePairing, toggleSection, updateDelegazioniList, updateGrapePct,
+  toggleAdvFilters, toggleFisarMethodField, toggleNavMenu, togglePairing, toggleSection, updateDelegazioniList, updateGrapePct,
   updateRegionOptions, updateProvinceOptions
 });
 </script>

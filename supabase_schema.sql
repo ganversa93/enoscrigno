@@ -285,3 +285,9 @@ create policy "wines: visibili nel network se seguo l'utente e il vino è pubbli
         and f.status = 'accepted'
     )
   );
+
+-- ════════════════════════════════════════════
+-- FISAR — scheda descrittiva (alternativa a quella a punteggio)
+-- ════════════════════════════════════════════
+alter table public.profiles add column if not exists fisar_method text not null default 'punteggio'; -- 'punteggio' | 'descrittiva'
+alter table public.wines add column if not exists fisar_desc_params jsonb;
