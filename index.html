@@ -301,6 +301,27 @@
     }
     .adv-filter-toggle-btn.active { background: var(--wine-pale); color: var(--wine); border-color: var(--wine); }
 
+    .guide-list { list-style: none; padding: 0; margin: 0; }
+    .guide-list li {
+      font-size: 13px; color: var(--ink); line-height: 1.6; padding: 8px 0 8px 20px;
+      border-bottom: 0.5px solid var(--border); position: relative;
+    }
+    .guide-list li:last-child { border-bottom: none; }
+    .guide-list li::before {
+      content: "•"; position: absolute; left: 4px; color: var(--wine); font-weight: 700;
+    }
+    .guide-flag {
+      background: var(--wine-pale); border: 0.5px solid rgba(107,24,57,.2);
+      border-radius: 10px; padding: 12px 14px; margin-bottom: 10px;
+    }
+    .guide-flag-title {
+      font-size: 13px; font-weight: 600; color: var(--wine); margin-bottom: 6px;
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+    .guide-flag-where { font-size: 10px; font-weight: 400; color: var(--muted); background: var(--bg); padding: 2px 7px; border-radius: 10px; }
+    .guide-flag p { font-size: 12px; color: var(--muted); line-height: 1.6; margin-bottom: 6px; }
+    .guide-flag p:last-child { margin-bottom: 0; }
+
     .network-search {
       width: 100%; font-family: 'Inter', sans-serif; font-size: 14px;
       padding: 10px 12px 10px 36px; border-radius: 10px;
@@ -762,7 +783,12 @@
       <div class="home-card" onclick="showNetworkScreen()">
         <i class="ti ti-users"></i>
         <div class="home-card-title">Network</div>
-        <div class="home-card-sub">In arrivo</div>
+        <div class="home-card-sub">Sommelier e feed</div>
+      </div>
+      <div class="home-card" onclick="showGuideScreen()">
+        <i class="ti ti-book"></i>
+        <div class="home-card-title">Guida</div>
+        <div class="home-card-sub">Come funziona Enoscrigno</div>
       </div>
     </div>
   </div>
@@ -776,6 +802,7 @@
     <div class="nav-menu-item" onclick="closeNavMenu();showComingSoon('Blog')"><i class="ti ti-news"></i>Blog</div>
     <div class="nav-menu-item" onclick="closeNavMenu();showComingSoon('Eventi')"><i class="ti ti-calendar-event"></i>Eventi</div>
     <div class="nav-menu-item" onclick="closeNavMenu();showNetworkScreen()"><i class="ti ti-users"></i>Network</div>
+    <div class="nav-menu-item" onclick="closeNavMenu();showGuideScreen()"><i class="ti ti-book"></i>Guida</div>
   </div>
 
   <!-- ══ NETWORK ══ -->
@@ -804,6 +831,99 @@
       <button class="btn sm" onclick="showScreen('screen-network')"><i class="ti ti-arrow-left"></i>Network</button>
     </div>
     <div id="network-preview-content"></div>
+  </div>
+
+  <!-- ══ GUIDA ══ -->
+  <div id="screen-guide" class="screen">
+    <div class="nav" style="margin-bottom:1.1rem">
+      <button class="btn sm" onclick="showScreen('screen-home')"><i class="ti ti-arrow-left"></i>Home</button>
+      <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--ink)">Guida</span>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:1rem">Una panoramica rapida per punti. Video guida in arrivo prossimamente.</p>
+
+    <div class="fsec collapsible" id="guide-1">
+      <div class="stitle fsec-header" onclick="toggleSection('guide-1')"><i class="ti ti-bottle"></i>Aggiungere un vino<i class="ti ti-chevron-down fsec-chevron"></i></div>
+      <div class="fsec-body">
+        <ul class="guide-list">
+          <li>Dalla Cantina, tocca <b>Aggiungi vino</b>.</li>
+          <li>Carica le foto di fronte e (se vuoi) controetichetta, poi premi <b>Analizza con AI</b> per compilare automaticamente nome, produttore, annata, denominazione, regione e gradazione.</li>
+          <li>Le sezioni del form sono a scomparsa: solo <b>Foto</b> e <b>Identità</b> sono aperte di default, le altre (Vitigni, Abbinamento, Degustazione, Dati degustazione) si aprono toccandole.</li>
+          <li>La quantità può essere <b>0</b>: usalo per i vini degustati ma non posseduti (a un evento, al ristorante).</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="fsec collapsible collapsed" id="guide-2">
+      <div class="stitle fsec-header" onclick="toggleSection('guide-2')"><i class="ti ti-award"></i>Schede di degustazione<i class="ti ti-chevron-down fsec-chevron"></i></div>
+      <div class="fsec-body">
+        <ul class="guide-list">
+          <li>Chi ha un'associazione impostata nel profilo (AIS o FISAR) vede il proprio metodo ufficiale + la modalità <b>Libera</b>.</li>
+          <li>Chi non ha nessuna associazione vede solo la modalità <b>Libera</b> — le schede AIS/FISAR sono riservate ai rispettivi iscritti.</li>
+          <li>Il punteggio mostrato sulla card del vino viene calcolato automaticamente in base ai parametri della scheda scelta.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="fsec collapsible collapsed" id="guide-3">
+      <div class="stitle fsec-header" onclick="toggleSection('guide-3')"><i class="ti ti-tag"></i>Abbinamento e vitigni<i class="ti ti-chevron-down fsec-chevron"></i></div>
+      <div class="fsec-body">
+        <ul class="guide-list">
+          <li>L'abbinamento cibo si scelgono tra categorie predefinite (chip) più un campo libero per piatti specifici — diventa un parametro di ricerca e filtro.</li>
+          <li>I vitigni si aggiungono uno alla volta cercandoli; ogni vitigno può avere una percentuale opzionale, mostrata separatamente in scheda.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="fsec collapsible collapsed" id="guide-4">
+      <div class="stitle fsec-header" onclick="toggleSection('guide-4')"><i class="ti ti-filter"></i>Filtri e ricerca<i class="ti ti-chevron-down fsec-chevron"></i></div>
+      <div class="fsec-body">
+        <ul class="guide-list">
+          <li>La ricerca in alto trova per nome, produttore, regione e abbinamento contemporaneamente.</li>
+          <li>Il pulsante <b>Filtri</b> apre un pannello con Paese, Regione, Abbinamento e Vitigno — le opzioni mostrano solo i valori che hai davvero usato, mai filtri che darebbero zero risultati.</li>
+          <li>Le chip <b>Tutte / In cantina / Solo degustati</b> filtrano per quantità posseduta.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="fsec collapsible collapsed" id="guide-5">
+      <div class="stitle fsec-header" onclick="toggleSection('guide-5')"><i class="ti ti-users"></i>Network — le basi<i class="ti ti-chevron-down fsec-chevron"></i></div>
+      <div class="fsec-body">
+        <ul class="guide-list">
+          <li>Dalla sezione <b>Network</b> puoi cercare altri sommelier per nome — trovi solo chi ha impostato il proprio profilo come pubblico.</li>
+          <li>Premendo <b>Segui</b> invii una richiesta: la persona deve accettarla dal proprio profilo prima che tu veda i suoi vini.</li>
+          <li>Chi ti ha chiesto di seguirti appare nel tuo profilo, sezione <b>Richieste di follow</b>, con Accetta/Rifiuta. La campanella in alto mostra un contatore quando ce ne sono in attesa.</li>
+          <li>Il feed Network mostra i vini di chi segui (che ti ha accettato), ordinati dal più recente. Toccando una scheda vedi un'anteprima di sola lettura con abbinamento e note — non puoi modificarla, essendo il vino di un'altra persona.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="fsec collapsible collapsed" id="guide-6">
+      <div class="stitle fsec-header" onclick="toggleSection('guide-6')"><i class="ti ti-eye"></i>Network — chi vede cosa (importante)<i class="ti ti-chevron-down fsec-chevron"></i></div>
+      <div class="fsec-body">
+        <p style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.6">Ci sono <b>due interruttori diversi</b>, a due livelli, che devono essere entrambi nella posizione giusta perché un vino sia visto da altri:</p>
+        <div class="guide-flag">
+          <div class="guide-flag-title"><i class="ti ti-world"></i> Profilo pubblico <span class="guide-flag-where">nel tuo Profilo</span></div>
+          <p>Se <b>disattivo</b>: nessuno può trovarti nella ricerca del Network, indipendentemente da quanti vini hai impostato come visibili. Non riceverai richieste di follow perché nessuno ti trova.</p>
+          <p>Se <b>attivo</b>: sei ricercabile per nome. Chi ti trova può inviarti una richiesta di follow — ma vedrà i tuoi vini solo dopo che l'accetti.</p>
+        </div>
+        <div class="guide-flag">
+          <div class="guide-flag-title"><i class="ti ti-bottle"></i> Visibile nel Network <span class="guide-flag-where">su ogni singolo vino</span></div>
+          <p>È l'interruttore che trovi in alto nel form di ogni vino, sempre a vista. Default <b>attivo</b> per i vini nuovi.</p>
+          <p>Se lo disattivi per un vino specifico, quel vino resta <b>privato</b> anche se il tuo profilo è pubblico e hai dei follower che ti seguono — nella scheda dettaglio appare un badge "Privato" a ricordartelo.</p>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin-top:10px;line-height:1.6">In pratica: <b>Profilo pubblico</b> controlla se sei ricercabile e seguibile; <b>Visibile nel Network</b> controlla, vino per vino, cosa mostri davvero a chi ti segue. Un'impostazione granulare più fine (es. nascondere solo il prezzo pagato, o solo le note) è una possibile evoluzione futura, non ancora disponibile.</p>
+      </div>
+    </div>
+
+    <div class="fsec collapsible collapsed" id="guide-7">
+      <div class="stitle fsec-header" onclick="toggleSection('guide-7')"><i class="ti ti-download"></i>Export dei dati<i class="ti ti-chevron-down fsec-chevron"></i></div>
+      <div class="fsec-body">
+        <ul class="guide-list">
+          <li>Dalla Cantina, il pulsante <b>Export</b> offre CSV, backup JSON completo, schede di degustazione stampabili in HTML e un inventario testuale.</li>
+          <li>Tutti gli export includono solo i tuoi vini — mai quelli di altri utenti visti nel Network.</li>
+        </ul>
+      </div>
+    </div>
   </div>
 
   <!-- ══ LIST ══ -->
@@ -2915,6 +3035,10 @@ function showNetworkScreen() {
   loadNetworkFeed();
 }
 
+function showGuideScreen() {
+  showScreen('screen-guide');
+}
+
 function searchNetworkUsers() {
   clearTimeout(networkSearchTimer);
   const q = document.getElementById('network-search-input').value.trim();
@@ -3198,6 +3322,7 @@ Object.assign(window, {
   goBackFromProfile,
   scanBothLabels, searchNetworkUsers, sendFollowRequest, setFilter, setQtyFilter, showAdd, showComingSoon, showDetail,
   showNetworkScreen, showNetworkWinePreview, showProfileScreen, showScreen, stepQty, switchDeg, switchLTab, toast,
+  showGuideScreen,
   toggleAdvFilters, toggleNavMenu, togglePairing, toggleSection, updateDelegazioniList, updateGrapePct,
   updateRegionOptions, updateProvinceOptions
 });
