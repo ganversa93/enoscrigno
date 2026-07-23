@@ -258,6 +258,27 @@
 
     .pairing-chips { display: flex; gap: 6px; flex-wrap: wrap; }
 
+    /* ── FILTRI AVANZATI (Paese / Regione / Abbinamento) ── */
+    #adv-filter-toggle { display: flex; align-items: center; }
+    #adv-filter-badge {
+      background: var(--wine); color: #fff; font-size: 10px; font-weight: 600;
+      border-radius: 10px; min-width: 16px; height: 16px; padding: 0 4px;
+      display: inline-flex; align-items: center; justify-content: center; margin-left: 5px;
+    }
+    .adv-filter-panel {
+      display: none; background: var(--bg); border: 0.5px solid var(--border);
+      border-radius: 12px; padding: 1rem; margin-bottom: 1rem;
+    }
+    .adv-filter-panel.open { display: block; }
+    .adv-filter-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+    .adv-filter-field { flex: 1; min-width: 130px; }
+    .adv-filter-field label { display: block; font-size: 11px; font-weight: 500; color: var(--muted); margin-bottom: 4px; }
+    .adv-filter-field select {
+      width: 100%; font-family: 'Inter', sans-serif; font-size: 13px;
+      padding: 7px 10px; border-radius: 8px; border: 0.5px solid var(--border);
+      background: var(--bg); color: var(--ink);
+    }
+
     /* ── AUTOCOMPLETE personalizzato (sostituisce datalist, poco affidabile su iOS) ── */
     .ac-box {
       position: absolute; top: 100%; left: 0; right: 0; z-index: 50;
@@ -585,6 +606,30 @@
       <div class="chip active" data-qf="all" onclick="setQtyFilter('all',this)"><i class="ti ti-bottle" style="font-size:11px;vertical-align:-1px;margin-right:3px"></i>Tutte</div>
       <div class="chip" data-qf="owned" onclick="setQtyFilter('owned',this)"><i class="ti ti-building-warehouse" style="font-size:11px;vertical-align:-1px;margin-right:3px"></i>In cantina</div>
       <div class="chip" data-qf="tasted" onclick="setQtyFilter('tasted',this)"><i class="ti ti-glass-full" style="font-size:11px;vertical-align:-1px;margin-right:3px"></i>Solo degustati</div>
+      <div class="chip" id="adv-filter-toggle" onclick="toggleAdvFilters()" style="margin-left:auto"><i class="ti ti-filter" style="font-size:11px;vertical-align:-1px;margin-right:3px"></i>Filtri<span id="adv-filter-badge" style="display:none"></span></div>
+    </div>
+    <div class="adv-filter-panel" id="adv-filter-panel">
+      <div class="adv-filter-row">
+        <div class="adv-filter-field">
+          <label>Paese</label>
+          <select id="af-country" onchange="onAdvCountryChange()">
+            <option value="">Tutti</option>
+          </select>
+        </div>
+        <div class="adv-filter-field">
+          <label>Regione</label>
+          <select id="af-region" onchange="renderGrid()">
+            <option value="">Tutte</option>
+          </select>
+        </div>
+        <div class="adv-filter-field">
+          <label>Abbinamento</label>
+          <select id="af-pairing" onchange="renderGrid()">
+            <option value="">Tutti</option>
+          </select>
+        </div>
+        <button class="btn sm" onclick="resetAdvFilters()"><i class="ti ti-x"></i>Azzera</button>
+      </div>
     </div>
     <div class="wine-grid" id="wine-grid"></div>
     <div class="empty" id="empty-state" style="display:none">
@@ -1515,13 +1560,85 @@ function setQtyFilter(f, el) {
   el.classList.add('active');
   renderGrid();
 }
+
+/* ── FILTRI AVANZATI: Paese / Regione / Abbinamento ──
+   Le opzioni sono ricavate dai valori realmente presenti nella
+   cantina dell'utente, non da un elenco fisso — così non si vedono
+   mai filtri che darebbero zero risultati. */
+function toggleAdvFilters() {
+  const panel = document.getElementById('adv-filter-panel');
+  const opening = !panel.classList.contains('open');
+  panel.classList.toggle('open');
+  if (opening) populateAdvFilterOptions();
+}
+
+function populateAdvFilterOptions() {
+  const wines = myWines();
+  const countrySel  = document.getElementById('af-country');
+  const pairingSel  = document.getElementById('af-pairing');
+  const prevCountry = countrySel.value;
+  const prevPairing = pairingSel.value;
+
+  const countries = [...new Set(wines.map(w => w.country).filter(Boolean))].sort();
+  countrySel.innerHTML = '<option value="">Tutti</option>' + countries.map(c => `<option value="${c}">${c}</option>`).join('');
+  countrySel.value = countries.includes(prevCountry) ? prevCountry : '';
+
+  const allPairings = wines.flatMap(w => (w.pairing || '').split(',').map(p => p.trim()).filter(Boolean));
+  const pairings = [...new Set(allPairings)].sort();
+  pairingSel.innerHTML = '<option value="">Tutti</option>' + pairings.map(p => `<option value="${p}">${p}</option>`).join('');
+  pairingSel.value = pairings.includes(prevPairing) ? prevPairing : '';
+
+  populateAdvRegionOptions();
+}
+
+function onAdvCountryChange() {
+  populateAdvRegionOptions();
+  renderGrid();
+}
+
+function populateAdvRegionOptions() {
+  const wines = myWines();
+  const country = document.getElementById('af-country').value;
+  const regionSel = document.getElementById('af-region');
+  const prevRegion = regionSel.value;
+  const pool = country ? wines.filter(w => w.country === country) : wines;
+  const regions = [...new Set(pool.map(w => w.region).filter(Boolean))].sort();
+  regionSel.innerHTML = '<option value="">Tutte</option>' + regions.map(r => `<option value="${r}">${r}</option>`).join('');
+  regionSel.value = regions.includes(prevRegion) ? prevRegion : '';
+}
+
+function resetAdvFilters() {
+  document.getElementById('af-country').value = '';
+  document.getElementById('af-region').value = '';
+  document.getElementById('af-pairing').value = '';
+  populateAdvRegionOptions();
+  renderGrid();
+}
+
+function updateAdvFilterBadge() {
+  const n = ['af-country','af-region','af-pairing'].filter(id => document.getElementById(id)?.value).length;
+  const badge = document.getElementById('adv-filter-badge');
+  const toggle = document.getElementById('adv-filter-toggle');
+  if (n > 0) { badge.textContent = n; badge.style.display = 'inline-flex'; toggle.classList.add('active'); }
+  else { badge.style.display = 'none'; toggle.classList.remove('active'); }
+}
 function renderGrid() {
   const q    = (document.getElementById('search-input')?.value || '').toLowerCase();
+  const afCountry = document.getElementById('af-country')?.value || '';
+  const afRegion  = document.getElementById('af-region')?.value || '';
+  const afPairing = document.getElementById('af-pairing')?.value || '';
+  updateAdvFilterBadge();
   const list = myWines().filter(w => {
     if (currentFilter !== 'all' && w.type !== currentFilter) return false;
     const qty = w.qty ?? 1;
     if (currentQtyFilter === 'owned'  && qty <= 0) return false;
     if (currentQtyFilter === 'tasted' && qty > 0)  return false;
+    if (afCountry && w.country !== afCountry) return false;
+    if (afRegion  && w.region  !== afRegion)  return false;
+    if (afPairing) {
+      const tags = (w.pairing || '').split(',').map(p => p.trim());
+      if (!tags.includes(afPairing)) return false;
+    }
     if (q && ![(w.name||''),(w.producer||''),(w.region||''),(w.pairing||'')].join(' ').toLowerCase().includes(q)) return false;
     return true;
   });
@@ -2394,9 +2511,9 @@ calcAIS(); calcFISAR();
    ma gli onclick="..." nell'HTML devono poterle richiamare. */
 Object.assign(window, {
   adjustQty, calcAIS, calcFISAR, cancelForm, deleteWine, doLogin, doLogout, doRegister,
-  editWine, exportCSV, exportInventory, exportJSON, exportTasting, previewImg,
-  renderGrid, resendConfirmation, saveProfile, saveWine, scanBothLabels, setFilter, setQtyFilter, showAdd, showDetail,
-  showProfileScreen, showScreen, stepQty, switchDeg, switchLTab, toast,
+  editWine, exportCSV, exportInventory, exportJSON, exportTasting, onAdvCountryChange, previewImg,
+  renderGrid, resendConfirmation, resetAdvFilters, saveProfile, saveWine, scanBothLabels, setFilter, setQtyFilter, showAdd, showDetail,
+  showProfileScreen, showScreen, stepQty, switchDeg, switchLTab, toast, toggleAdvFilters,
   togglePairing, toggleSection, updateDelegazioniList, updateRegionOptions, updateProvinceOptions
 });
 </script>
