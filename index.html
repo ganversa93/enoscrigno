@@ -294,6 +294,13 @@
     }
     .avatar-upload-badge i { font-size: 11px; color: #fff; }
 
+    .btn-add-wine { display: flex; margin: 0 0 1rem auto; }
+    .adv-filter-toggle-btn {
+      display: flex; align-items: center; gap: 5px; justify-content: center;
+      margin: 0 0 1rem auto; cursor: pointer;
+    }
+    .adv-filter-toggle-btn.active { background: var(--wine-pale); color: var(--wine); border-color: var(--wine); }
+
     .network-search {
       width: 100%; font-family: 'Inter', sans-serif; font-size: 14px;
       padding: 10px 12px 10px 36px; border-radius: 10px;
@@ -626,14 +633,12 @@
       .user-pill .assoc-badge { flex-shrink: 0; }
       .nav-right .btn.sm { padding: 5px 9px; font-size: 11px; white-space: nowrap; }
 
-      /* Filtri: ricerca a piena larghezza, chip compatte, Aggiungi sempre full-width */
-      .filter-bar { gap: 6px; margin-bottom: 1rem; }
+      /* Filtri: ricerca a piena larghezza, chip compatte */
+      .filter-bar { gap: 6px; margin-bottom: .75rem; }
       .filter-bar input { min-width: 100%; order: -1; margin-bottom: 4px; }
       .chip { padding: 7px 13px; font-size: 12px; }
-      .filter-bar .btn.primary.sm {
-        margin-left: 0 !important; width: 100%; order: 99;
-        justify-content: center; padding: 10px 12px; margin-top: 4px;
-      }
+      .adv-filter-toggle-btn { width: 100%; margin: 0 0 8px 0; padding: 10px 12px; }
+      .btn-add-wine { width: 100%; justify-content: center; margin: 0 0 1rem 0; padding: 10px 12px; }
 
       /* Form: sezioni più compatte, pulsanti a piena larghezza per il pollice */
       .fsec { padding: 1rem; }
@@ -830,14 +835,13 @@
       <div class="chip" data-f="Bianco"    onclick="setFilter('Bianco',this)">Bianco</div>
       <div class="chip" data-f="Rosato"    onclick="setFilter('Rosato',this)">Rosato</div>
       <div class="chip" data-f="Spumante"  onclick="setFilter('Spumante',this)">Spumante</div>
-      <button class="btn primary sm" onclick="showAdd()" style="margin-left:auto"><i class="ti ti-plus"></i>Aggiungi</button>
     </div>
     <div class="filter-bar" style="margin-top:-.5rem">
       <div class="chip active" data-qf="all" onclick="setQtyFilter('all',this)"><i class="ti ti-bottle" style="font-size:11px;vertical-align:-1px;margin-right:3px"></i>Tutte</div>
       <div class="chip" data-qf="owned" onclick="setQtyFilter('owned',this)"><i class="ti ti-building-warehouse" style="font-size:11px;vertical-align:-1px;margin-right:3px"></i>In cantina</div>
       <div class="chip" data-qf="tasted" onclick="setQtyFilter('tasted',this)"><i class="ti ti-glass-full" style="font-size:11px;vertical-align:-1px;margin-right:3px"></i>Solo degustati</div>
-      <div class="chip" id="adv-filter-toggle" onclick="toggleAdvFilters()" style="margin-left:auto"><i class="ti ti-filter" style="font-size:11px;vertical-align:-1px;margin-right:3px"></i>Filtri<span id="adv-filter-badge" style="display:none"></span></div>
     </div>
+    <div id="adv-filter-toggle" class="btn adv-filter-toggle-btn" onclick="toggleAdvFilters()"><i class="ti ti-filter"></i>Filtri<span id="adv-filter-badge" style="display:none"></span></div>
     <div class="adv-filter-panel" id="adv-filter-panel">
       <div class="adv-filter-row">
         <div class="adv-filter-field">
@@ -873,6 +877,7 @@
         <button class="btn sm" onclick="resetAdvFilters()"><i class="ti ti-x"></i>Azzera</button>
       </div>
     </div>
+    <button class="btn primary btn-add-wine" id="btn-add-wine" onclick="showAdd()"><i class="ti ti-plus"></i>Aggiungi vino</button>
     <div class="wine-grid" id="wine-grid"></div>
     <div class="empty" id="empty-state" style="display:none">
       <i class="ti ti-bottle" aria-hidden="true"></i>
