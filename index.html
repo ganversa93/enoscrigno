@@ -301,6 +301,12 @@
     }
     .network-search:focus { outline: none; border-color: var(--wine); }
 
+    .email-reminder {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--wine-pale); border: 0.5px solid rgba(107,24,57,.2);
+      border-radius: 10px; padding: 10px 14px; margin-bottom: 1rem;
+    }
+
     /* ── HOME ── */
     .home-welcome { font-family: 'Cormorant Garamond', serif; font-size: 22px; color: var(--ink); margin: 1.5rem 0 1.25rem; text-align: center; }
     .home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -1357,6 +1363,15 @@
       <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--ink)">Il mio profilo</span>
     </div>
 
+    <div class="email-reminder" id="email-reminder" style="display:none">
+      <i class="ti ti-mail-exclamation" style="font-size:16px;color:var(--gold);flex-shrink:0"></i>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:500;color:var(--ink)">Email non ancora confermata</div>
+        <div style="font-size:11px;color:var(--muted)">Controlla la posta (anche lo spam) e clicca il link ricevuto per confermarla.</div>
+      </div>
+      <button class="btn sm" onclick="resendConfirmationFromProfile()">Rinvia</button>
+    </div>
+
     <!-- Immagine profilo + visibilità -->
     <div class="fsec">
       <div class="stitle"><i class="ti ti-photo"></i>Immagine e visibilità</div>
@@ -1567,6 +1582,12 @@ async function resendConfirmation(e) {
   err.style.display = 'block';
 }
 
+async function resendConfirmationFromProfile() {
+  const { error } = await sb.auth.resend({ type: 'signup', email: currentUser.email });
+  if (error) { toastErr('Errore nel reinvio: ' + error.message); return; }
+  toast('✓ Email di conferma reinviata! Controlla la posta (anche lo spam).');
+}
+
 async function doRegister() {
   const firstname = document.getElementById('r-name').value.trim();
   const email     = document.getElementById('r-email').value.trim();
@@ -1610,6 +1631,9 @@ async function doRegister() {
     return;
   }
   await loadProfile(data.user);
+  if (!data.user.email_confirmed_at) {
+    setTimeout(() => toast('Account creato! Ricordati di confermare l\'email quando puoi (la trovi nel tuo profilo) 📧'), 600);
+  }
 }
 
 async function doLogout() {
@@ -1631,7 +1655,8 @@ async function loadProfile(authUser) {
     delegazioneCustom: profile?.delegazione_custom || '',
     aiScanEnabled:     profile?.ai_scan_enabled || false,
     avatarBase64:      profile?.avatar_base64 || '',
-    isPublic:          profile?.is_public || false
+    isPublic:          profile?.is_public || false,
+    emailConfirmed:    !!authUser.email_confirmed_at
   };
   // Se non esiste ancora un profilo (caso raro, es. trigger non installato),
   // lo creiamo ora che l'utente è sicuramente autenticato.
@@ -2770,6 +2795,9 @@ function showProfileScreen() {
   // Profilo pubblico
   document.getElementById('p-is-public').checked = !!u.isPublic;
 
+  // Promemoria email non confermata (non bloccante)
+  document.getElementById('email-reminder').style.display = u.emailConfirmed ? 'none' : 'flex';
+
   showScreen('screen-profile');
   loadFollowRequests();
 }
@@ -3120,7 +3148,7 @@ calcAIS(); calcFISAR();
 Object.assign(window, {
   adjustQty, calcAIS, calcFISAR, cancelForm, closeNavMenu, deleteWine, doLogin, doLogout, doRegister,
   editWine, exportCSV, exportInventory, exportJSON, exportTasting, onAdvCountryChange, previewAvatar, previewImg,
-  removeGrapeTag, renderGrid, resendConfirmation, resetAdvFilters, respondFollowRequest, saveProfile, saveWine,
+  removeGrapeTag, renderGrid, resendConfirmation, resendConfirmationFromProfile, resetAdvFilters, respondFollowRequest, saveProfile, saveWine,
   scanBothLabels, searchNetworkUsers, sendFollowRequest, setFilter, setQtyFilter, showAdd, showComingSoon, showDetail,
   showNetworkScreen, showNetworkWinePreview, showProfileScreen, showScreen, stepQty, switchDeg, switchLTab, toast,
   toggleAdvFilters, toggleNavMenu, togglePairing, toggleSection, updateDelegazioniList, updateGrapePct,
