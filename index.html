@@ -1381,7 +1381,7 @@
   <!-- ══ PROFILE ══ -->
   <div id="screen-profile" class="screen">
     <div class="nav" style="margin-bottom:1.25rem">
-      <button class="btn sm" onclick="showScreen(profileReturnScreen)"><i class="ti ti-arrow-left"></i>Indietro</button>
+      <button class="btn sm" onclick="goBackFromProfile()"><i class="ti ti-arrow-left"></i>Indietro</button>
       <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--ink)">Il mio profilo</span>
     </div>
 
@@ -1474,7 +1474,7 @@
     </div>
 
     <div style="display:flex;gap:9px;justify-content:flex-end;margin-top:1rem;margin-bottom:.5rem">
-      <button class="btn" onclick="showScreen(profileReturnScreen)">Annulla</button>
+      <button class="btn" onclick="goBackFromProfile()">Annulla</button>
       <button class="btn primary" onclick="saveProfile()"><i class="ti ti-device-floppy"></i>Salva profilo</button>
     </div>
     <div style="text-align:center;margin-top:1rem">
@@ -2802,6 +2802,7 @@ function updateDelegazioniList() {
 }
 
 let profileReturnScreen = 'screen-home';
+function goBackFromProfile() { showScreen(profileReturnScreen); }
 function showProfileScreen() {
   profileReturnScreen = document.getElementById('screen-list')?.classList.contains('active') ? 'screen-list' : 'screen-home';
   const u = currentUser;
@@ -3186,6 +3187,7 @@ Object.assign(window, {
   adjustQty, calcAIS, calcFISAR, cancelForm, closeNavMenu, deleteWine, doLogin, doLogout, doRegister,
   editWine, exportCSV, exportInventory, exportJSON, exportTasting, onAdvCountryChange, previewAvatar, previewImg,
   removeGrapeTag, renderGrid, resendConfirmation, resendConfirmationFromProfile, resetAdvFilters, respondFollowRequest, saveProfile, saveWine,
+  goBackFromProfile,
   scanBothLabels, searchNetworkUsers, sendFollowRequest, setFilter, setQtyFilter, showAdd, showComingSoon, showDetail,
   showNetworkScreen, showNetworkWinePreview, showProfileScreen, showScreen, stepQty, switchDeg, switchLTab, toast,
   toggleAdvFilters, toggleNavMenu, togglePairing, toggleSection, updateDelegazioniList, updateGrapePct,
