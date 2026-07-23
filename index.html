@@ -646,6 +646,12 @@
             <option value="">Tutti</option>
           </select>
         </div>
+        <div class="adv-filter-field">
+          <label>Vitigno</label>
+          <select id="af-grape" onchange="renderGrid()">
+            <option value="">Tutti</option>
+          </select>
+        </div>
         <button class="btn sm" onclick="resetAdvFilters()"><i class="ti ti-x"></i>Azzera</button>
       </div>
     </div>
@@ -1617,6 +1623,13 @@ function populateAdvFilterOptions() {
   pairingSel.innerHTML = '<option value="">Tutti</option>' + pairings.map(p => `<option value="${p}">${p}</option>`).join('');
   pairingSel.value = pairings.includes(prevPairing) ? prevPairing : '';
 
+  const grapeSel = document.getElementById('af-grape');
+  const prevGrape = grapeSel.value;
+  const allGrapes = wines.flatMap(w => (w.grapes || '').split(',').map(g => g.trim().replace(/\s+\d{1,3}\s*%$/, '')).filter(Boolean));
+  const grapes = [...new Set(allGrapes)].sort();
+  grapeSel.innerHTML = '<option value="">Tutti</option>' + grapes.map(g => `<option value="${g}">${g}</option>`).join('');
+  grapeSel.value = grapes.includes(prevGrape) ? prevGrape : '';
+
   populateAdvRegionOptions();
 }
 
@@ -1640,12 +1653,13 @@ function resetAdvFilters() {
   document.getElementById('af-country').value = '';
   document.getElementById('af-region').value = '';
   document.getElementById('af-pairing').value = '';
+  document.getElementById('af-grape').value = '';
   populateAdvRegionOptions();
   renderGrid();
 }
 
 function updateAdvFilterBadge() {
-  const n = ['af-country','af-region','af-pairing'].filter(id => document.getElementById(id)?.value).length;
+  const n = ['af-country','af-region','af-pairing','af-grape'].filter(id => document.getElementById(id)?.value).length;
   const badge = document.getElementById('adv-filter-badge');
   const toggle = document.getElementById('adv-filter-toggle');
   if (n > 0) { badge.textContent = n; badge.style.display = 'inline-flex'; toggle.classList.add('active'); }
@@ -1656,6 +1670,7 @@ function renderGrid() {
   const afCountry = document.getElementById('af-country')?.value || '';
   const afRegion  = document.getElementById('af-region')?.value || '';
   const afPairing = document.getElementById('af-pairing')?.value || '';
+  const afGrape   = document.getElementById('af-grape')?.value || '';
   updateAdvFilterBadge();
   const list = myWines().filter(w => {
     if (currentFilter !== 'all' && w.type !== currentFilter) return false;
@@ -1667,6 +1682,10 @@ function renderGrid() {
     if (afPairing) {
       const tags = (w.pairing || '').split(',').map(p => p.trim());
       if (!tags.includes(afPairing)) return false;
+    }
+    if (afGrape) {
+      const grapeNames = (w.grapes || '').split(',').map(g => g.trim().replace(/\s+\d{1,3}\s*%$/, ''));
+      if (!grapeNames.includes(afGrape)) return false;
     }
     if (q && ![(w.name||''),(w.producer||''),(w.region||''),(w.pairing||'')].join(' ').toLowerCase().includes(q)) return false;
     return true;
