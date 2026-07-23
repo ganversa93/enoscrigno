@@ -616,8 +616,10 @@
       .stat-l { font-size: 10px; }
       .frow { grid-template-columns: 1fr; }
       .dgrid { grid-template-columns: 1fr; }
-      .dhero { flex-direction: column; }
-      .dimgs { flex-direction: row; justify-content: center; }
+      .dhero { flex-direction: row; align-items: flex-start; gap: 12px; }
+      .dinfo { order: 1; flex: 1; min-width: 0; }
+      .dimgs { order: 2; flex-direction: column; flex-shrink: 0; gap: 6px; }
+      .dimg { width: 76px; height: 100px; border-radius: 8px; }
       .logo-text { font-size: 16px; }
 
       /* Nav: logo compatto in alto, azioni utente sotto su riga propria */
