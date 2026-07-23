@@ -279,6 +279,21 @@
     .switch input:checked + .switch-slider { background: var(--wine); }
     .switch input:checked + .switch-slider::before { transform: translateX(18px); }
 
+    .avatar-upload {
+      position: relative; width: 72px; height: 72px; border-radius: 50%;
+      background: var(--wine-pale); border: 0.5px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0; overflow: hidden;
+    }
+    .avatar-upload img { width: 100%; height: 100%; object-fit: cover; }
+    .avatar-upload i#p-avatar-placeholder { font-size: 30px; color: var(--wine); opacity: .5; }
+    .avatar-upload-badge {
+      position: absolute; bottom: 0; right: 0; width: 24px; height: 24px;
+      background: var(--wine); border-radius: 50%; display: flex;
+      align-items: center; justify-content: center; border: 2px solid var(--bg);
+    }
+    .avatar-upload-badge i { font-size: 11px; color: #fff; }
+
     /* ── HOME ── */
     .home-welcome { font-family: 'Cormorant Garamond', serif; font-size: 22px; color: var(--ink); margin: 1.5rem 0 1.25rem; text-align: center; }
     .home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -706,7 +721,7 @@
         <div class="home-card-title">Eventi</div>
         <div class="home-card-sub">In arrivo</div>
       </div>
-      <div class="home-card" onclick="showComingSoon('Network')">
+      <div class="home-card" onclick="showNetworkScreen()">
         <i class="ti ti-users"></i>
         <div class="home-card-title">Network</div>
         <div class="home-card-sub">In arrivo</div>
@@ -722,7 +737,32 @@
     <div class="nav-menu-item" onclick="closeNavMenu();showComingSoon('Highlights')"><i class="ti ti-sparkles"></i>Highlights</div>
     <div class="nav-menu-item" onclick="closeNavMenu();showComingSoon('Blog')"><i class="ti ti-news"></i>Blog</div>
     <div class="nav-menu-item" onclick="closeNavMenu();showComingSoon('Eventi')"><i class="ti ti-calendar-event"></i>Eventi</div>
-    <div class="nav-menu-item" onclick="closeNavMenu();showComingSoon('Network')"><i class="ti ti-users"></i>Network</div>
+    <div class="nav-menu-item" onclick="closeNavMenu();showNetworkScreen()"><i class="ti ti-users"></i>Network</div>
+  </div>
+
+  <!-- ══ NETWORK ══ -->
+  <div id="screen-network" class="screen">
+    <div class="nav" style="margin-bottom:1.1rem">
+      <button class="btn sm" onclick="showScreen('screen-home')"><i class="ti ti-arrow-left"></i>Home</button>
+      <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--ink)">Network</span>
+    </div>
+
+    <div class="fsec" style="margin-bottom:1rem">
+      <div class="stitle"><i class="ti ti-search"></i>Trova sommelier</div>
+      <input type="text" id="network-search-input" placeholder="Cerca per nome…" oninput="searchNetworkUsers()">
+      <div id="network-search-results" style="margin-top:10px"></div>
+    </div>
+
+    <div class="stitle" style="margin:0 0 .75rem .1rem"><i class="ti ti-bottle-filled"></i>Ultimi vini da chi segui</div>
+    <div id="network-feed"><div class="empty"><i class="ti ti-users"></i><p>Segui qualche sommelier per vedere qui i loro vini.</p></div></div>
+  </div>
+
+  <!-- ══ ANTEPRIMA VINO (network, sola lettura) ══ -->
+  <div id="screen-network-preview" class="screen">
+    <div class="nav" style="margin-bottom:.9rem">
+      <button class="btn sm" onclick="showScreen('screen-network')"><i class="ti ti-arrow-left"></i>Network</button>
+    </div>
+    <div id="network-preview-content"></div>
   </div>
 
   <!-- ══ LIST ══ -->
@@ -1303,8 +1343,38 @@
   <!-- ══ PROFILE ══ -->
   <div id="screen-profile" class="screen">
     <div class="nav" style="margin-bottom:1.25rem">
-      <button class="btn sm" onclick="showScreen('screen-list')"><i class="ti ti-arrow-left"></i>Cantina</button>
+      <button class="btn sm" onclick="showScreen(profileReturnScreen)"><i class="ti ti-arrow-left"></i>Indietro</button>
       <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--ink)">Il mio profilo</span>
+    </div>
+
+    <!-- Immagine profilo + visibilità -->
+    <div class="fsec">
+      <div class="stitle"><i class="ti ti-photo"></i>Immagine e visibilità</div>
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:1rem">
+        <div class="avatar-upload" onclick="document.getElementById('p-avatar-input').click()">
+          <img id="p-avatar-preview" src="" alt="" style="display:none">
+          <i class="ti ti-user" id="p-avatar-placeholder"></i>
+          <div class="avatar-upload-badge"><i class="ti ti-camera"></i></div>
+        </div>
+        <input type="file" id="p-avatar-input" accept="image/*" style="display:none" onchange="previewAvatar(this)">
+        <div style="font-size:12px;color:var(--muted)">Tocca l'immagine per caricarne una nuova.</div>
+      </div>
+      <div class="visibility-toggle" style="margin-bottom:0">
+        <div>
+          <div class="visibility-toggle-label"><i class="ti ti-world" style="font-size:13px;vertical-align:-2px;margin-right:4px"></i>Profilo pubblico</div>
+          <div class="visibility-toggle-sub">Se attivo, altri utenti potranno trovarti nella ricerca del Network e inviarti richieste di follow. Se disattivo, il tuo profilo non è ricercabile da nessuno.</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="p-is-public">
+          <span class="switch-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Richieste di follow in attesa -->
+    <div class="fsec" id="follow-requests-section" style="display:none">
+      <div class="stitle"><i class="ti ti-user-plus"></i>Richieste di follow</div>
+      <div id="follow-requests-list"></div>
     </div>
 
     <!-- Dati personali -->
@@ -1357,7 +1427,7 @@
     </div>
 
     <div style="display:flex;gap:9px;justify-content:flex-end;margin-top:1rem;margin-bottom:.5rem">
-      <button class="btn" onclick="showScreen('screen-list')">Annulla</button>
+      <button class="btn" onclick="showScreen(profileReturnScreen)">Annulla</button>
       <button class="btn primary" onclick="saveProfile()"><i class="ti ti-device-floppy"></i>Salva profilo</button>
     </div>
     <div style="text-align:center;margin-top:1rem">
@@ -1549,7 +1619,9 @@ async function loadProfile(authUser) {
     card:              profile?.card  || '',
     delegazione:       profile?.delegazione || '',
     delegazioneCustom: profile?.delegazione_custom || '',
-    aiScanEnabled:     profile?.ai_scan_enabled || false
+    aiScanEnabled:     profile?.ai_scan_enabled || false,
+    avatarBase64:      profile?.avatar_base64 || '',
+    isPublic:          profile?.is_public || false
   };
   // Se non esiste ancora un profilo (caso raro, es. trigger non installato),
   // lo creiamo ora che l'utente è sicuramente autenticato.
@@ -2658,7 +2730,9 @@ function updateDelegazioniList() {
     : `<option value="">— Seleziona associazione prima —</option>`;
 }
 
+let profileReturnScreen = 'screen-home';
 function showProfileScreen() {
+  profileReturnScreen = document.getElementById('screen-list')?.classList.contains('active') ? 'screen-list' : 'screen-home';
   const u = currentUser;
   const parts = u.name.trim().split(' ');
   document.getElementById('p-firstname').value = parts[0] || '';
@@ -2675,7 +2749,204 @@ function showProfileScreen() {
   if (del && u.delegazione) del.value = u.delegazione;
   const delCustom = document.getElementById('p-delegazione-custom');
   if (delCustom) delCustom.value = u.delegazioneCustom || '';
+
+  // Immagine profilo
+  pendingAvatarBase64 = null;
+  const avatarImg = document.getElementById('p-avatar-preview');
+  const avatarPh  = document.getElementById('p-avatar-placeholder');
+  if (u.avatarBase64) { avatarImg.src = u.avatarBase64; avatarImg.style.display = 'block'; avatarPh.style.display = 'none'; }
+  else { avatarImg.style.display = 'none'; avatarPh.style.display = ''; }
+
+  // Profilo pubblico
+  document.getElementById('p-is-public').checked = !!u.isPublic;
+
   showScreen('screen-profile');
+  loadFollowRequests();
+}
+
+let pendingAvatarBase64 = null;
+
+function previewAvatar(input) {
+  const file = input.files[0]; if (!file) return;
+  const r = new FileReader();
+  r.onload = e => {
+    pendingAvatarBase64 = e.target.result;
+    const avatarImg = document.getElementById('p-avatar-preview');
+    const avatarPh  = document.getElementById('p-avatar-placeholder');
+    avatarImg.src = e.target.result; avatarImg.style.display = 'block';
+    avatarPh.style.display = 'none';
+  };
+  r.readAsDataURL(file);
+}
+
+/* ── FOLLOW: richieste in attesa (chi vuole seguirmi) ── */
+async function loadFollowRequests() {
+  const section = document.getElementById('follow-requests-section');
+  const list = document.getElementById('follow-requests-list');
+  const { data: requests, error } = await sb
+    .from('follows').select('follower_id, created_at')
+    .eq('followee_id', currentUser.id).eq('status', 'pending')
+    .order('created_at', { ascending: false });
+  if (error || !requests?.length) { section.style.display = 'none'; return; }
+
+  const ids = requests.map(r => r.follower_id);
+  const { data: profilesData } = await sb.from('profiles').select('id, full_name, avatar_base64').in('id', ids);
+  const profMap = Object.fromEntries((profilesData || []).map(p => [p.id, p]));
+
+  section.style.display = '';
+  list.innerHTML = requests.map(r => {
+    const p = profMap[r.follower_id] || {};
+    const initials = (p.full_name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+    return `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border)">
+        ${p.avatar_base64
+          ? `<img src="${p.avatar_base64}" style="width:36px;height:36px;border-radius:50%;object-fit:cover">`
+          : `<div style="width:36px;height:36px;border-radius:50%;background:var(--wine-pale);color:var(--wine);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600">${initials}</div>`}
+        <div style="flex:1;font-size:13px;color:var(--ink)">${p.full_name || 'Utente'}</div>
+        <button class="btn sm primary" onclick="respondFollowRequest('${r.follower_id}', true)">Accetta</button>
+        <button class="btn sm" onclick="respondFollowRequest('${r.follower_id}', false)">Rifiuta</button>
+      </div>`;
+  }).join('');
+}
+
+async function respondFollowRequest(followerId, accept) {
+  if (accept) {
+    await sb.from('follows').update({ status: 'accepted' }).eq('follower_id', followerId).eq('followee_id', currentUser.id);
+    toast('Richiesta accettata');
+  } else {
+    await sb.from('follows').delete().eq('follower_id', followerId).eq('followee_id', currentUser.id);
+    toast('Richiesta rifiutata');
+  }
+  loadFollowRequests();
+}
+
+/* ══ NETWORK ══ */
+let networkWinesCache = [];
+let networkSearchTimer = null;
+
+function showNetworkScreen() {
+  document.getElementById('network-search-input').value = '';
+  document.getElementById('network-search-results').innerHTML = '';
+  showScreen('screen-network');
+  loadNetworkFeed();
+}
+
+function searchNetworkUsers() {
+  clearTimeout(networkSearchTimer);
+  const q = document.getElementById('network-search-input').value.trim();
+  const box = document.getElementById('network-search-results');
+  if (!q) { box.innerHTML = ''; return; }
+  networkSearchTimer = setTimeout(async () => {
+    const { data: results, error } = await sb
+      .from('profiles').select('id, full_name, avatar_base64, assoc')
+      .ilike('full_name', `%${q}%`)
+      .neq('id', currentUser.id)
+      .limit(15);
+    if (error) { box.innerHTML = `<div style="font-size:12px;color:var(--muted)">Errore ricerca</div>`; return; }
+    if (!results?.length) { box.innerHTML = `<div style="font-size:12px;color:var(--muted)">Nessun profilo pubblico trovato</div>`; return; }
+
+    const ids = results.map(r => r.id);
+    const { data: myFollows } = await sb.from('follows').select('followee_id, status').eq('follower_id', currentUser.id).in('followee_id', ids);
+    const statusMap = Object.fromEntries((myFollows || []).map(f => [f.followee_id, f.status]));
+
+    box.innerHTML = results.map(p => {
+      const initials = (p.full_name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+      const status = statusMap[p.id];
+      const btn = status === 'accepted'
+        ? `<span style="font-size:11px;color:var(--fisar);font-weight:500"><i class="ti ti-check"></i> Segui già</span>`
+        : status === 'pending'
+        ? `<span style="font-size:11px;color:var(--muted)">Richiesta inviata</span>`
+        : `<button class="btn sm primary" onclick="sendFollowRequest('${p.id}', this)">Segui</button>`;
+      return `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border)">
+          ${p.avatar_base64
+            ? `<img src="${p.avatar_base64}" style="width:36px;height:36px;border-radius:50%;object-fit:cover">`
+            : `<div style="width:36px;height:36px;border-radius:50%;background:var(--wine-pale);color:var(--wine);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600">${initials}</div>`}
+          <div style="flex:1">
+            <div style="font-size:13px;color:var(--ink)">${p.full_name || 'Utente'}</div>
+            ${p.assoc ? `<span class="assoc-badge badge-${p.assoc.toLowerCase()}" style="font-size:9px">${p.assoc}</span>` : ''}
+          </div>
+          ${btn}
+        </div>`;
+    }).join('');
+  }, 350);
+}
+
+async function sendFollowRequest(userId, btnEl) {
+  const { error } = await sb.from('follows').insert({ follower_id: currentUser.id, followee_id: userId, status: 'pending' });
+  if (error) { toastErr('Errore invio richiesta: ' + error.message); return; }
+  toast('Richiesta di follow inviata');
+  if (btnEl) btnEl.outerHTML = `<span style="font-size:11px;color:var(--muted)">Richiesta inviata</span>`;
+}
+
+async function loadNetworkFeed() {
+  const feedBox = document.getElementById('network-feed');
+  const { data: myFollows } = await sb.from('follows').select('followee_id').eq('follower_id', currentUser.id).eq('status', 'accepted');
+  const followeeIds = (myFollows || []).map(f => f.followee_id);
+  if (!followeeIds.length) {
+    feedBox.innerHTML = `<div class="empty"><i class="ti ti-users"></i><p>Segui qualche sommelier per vedere qui i loro vini.</p></div>`;
+    return;
+  }
+  const { data: wines, error } = await sb
+    .from('wines').select('*')
+    .in('user_id', followeeIds).eq('visibility', true)
+    .order('created_at', { ascending: false })
+    .limit(40);
+  if (error) { feedBox.innerHTML = `<div class="empty"><p>Errore caricamento feed.</p></div>`; return; }
+  if (!wines?.length) { feedBox.innerHTML = `<div class="empty"><i class="ti ti-bottle"></i><p>Le persone che segui non hanno ancora vini visibili.</p></div>`; return; }
+
+  const { data: profilesData } = await sb.from('profiles').select('id, full_name, avatar_base64').in('id', followeeIds);
+  const profMap = Object.fromEntries((profilesData || []).map(p => [p.id, p]));
+
+  networkWinesCache = wines.map(row => ({
+    ...row, aisParams: row.ais_params, fisarParams: row.fisar_params, aisScore: row.ais_score, fisarScore: row.fisar_score,
+    olfNote: row.olf_note, gustNote: row.gust_note, fpNote: row.fp_note, degSchema: row.deg_schema,
+    frontImg: row.front_img, backImg: row.back_img, ownerName: profMap[row.user_id]?.full_name || 'Sommelier',
+    ownerAvatar: profMap[row.user_id]?.avatar_base64 || ''
+  }));
+
+  const st = s => { const n = Math.round((s || 80) / 20); return '★'.repeat(n) + '☆'.repeat(5 - n); };
+  feedBox.innerHTML = `<div class="wine-grid">` + networkWinesCache.map(w => `
+    <div class="wcard" onclick="showNetworkWinePreview('${w.id}')">
+      <div class="wimg">${w.frontImg ? `<img src="${w.frontImg}" alt="${w.name}" loading="lazy">` : '<div class="ph"><i class="ti ti-bottle"></i></div>'}</div>
+      <div class="winfo">
+        <div class="wname">${w.name}</div>
+        <div class="wprod">${[w.producer, w.vintage].filter(Boolean).join(' · ') || '—'}</div>
+        <div class="wmeta">
+          <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)">
+            ${w.ownerAvatar ? `<img src="${w.ownerAvatar}" style="width:16px;height:16px;border-radius:50%;object-fit:cover">` : ''}
+            ${w.ownerName}
+          </span>
+          <span class="wscore">${w.score || '—'}/100</span>
+        </div>
+      </div>
+    </div>`).join('') + `</div>`;
+}
+
+function showNetworkWinePreview(id) {
+  const w = networkWinesCache.find(x => x.id === id); if (!w) return;
+  const chips = [w.type, w.doc, w.region, w.country, w.grapes].filter(Boolean);
+  document.getElementById('network-preview-content').innerHTML = `
+    <div class="dhero">
+      <div class="dimgs">
+        ${w.frontImg ? `<img src="${w.frontImg}" class="dimg" alt="Etichetta">` : `<div class="dimg"><i class="ti ti-bottle" style="font-size:28px;color:var(--wine);opacity:.3"></i></div>`}
+        ${w.backImg  ? `<img src="${w.backImg}"  class="dimg" alt="Controetichetta">` : ''}
+      </div>
+      <div class="dinfo" style="flex:1">
+        <div class="dname">${w.name}</div>
+        <div class="dprod">${w.producer || ''}</div>
+        <div class="dvintage">${w.vintage ? 'Annata: ' + w.vintage : ''}</div>
+        <div style="display:flex;align-items:center;gap:6px;margin:6px 0 8px;font-size:12px;color:var(--muted)">
+          ${w.ownerAvatar ? `<img src="${w.ownerAvatar}" style="width:20px;height:20px;border-radius:50%;object-fit:cover">` : ''}
+          Degustato da ${w.ownerName}
+        </div>
+        <div class="dchips">${chips.map(c => `<span class="dchip">${c}</span>`).join('')}</div>
+      </div>
+    </div>
+    ${w.pairing ? `<div class="dfield" style="margin-bottom:.9rem"><div class="fl"><i class="ti ti-tag" style="font-size:11px;vertical-align:-1px;margin-right:3px"></i>Abbinamento cibo</div><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">${w.pairing.split(',').map(p => `<span class="tag">${p.trim()}</span>`).join('')}</div></div>` : ''}
+    ${(w.notes || w.olfNote || w.gustNote || w.fpNote) ? `<div class="dfield"><div class="fl">Note di degustazione</div><div class="fv" style="font-style:italic;margin-top:4px;line-height:1.7;font-size:13px;color:var(--muted)">${[w.notes, w.olfNote, w.gustNote, w.fpNote].filter(Boolean).join(' — ')}</div></div>` : ''}
+  `;
+  showScreen('screen-network-preview');
 }
 
 async function saveProfile() {
@@ -2704,7 +2975,9 @@ async function saveProfile() {
     assoc:              document.getElementById('p-assoc')?.value || '',
     card:               document.getElementById('p-card')?.value.trim() || '',
     delegazione:        document.getElementById('p-delegazione')?.value || '',
-    delegazione_custom: document.getElementById('p-delegazione-custom')?.value.trim() || ''
+    delegazione_custom: document.getElementById('p-delegazione-custom')?.value.trim() || '',
+    avatar_base64:      pendingAvatarBase64 !== null ? pendingAvatarBase64 : (currentUser.avatarBase64 || null),
+    is_public:          document.getElementById('p-is-public')?.checked || false
   });
   showLoadingOverlay(false);
   if (profErr) { toastErr('Errore salvataggio profilo: ' + profErr.message); console.error('saveProfile error:', profErr); return; }
@@ -2714,6 +2987,8 @@ async function saveProfile() {
   currentUser.card              = document.getElementById('p-card')?.value.trim() || '';
   currentUser.delegazione       = document.getElementById('p-delegazione')?.value || '';
   currentUser.delegazioneCustom = document.getElementById('p-delegazione-custom')?.value.trim() || '';
+  if (pendingAvatarBase64 !== null) currentUser.avatarBase64 = pendingAvatarBase64;
+  currentUser.isPublic = document.getElementById('p-is-public')?.checked || false;
   const initials = currentUser.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
   document.getElementById('nav-avatar').textContent = initials;
   document.getElementById('nav-name').textContent   = currentUser.name.split(' ')[0];
@@ -2721,7 +2996,7 @@ async function saveProfile() {
   if (currentUser.assoc) { bc.textContent = currentUser.assoc; bc.className = 'assoc-badge badge-' + currentUser.assoc.toLowerCase(); bc.style.display = ''; }
   else bc.style.display = 'none';
   toast('Profilo aggiornato!');
-  showScreen('screen-list');
+  showScreen(profileReturnScreen);
 }
 
 /* ── EXPORT ── */
@@ -2834,10 +3109,12 @@ calcAIS(); calcFISAR();
    ma gli onclick="..." nell'HTML devono poterle richiamare. */
 Object.assign(window, {
   adjustQty, calcAIS, calcFISAR, cancelForm, closeNavMenu, deleteWine, doLogin, doLogout, doRegister,
-  editWine, exportCSV, exportInventory, exportJSON, exportTasting, onAdvCountryChange, previewImg,
-  removeGrapeTag, renderGrid, resendConfirmation, resetAdvFilters, saveProfile, saveWine, scanBothLabels, setFilter, setQtyFilter, showAdd, showComingSoon, showDetail,
-  showProfileScreen, showScreen, stepQty, switchDeg, switchLTab, toast, toggleAdvFilters, toggleNavMenu,
-  togglePairing, toggleSection, updateDelegazioniList, updateGrapePct, updateRegionOptions, updateProvinceOptions
+  editWine, exportCSV, exportInventory, exportJSON, exportTasting, onAdvCountryChange, previewAvatar, previewImg,
+  removeGrapeTag, renderGrid, resendConfirmation, resetAdvFilters, respondFollowRequest, saveProfile, saveWine,
+  scanBothLabels, searchNetworkUsers, sendFollowRequest, setFilter, setQtyFilter, showAdd, showComingSoon, showDetail,
+  showNetworkScreen, showNetworkWinePreview, showProfileScreen, showScreen, stepQty, switchDeg, switchLTab, toast,
+  toggleAdvFilters, toggleNavMenu, togglePairing, toggleSection, updateDelegazioniList, updateGrapePct,
+  updateRegionOptions, updateProvinceOptions
 });
 </script>
 </body>

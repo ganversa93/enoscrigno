@@ -226,3 +226,62 @@ alter table public.wines add column if not exists shop_category text;
 -- Default TRUE per tutti i vini già esistenti.
 -- ════════════════════════════════════════════
 alter table public.wines add column if not exists visibility boolean not null default true;
+
+-- ════════════════════════════════════════════
+-- NETWORK — fondamenta per la parte condivisa
+-- ════════════════════════════════════════════
+
+-- 1) Profilo: immagine personale + interruttore "profilo pubblico"
+--    Un profilo NON pubblico non è mai ricercabile da altri utenti,
+--    indipendentemente da quanti vini abbia impostati come visibili.
+alter table public.profiles add column if not exists avatar_base64 text;
+alter table public.profiles add column if not exists is_public boolean not null default false;
+
+-- 2) Tabella follow — richieste di seguire un altro utente
+create table if not exists public.follows (
+  follower_id uuid not null references auth.users(id) on delete cascade,
+  followee_id uuid not null references auth.users(id) on delete cascade,
+  status      text not null default 'pending',  -- 'pending' | 'accepted'
+  created_at  timestamptz default now(),
+  primary key (follower_id, followee_id),
+  constraint no_self_follow check (follower_id <> followee_id)
+);
+alter table public.follows enable row level security;
+
+create policy "follows: vedo le mie richieste (inviate o ricevute)"
+  on public.follows for select
+  using (auth.uid() = follower_id or auth.uid() = followee_id);
+
+create policy "follows: posso creare solo richieste mie"
+  on public.follows for insert
+  with check (auth.uid() = follower_id);
+
+create policy "follows: accetto/rifiuto se sono il destinatario, annullo se il mittente"
+  on public.follows for update
+  using (auth.uid() = followee_id or auth.uid() = follower_id);
+
+create policy "follows: elimino una relazione che mi coinvolge"
+  on public.follows for delete
+  using (auth.uid() = follower_id or auth.uid() = followee_id);
+
+-- 3) Profili pubblici ricercabili da chiunque sia autenticato
+--    (si aggiunge alla policy esistente "profiles: own read" — un
+--    utente vede sempre il proprio profilo, e in più quelli pubblici)
+create policy "profiles: profili pubblici visibili a tutti"
+  on public.profiles for select
+  using (is_public = true);
+
+-- 4) Vini visibili nel feed Network: solo se il proprietario è
+--    seguito con richiesta accettata E il singolo vino è impostato
+--    come visibile (colonna wines.visibility)
+create policy "wines: visibili nel network se seguo l'utente e il vino è pubblico"
+  on public.wines for select
+  using (
+    visibility = true
+    and exists (
+      select 1 from public.follows f
+      where f.follower_id = auth.uid()
+        and f.followee_id = wines.user_id
+        and f.status = 'accepted'
+    )
+  );
