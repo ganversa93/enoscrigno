@@ -675,6 +675,12 @@
             <option value="">Tutti</option>
           </select>
         </div>
+        <div class="adv-filter-field">
+          <label>Categoria acquisto</label>
+          <select id="af-shopcat" onchange="renderGrid()">
+            <option value="">Tutte</option>
+          </select>
+        </div>
         <button class="btn sm" onclick="resetAdvFilters()"><i class="ti ti-x"></i>Azzera</button>
       </div>
     </div>
@@ -1136,8 +1142,15 @@
       </div>
       <div class="frow">
         <div class="fg"><label>Data acquisto</label><input type="date" id="f-date"></div>
-        <div class="fg"><label>Luogo acquisto</label><input type="text" id="f-shop" placeholder="es. Enoteca Bianchi, Milano"></div>
+        <div class="fg"><label>Categoria acquisto</label>
+          <select id="f-shop-category">
+            <option value="">Seleziona…</option>
+            <option>Cantina</option><option>Enoteca</option><option>Evento</option>
+            <option>Web</option><option>Supermercato</option><option>Regalo</option><option>Altro</option>
+          </select>
+        </div>
       </div>
+      <div class="fg"><label>Dettaglio luogo <span style="font-weight:400;color:var(--muted)">(facoltativo)</span></label><input type="text" id="f-shop" placeholder="es. Enoteca Bianchi, Milano · Compleanno di Marco"></div>
       <div class="fg"><label>Finestra di consumo ottimale</label><input type="text" id="f-drink" placeholder="es. 2025–2038"></div>
       <div class="frow">
         <div class="fg"><label>Data degustazione</label><input type="date" id="f-tastingdate"></div>
@@ -1447,6 +1460,7 @@ async function loadWines() {
     degSchema:   row.deg_schema,
     tastingDate:  row.tasting_date,
     tastingPlace: row.tasting_place,
+    shopCategory: row.shop_category,
     frontImg:    row.front_img,
     backImg:     row.back_img,
   }));
@@ -1472,6 +1486,7 @@ async function dbSaveWine(wine) {
     qty:          wine.qty          || 1,
     date:         wine.date         || null,
     shop:         wine.shop         || null,
+    shop_category: wine.shopCategory || null,
     drink:        wine.drink        || null,
     tasting_date:  wine.tastingDate  || null,
     tasting_place: wine.tastingPlace || null,
@@ -1653,6 +1668,12 @@ function populateAdvFilterOptions() {
   grapeSel.innerHTML = '<option value="">Tutti</option>' + grapes.map(g => `<option value="${g}">${g}</option>`).join('');
   grapeSel.value = grapes.includes(prevGrape) ? prevGrape : '';
 
+  const shopCatSel = document.getElementById('af-shopcat');
+  const prevShopCat = shopCatSel.value;
+  const shopCats = [...new Set(wines.map(w => w.shopCategory).filter(Boolean))].sort();
+  shopCatSel.innerHTML = '<option value="">Tutte</option>' + shopCats.map(s => `<option value="${s}">${s}</option>`).join('');
+  shopCatSel.value = shopCats.includes(prevShopCat) ? prevShopCat : '';
+
   populateAdvRegionOptions();
 }
 
@@ -1677,12 +1698,13 @@ function resetAdvFilters() {
   document.getElementById('af-region').value = '';
   document.getElementById('af-pairing').value = '';
   document.getElementById('af-grape').value = '';
+  document.getElementById('af-shopcat').value = '';
   populateAdvRegionOptions();
   renderGrid();
 }
 
 function updateAdvFilterBadge() {
-  const n = ['af-country','af-region','af-pairing','af-grape'].filter(id => document.getElementById(id)?.value).length;
+  const n = ['af-country','af-region','af-pairing','af-grape','af-shopcat'].filter(id => document.getElementById(id)?.value).length;
   const badge = document.getElementById('adv-filter-badge');
   const toggle = document.getElementById('adv-filter-toggle');
   if (n > 0) { badge.textContent = n; badge.style.display = 'inline-flex'; toggle.classList.add('active'); }
@@ -1694,6 +1716,7 @@ function renderGrid() {
   const afRegion  = document.getElementById('af-region')?.value || '';
   const afPairing = document.getElementById('af-pairing')?.value || '';
   const afGrape   = document.getElementById('af-grape')?.value || '';
+  const afShopCat = document.getElementById('af-shopcat')?.value || '';
   updateAdvFilterBadge();
   const list = myWines().filter(w => {
     if (currentFilter !== 'all' && w.type !== currentFilter) return false;
@@ -1710,6 +1733,7 @@ function renderGrid() {
       const grapeNames = (w.grapes || '').split(',').map(g => g.trim().replace(/\s+\d{1,3}\s*%$/, ''));
       if (!grapeNames.includes(afGrape)) return false;
     }
+    if (afShopCat && w.shopCategory !== afShopCat) return false;
     if (q && ![(w.name||''),(w.producer||''),(w.region||''),(w.pairing||'')].join(' ').toLowerCase().includes(q)) return false;
     return true;
   });
@@ -1744,7 +1768,7 @@ function showAdd() {
   // Reset accordion: Foto + Identità aperte, il resto chiuso (nuovo inserimento)
   resetSections();
   const clear = ids => ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  clear(['f-name','f-producer','f-doc','f-grapes','f-region','f-country','f-province','f-shop','f-drink','f-notes','f-tags','ap-olfnote','ap-gustnote','fp-note','f-pairing-custom']);
+  clear(['f-name','f-producer','f-doc','f-grapes','f-region','f-country','f-province','f-shop','f-shop-category','f-drink','f-notes','f-tags','ap-olfnote','ap-gustnote','fp-note','f-pairing-custom']);
   selectedGrapes = []; renderGrapeTags();
   const grapesInput = document.getElementById('f-grapes-input'); if (grapesInput) grapesInput.value = '';
   clear(['f-vintage','f-abv','f-price']);
@@ -2064,7 +2088,7 @@ async function saveWine() {
     doc: g('f-doc'), grapes: g('f-grapes'), region: g('f-region'), country: g('f-country') || 'Italia', province: g('f-province'),
     abv: +g('f-abv') || null, format: g('f-format') || '750 ml',
     price: +g('f-price') || null, qty: (g('f-qty') === '' ? 1 : +g('f-qty')),
-    date: g('f-date'), shop: g('f-shop'), drink: g('f-drink'),
+    date: g('f-date'), shop: g('f-shop'), shopCategory: g('f-shop-category'), drink: g('f-drink'),
     tastingDate: g('f-tastingdate'), tastingPlace: g('f-tastingplace'),
     pairing: computePairingValue(),
     degSchema: activeDeg,
@@ -2162,7 +2186,7 @@ function showDetail(id) {
       </div>
       <div class="dfield"><div class="fl">Prezzo pagato</div><div class="fv">${w.price ? '€' + w.price.toFixed(2) : '—'}</div></div>
       <div class="dfield"><div class="fl">Acquistato il</div><div class="fv">${fmtDate(w.date)}</div></div>
-      <div class="dfield"><div class="fl">Luogo acquisto</div><div class="fv">${w.shop || '—'}</div></div>
+      <div class="dfield"><div class="fl">Luogo acquisto</div><div class="fv">${[w.shopCategory, w.shop].filter(Boolean).join(' — ') || '—'}</div></div>
       <div class="dfield"><div class="fl">Da bere</div><div class="fv">${w.drink || '—'}</div></div>
       <div class="dfield"><div class="fl">Data degustazione</div><div class="fv">${fmtDate(w.tastingDate)}</div></div>
       ${w.tastingPlace ? `<div class="dfield" style="grid-column:1/-1"><div class="fl">Luogo degustazione</div><div class="fv">${w.tastingPlace}</div></div>` : ''}
@@ -2224,7 +2248,7 @@ function editWine() {
   set('f-province', w.province);
   set('f-abv', w.abv);
   set('f-format', w.format); set('f-price', w.price); set('f-qty', w.qty ?? 1);
-  set('f-date', w.date); set('f-shop', w.shop); set('f-drink', w.drink);
+  set('f-date', w.date); set('f-shop', w.shop); set('f-shop-category', w.shopCategory); set('f-drink', w.drink);
   set('f-tastingdate', w.tastingDate); set('f-tastingplace', w.tastingPlace);
   applyPairingToForm(w.pairing);
   set('f-notes', w.notes); set('f-tags', w.tags);
@@ -2571,8 +2595,8 @@ function dl(filename, content, type) {
 }
 function exportCSV() {
   const w = myWines();
-  const hdr = 'Nome,Produttore,Annata,Tipo,DOC,Vitigni,Regione,Provincia,Paese,Gradazione,Formato,Prezzo,Bottiglie,Data acquisto,Luogo,Da bere,Abbinamento,Schema degustazione,Punteggio,Note';
-  const rows = w.map(x => [x.name,x.producer,x.vintage||'',x.type,x.doc,x.grapes,x.region,x.province||'',x.country,x.abv||'',x.format,x.price||'',x.qty,x.date,x.shop,x.drink,'"'+(x.pairing||'').replace(/"/g,"''")+'"',x.degSchema||'',x.score||'','"'+(x.notes||x.olfNote||'').replace(/"/g,"''")+'"'].join(','));
+  const hdr = 'Nome,Produttore,Annata,Tipo,DOC,Vitigni,Regione,Provincia,Paese,Gradazione,Formato,Prezzo,Bottiglie,Data acquisto,Categoria acquisto,Luogo,Da bere,Abbinamento,Schema degustazione,Punteggio,Note';
+  const rows = w.map(x => [x.name,x.producer,x.vintage||'',x.type,x.doc,x.grapes,x.region,x.province||'',x.country,x.abv||'',x.format,x.price||'',x.qty,x.date,x.shopCategory||'',x.shop,x.drink,'"'+(x.pairing||'').replace(/"/g,"''")+'"',x.degSchema||'',x.score||'','"'+(x.notes||x.olfNote||'').replace(/"/g,"''")+'"'].join(','));
   dl('cantina_' + currentUser.name.replace(/\s/g,'_') + '.csv', [hdr, ...rows].join('\n'), 'text/csv');
   showExportMsg('✓ CSV esportato con successo');
 }

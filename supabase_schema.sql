@@ -43,7 +43,8 @@ create table if not exists public.wines (
   price         numeric(8,2),
   qty           integer default 1,
   date          date,             -- data acquisto
-  shop          text,             -- luogo acquisto
+  shop          text,             -- luogo acquisto (dettaglio libero)
+  shop_category text,             -- Cantina | Enoteca | Evento | Web | Supermercato | Regalo | Altro
   drink         text,             -- finestra consumo
 
   -- degustazione
@@ -210,3 +211,9 @@ alter table public.profiles add column if not exists ai_scan_enabled boolean not
 -- aggiungere il campo provincia (rilevante solo per l'Italia)
 -- ════════════════════════════════════════════
 alter table public.wines add column if not exists province text;
+
+-- ════════════════════════════════════════════
+-- CATEGORIA ACQUISTO — se il database esiste già, esegui questa riga
+-- per aggiungere il campo di classificazione del luogo di acquisto
+-- ════════════════════════════════════════════
+alter table public.wines add column if not exists shop_category text;
