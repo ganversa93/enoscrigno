@@ -258,6 +258,24 @@
 
     .pairing-chips { display: flex; gap: 6px; flex-wrap: wrap; }
 
+    .grape-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .grape-tag {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--wine-pale); border: 0.5px solid rgba(107,24,57,.2);
+      border-radius: 20px; padding: 4px 6px 4px 12px; font-size: 12px; color: var(--wine);
+    }
+    .grape-tag input {
+      width: 40px; font-size: 12px; text-align: center; padding: 2px 3px;
+      border: 0.5px solid rgba(107,24,57,.25); border-radius: 6px;
+      background: var(--bg); color: var(--wine);
+    }
+    .grape-tag .pct-sign { font-size: 11px; color: var(--wine); opacity: .7; }
+    .grape-tag .rm-btn {
+      cursor: pointer; color: var(--wine); opacity: .6; font-size: 15px;
+      line-height: 1; padding: 0 2px;
+    }
+    .grape-tag .rm-btn:hover { opacity: 1; }
+
     /* ── FILTRI AVANZATI (Paese / Regione / Abbinamento) ── */
     #adv-filter-toggle { display: flex; align-items: center; }
     #adv-filter-badge {
@@ -709,7 +727,13 @@
             <option>Spumante</option><option>Dolce</option><option>Passito</option><option>Altro</option>
           </select>
         </div>
-        <div class="fg"><label>Vitigni</label><input type="text" id="f-grapes" placeholder="es. Nebbiolo 100%"></div>
+        <div class="fg"></div>
+      </div>
+      <div class="fg" style="position:relative">
+        <label>Vitigni</label>
+        <input type="text" id="f-grapes-input" placeholder="Scrivi per cercare un vitigno…" autocomplete="off">
+        <div class="grape-tags" id="grape-tags"></div>
+        <input type="hidden" id="f-grapes">
       </div>
       </div>
     </div>
@@ -1674,6 +1698,8 @@ function showAdd() {
   resetSections();
   const clear = ids => ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   clear(['f-name','f-producer','f-doc','f-grapes','f-region','f-country','f-province','f-shop','f-drink','f-notes','f-tags','ap-olfnote','ap-gustnote','fp-note','f-pairing-custom']);
+  selectedGrapes = []; renderGrapeTags();
+  const grapesInput = document.getElementById('f-grapes-input'); if (grapesInput) grapesInput.value = '';
   clear(['f-vintage','f-abv','f-price']);
   updateRegionOptions(); // resetta datalist regione/provincia e stato campo
   document.querySelectorAll('.p-chip').forEach(chip => chip.classList.remove('active'));
@@ -1955,7 +1981,7 @@ async function scanBothLabels() {
 function fillForm(d) {
   const set = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; };
   set('f-name', d.name); set('f-producer', d.producer); set('f-vintage', d.vintage);
-  set('f-doc', d.doc); set('f-grapes', d.grapes);
+  set('f-doc', d.doc); if (d.grapes) applyGrapesToForm(d.grapes);
   set('f-country', d.country || 'Italia'); updateRegionOptions();
   set('f-region', d.region); updateProvinceOptions();
   set('f-province', d.province);
@@ -2145,7 +2171,7 @@ function editWine() {
   document.getElementById('f-province').value = '';
   const set = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.value = v; };
   set('f-name', w.name); set('f-producer', w.producer); set('f-vintage', w.vintage);
-  set('f-type', w.type); set('f-doc', w.doc); set('f-grapes', w.grapes);
+  set('f-type', w.type); set('f-doc', w.doc); applyGrapesToForm(w.grapes);
   set('f-country', w.country); updateRegionOptions();
   set('f-region', w.region); updateProvinceOptions();
   set('f-province', w.province);
@@ -2267,6 +2293,85 @@ const FRANCE_AOC = {
 };
 
 const GERMANY_DESIGNATIONS = ['Qualitätswein','Kabinett','Spätlese','Auslese','Beerenauslese (BA)','Trockenbeerenauslese (TBA)','Eiswein','Prädikatswein','Erste Lage','Grosses Gewächs (GG)','Classic','Selection'];
+
+/* ══ VITIGNI — elenco curato (non esaustivo) per uniformare il campo ══
+   Internazionali + principali autoctoni italiani, francesi, tedeschi,
+   spagnoli. Il campo resta comunque libero per varietà non elencate. */
+const GRAPE_VARIETIES = [
+  // Internazionali
+  'Cabernet Sauvignon','Cabernet Franc','Merlot','Pinot Nero','Pinot Grigio','Pinot Bianco',
+  'Syrah','Chardonnay','Sauvignon Blanc','Riesling','Gewürztraminer','Viognier',
+  'Grenache (Garnacha)','Tempranillo','Malbec','Petit Verdot','Sémillon','Moscato',
+  'Zinfandel (Primitivo)','Gamay','Mourvèdre','Carignan','Cinsault','Chenin Blanc',
+  // Autoctoni italiani
+  'Sangiovese','Nebbiolo','Barbera','Dolcetto','Corvina','Rondinella','Molinara',
+  'Garganega','Trebbiano','Vermentino','Glera','Nero d\'Avola','Nerello Mascalese',
+  'Nerello Cappuccio','Aglianico','Fiano','Greco','Falanghina','Verdicchio','Vernaccia',
+  'Montepulciano','Lambrusco','Croatina','Freisa','Grignolino','Cortese','Arneis',
+  'Ribolla Gialla','Friulano','Pignolo','Schiava','Lagrein','Teroldego','Negroamaro',
+  'Bombino Bianco','Bombino Nero','Grillo','Catarratto','Malvasia','Ansonica (Inzolia)',
+  'Pecorino','Passerina','Sagrantino','Ciliegiolo','Canaiolo','Colorino','Vespolina',
+  'Bonarda','Timorasso','Moscato Giallo','Traminer Aromatico','Kerner','Marzemino',
+  // Francia (oltre agli internazionali già elencati)
+  'Melon de Bourgogne','Ugni Blanc','Colombard','Roussanne','Marsanne','Petit Manseng',
+  // Germania (oltre a Riesling già elencato)
+  'Müller-Thurgau','Silvaner','Dornfelder','Portugieser','Scheurebe',
+  // Spagna (oltre a Tempranillo/Grenache già elencati)
+  'Albariño','Verdejo','Bobal','Godello','Mencía','Palomino','Xarel-lo','Macabeo',
+  'Monastrell','Graciano','Cariñena (Mazuelo)'
+];
+
+let selectedGrapes = []; // [{name, pct}]
+
+function renderGrapeTags() {
+  const box = document.getElementById('grape-tags');
+  if (!box) return;
+  box.innerHTML = selectedGrapes.map((g, i) => `
+    <span class="grape-tag">
+      ${g.name}
+      <input type="number" min="0" max="100" placeholder="—" value="${g.pct || ''}"
+             oninput="updateGrapePct(${i}, this.value)" onclick="event.stopPropagation()">
+      <span class="pct-sign">%</span>
+      <span class="rm-btn" onclick="removeGrapeTag(${i})">×</span>
+    </span>
+  `).join('');
+  syncGrapesHiddenInput();
+}
+
+function addGrapeTag(name) {
+  const trimmed = name.trim();
+  if (!trimmed) return;
+  if (selectedGrapes.some(g => g.name.toLowerCase() === trimmed.toLowerCase())) return;
+  selectedGrapes.push({ name: trimmed, pct: '' });
+  renderGrapeTags();
+  const input = document.getElementById('f-grapes-input');
+  if (input) { input.value = ''; input.focus(); }
+}
+
+function updateGrapePct(index, val) {
+  if (selectedGrapes[index]) selectedGrapes[index].pct = val;
+  syncGrapesHiddenInput();
+}
+
+function removeGrapeTag(index) {
+  selectedGrapes.splice(index, 1);
+  renderGrapeTags();
+}
+
+function syncGrapesHiddenInput() {
+  const str = selectedGrapes.map(g => g.name + (g.pct ? ' ' + g.pct + '%' : '')).join(', ');
+  const hidden = document.getElementById('f-grapes');
+  if (hidden) hidden.value = str;
+}
+
+// Ricostruisce i tag a partire dalla stringa salvata (es. "Nebbiolo 100%, Barbera 10%")
+function applyGrapesToForm(grapesStr) {
+  selectedGrapes = (grapesStr || '').split(',').map(s => s.trim()).filter(Boolean).map(token => {
+    const m = token.match(/^(.*?)\s+(\d{1,3})\s*%$/);
+    return m ? { name: m[1].trim(), pct: m[2] } : { name: token, pct: '' };
+  });
+  renderGrapeTags();
+}
 
 const SPAIN_DO = {
   'Rioja': ['Rioja DOCa'],
@@ -2467,7 +2572,7 @@ function exportInventory() {
    inconsistente e talvolta arriva a coprire il campo di testo con
    il suggerimento (bug noto su iOS 26). Questo widget fatto a mano
    si comporta in modo identico e prevedibile su ogni dispositivo. */
-function attachAutocomplete(inputId, getSuggestions) {
+function attachAutocomplete(inputId, getSuggestions, onSelect) {
   const input = document.getElementById(inputId);
   if (!input) return;
   let box = null;
@@ -2486,9 +2591,9 @@ function attachAutocomplete(inputId, getSuggestions) {
       item.textContent = s;
       item.addEventListener('mousedown', e => {
         e.preventDefault();
-        input.value = s;
+        if (onSelect) { onSelect(s); }
+        else { input.value = s; input.dispatchEvent(new Event('change')); }
         close();
-        input.dispatchEvent(new Event('change'));
       });
       box.appendChild(item);
     });
@@ -2501,6 +2606,10 @@ function attachAutocomplete(inputId, getSuggestions) {
 attachAutocomplete('f-region',   () => regionSuggestions);
 attachAutocomplete('f-province', () => provinceSuggestions);
 attachAutocomplete('f-doc',      () => docSuggestions);
+attachAutocomplete('f-grapes-input', () => GRAPE_VARIETIES, name => addGrapeTag(name));
+document.getElementById('f-grapes-input')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); addGrapeTag(e.target.value); }
+});
 
 /* ── INIT ── */
 calcAIS(); calcFISAR();
@@ -2512,9 +2621,9 @@ calcAIS(); calcFISAR();
 Object.assign(window, {
   adjustQty, calcAIS, calcFISAR, cancelForm, deleteWine, doLogin, doLogout, doRegister,
   editWine, exportCSV, exportInventory, exportJSON, exportTasting, onAdvCountryChange, previewImg,
-  renderGrid, resendConfirmation, resetAdvFilters, saveProfile, saveWine, scanBothLabels, setFilter, setQtyFilter, showAdd, showDetail,
+  removeGrapeTag, renderGrid, resendConfirmation, resetAdvFilters, saveProfile, saveWine, scanBothLabels, setFilter, setQtyFilter, showAdd, showDetail,
   showProfileScreen, showScreen, stepQty, switchDeg, switchLTab, toast, toggleAdvFilters,
-  togglePairing, toggleSection, updateDelegazioniList, updateRegionOptions, updateProvinceOptions
+  togglePairing, toggleSection, updateDelegazioniList, updateGrapePct, updateRegionOptions, updateProvinceOptions
 });
 </script>
 </body>
