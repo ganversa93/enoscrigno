@@ -530,7 +530,6 @@
           <div class="lfield"><label>Password</label><input type="password" id="l-pwd" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
           <button class="lbtn" onclick="doLogin()">Accedi</button>
           <div class="lerr" id="lerr">Email o password non corretti</div>
-          <p class="demo-hint">Demo: <b>mario@ais.it</b> / <b>1234</b> &nbsp;·&nbsp; <b>laura@fisar.it</b> / <b>1234</b></p>
         </div>
         <div id="lform-reg" style="display:none">
           <div class="lfield"><label>Nome e cognome *</label><input type="text" id="r-name" placeholder="Mario Rossi"></div>
@@ -1215,12 +1214,38 @@ async function doLogin() {
   const pwd   = document.getElementById('l-pwd').value;
   const err   = document.getElementById('lerr');
   err.style.display = 'none';
+  err.innerHTML = '';
   const btn = document.querySelector('#lform-login .lbtn');
   btn.textContent = 'Accesso in corso…'; btn.disabled = true;
   const { data, error } = await sb.auth.signInWithPassword({ email, password: pwd });
   btn.textContent = 'Accedi'; btn.disabled = false;
-  if (error) { err.textContent = 'Email o password non corretti'; err.style.display = 'block'; return; }
+  if (error) {
+    err.style.color = '#c0392b';
+    if (/email not confirmed/i.test(error.message)) {
+      err.innerHTML = 'Email non confermata. Controlla la posta (anche lo spam) — se il link è scaduto, <a href="#" onclick="resendConfirmation(event)" style="color:var(--wine);text-decoration:underline">richiedine uno nuovo</a>.';
+    } else {
+      err.textContent = 'Email o password non corretti';
+    }
+    err.style.display = 'block';
+    return;
+  }
   await loadProfile(data.user);
+}
+
+async function resendConfirmation(e) {
+  e.preventDefault();
+  const email = document.getElementById('l-email').value.trim();
+  const err = document.getElementById('lerr');
+  if (!email) { toast('Inserisci prima la tua email nel campo sopra'); return; }
+  const { error } = await sb.auth.resend({ type: 'signup', email });
+  if (error) {
+    err.style.color = '#c0392b';
+    err.innerHTML = 'Errore nel reinvio: ' + error.message;
+  } else {
+    err.style.color = 'var(--fisar)';
+    err.innerHTML = '✓ Nuova email di conferma inviata! Controlla la posta (anche lo spam).';
+  }
+  err.style.display = 'block';
 }
 
 async function doRegister() {
@@ -2351,7 +2376,7 @@ calcAIS(); calcFISAR();
 Object.assign(window, {
   adjustQty, calcAIS, calcFISAR, cancelForm, deleteWine, doLogin, doLogout, doRegister,
   editWine, exportCSV, exportInventory, exportJSON, exportTasting, previewImg,
-  renderGrid, saveProfile, saveWine, scanBothLabels, setFilter, setQtyFilter, showAdd, showDetail,
+  renderGrid, resendConfirmation, saveProfile, saveWine, scanBothLabels, setFilter, setQtyFilter, showAdd, showDetail,
   showProfileScreen, showScreen, stepQty, switchDeg, switchLTab, toast,
   togglePairing, toggleSection, updateDelegazioniList, updateRegionOptions, updateProvinceOptions
 });
