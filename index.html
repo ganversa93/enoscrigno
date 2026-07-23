@@ -2115,7 +2115,7 @@ async function saveWine() {
 function showDetail(id) {
   currentDetailId = id;
   const w = myWines().find(x => x.id === id); if (!w) return;
-  const chips = [w.type, w.doc, w.region, w.province ? 'Prov. ' + w.province : null, w.country, w.grapes, w.abv ? w.abv + '% alc.' : null].filter(Boolean);
+  const chips = [w.type, w.region, w.province ? 'Prov. ' + w.province : null, w.country, w.grapes, w.abv ? w.abv + '% alc.' : null].filter(Boolean);
   const st = s => { const n = Math.round((s || 80) / 20); return '★'.repeat(n) + '☆'.repeat(5 - n); };
 
   let degHTML = '';
@@ -2161,9 +2161,10 @@ function showDetail(id) {
         ${w.backImg  ? `<img src="${w.backImg}"  class="dimg" alt="Controetichetta">` : ''}
       </div>
       <div class="dinfo" style="flex:1">
-        <div class="dvintage">${w.vintage ? 'Annata: ' + w.vintage : ''}</div>
         <div class="dname">${w.name}</div>
         <div class="dprod">${w.producer || ''}</div>
+        <div class="dvintage">${w.vintage ? 'Annata: ' + w.vintage : ''}</div>
+        ${w.doc ? `<div style="font-size:12px;color:var(--muted);margin-bottom:6px">${w.doc}</div>` : ''}
         <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px">
           <span style="font-size:15px;color:var(--gold);letter-spacing:-1px">${st(w.score)}</span>
           <span style="font-size:20px;font-family:'Cormorant Garamond',serif;color:var(--wine);font-weight:500">${w.score || '—'}</span>
