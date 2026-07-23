@@ -2377,11 +2377,12 @@ async function saveWine() {
     degSchema: activeDeg,
     aisParams:   activeDeg === 'ais'   ? getAP() : null,
     aisScore:    activeDeg === 'ais'   ? aisScore : null,
-    olfNote: g('ap-olfnote'), gustNote: g('ap-gustnote'),
+    olfNote:  activeDeg === 'ais'   ? g('ap-olfnote') : '',
+    gustNote: activeDeg === 'ais'   ? g('ap-gustnote') : '',
     fisarParams: activeDeg === 'fisar' ? getFP() : null,
     fisarScore:  activeDeg === 'fisar' ? fisarScore : null,
-    fpNote: g('fp-note'),
-    score: finalScore, notes: g('f-notes'), tags: g('f-tags'),
+    fpNote:   activeDeg === 'fisar' ? g('fp-note') : '',
+    score: finalScore, notes: activeDeg === 'free' ? g('f-notes') : '', tags: g('f-tags'),
     frontImg, backImg
   };
   showLoadingOverlay(true);
