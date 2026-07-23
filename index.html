@@ -2083,8 +2083,8 @@ function availableDegTabs() {
   // Always show the association tab (if any) + free; never show the other association tab
   if (assocTab === 'ais')   return ['ais',   'free'];
   if (assocTab === 'fisar') return ['fisar', 'free'];
-  // No association: show all three
-  return ['ais', 'fisar', 'free'];
+  // Nessuna associazione: solo degustazione libera (AIS/FISAR riservate ai rispettivi iscritti)
+  return ['free'];
 }
 
 function renderDegTabs() {
