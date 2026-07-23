@@ -727,50 +727,27 @@
             <option>Spumante</option><option>Dolce</option><option>Passito</option><option>Altro</option>
           </select>
         </div>
-        <div class="fg"></div>
+        <div class="fg"><label>Gradazione alcolica (%)</label><input type="number" id="f-abv" placeholder="14.5" step="0.1" min="0" max="25"></div>
       </div>
+      <div class="fg"><label>Formato bottiglia</label>
+        <select id="f-format">
+          <option value="">Seleziona…</option>
+          <option>750 ml</option><option>375 ml (mezza)</option>
+          <option>1,5 L (Magnum)</option><option>3 L (Jeroboam)</option><option>5 L (Rehoboam)</option>
+        </select>
+      </div>
+      </div>
+    </div>
+
+    <!-- VITIGNI -->
+    <div class="fsec collapsible collapsed" id="fsec-grapes">
+      <div class="stitle fsec-header" onclick="toggleSection('fsec-grapes')"><i class="ti ti-leaf" aria-hidden="true"></i>Vitigni<i class="ti ti-chevron-down fsec-chevron"></i></div>
+      <div class="fsec-body">
       <div class="fg" style="position:relative">
         <label>Vitigni</label>
         <input type="text" id="f-grapes-input" placeholder="Scrivi per cercare un vitigno…" autocomplete="off">
         <div class="grape-tags" id="grape-tags"></div>
         <input type="hidden" id="f-grapes">
-      </div>
-      </div>
-    </div>
-
-    <div class="fsec collapsible collapsed" id="fsec-technical">
-      <div class="stitle fsec-header" onclick="toggleSection('fsec-technical')"><i class="ti ti-flask" aria-hidden="true"></i>Dati tecnici &amp; cantina<i class="ti ti-chevron-down fsec-chevron"></i></div>
-      <div class="fsec-body">
-      <div class="frow">
-        <div class="fg"><label>Gradazione alcolica (%)</label><input type="number" id="f-abv" placeholder="14.5" step="0.1" min="0" max="25"></div>
-        <div class="fg"><label>Formato bottiglia</label>
-          <select id="f-format">
-            <option value="">Seleziona…</option>
-            <option>750 ml</option><option>375 ml (mezza)</option>
-            <option>1,5 L (Magnum)</option><option>3 L (Jeroboam)</option><option>5 L (Rehoboam)</option>
-          </select>
-        </div>
-      </div>
-      <div class="frow">
-        <div class="fg"><label>Prezzo pagato (€)</label><input type="number" id="f-price" placeholder="28.00" step="0.5" min="0"></div>
-        <div class="fg">
-          <label>N° bottiglie in cantina</label>
-          <div class="qty-stepper">
-            <button type="button" class="qty-btn" onclick="stepQty(-1)" aria-label="Diminuisci">−</button>
-            <input type="number" id="f-qty" value="1" min="0" inputmode="numeric" onchange="if(this.value<0)this.value=0">
-            <button type="button" class="qty-btn" onclick="stepQty(1)" aria-label="Aumenta">+</button>
-          </div>
-          <div style="font-size:11px;color:var(--muted);margin-top:5px">0 = degustato ma non posseduto (es. a un evento o al ristorante)</div>
-        </div>
-      </div>
-      <div class="frow">
-        <div class="fg"><label>Data acquisto</label><input type="date" id="f-date"></div>
-        <div class="fg"><label>Luogo acquisto</label><input type="text" id="f-shop" placeholder="es. Enoteca Bianchi, Milano"></div>
-      </div>
-      <div class="fg"><label>Finestra di consumo ottimale</label><input type="text" id="f-drink" placeholder="es. 2025–2038"></div>
-      <div class="frow">
-        <div class="fg"><label>Data degustazione</label><input type="date" id="f-tastingdate"></div>
-        <div class="fg"><label>Luogo degustazione</label><input type="text" id="f-tastingplace" placeholder="es. Ristorante Da Marco, Roma"></div>
       </div>
       </div>
     </div>
@@ -1108,6 +1085,34 @@
         </div>
         <div class="fg"><label>Note di degustazione</label><textarea id="f-notes" placeholder="Colore, profumo, gusto, persistenza…"></textarea></div>
         <div class="fg" style="margin-top:8px"><label>Tag personali</label><input type="text" id="f-tags" placeholder="es. compleanno, regalo, da ricomprare"></div>
+      </div>
+      </div>
+    </div>
+
+    <!-- DATI DEGUSTAZIONE (ex Dati tecnici & cantina, senza ABV/Formato ora in Identità) -->
+    <div class="fsec collapsible collapsed" id="fsec-technical">
+      <div class="stitle fsec-header" onclick="toggleSection('fsec-technical')"><i class="ti ti-calendar-event" aria-hidden="true"></i>Dati degustazione<i class="ti ti-chevron-down fsec-chevron"></i></div>
+      <div class="fsec-body">
+      <div class="frow">
+        <div class="fg"><label>Prezzo pagato (€)</label><input type="number" id="f-price" placeholder="28.00" step="0.5" min="0"></div>
+        <div class="fg">
+          <label>N° bottiglie in cantina</label>
+          <div class="qty-stepper">
+            <button type="button" class="qty-btn" onclick="stepQty(-1)" aria-label="Diminuisci">−</button>
+            <input type="number" id="f-qty" value="1" min="0" inputmode="numeric" onchange="if(this.value<0)this.value=0">
+            <button type="button" class="qty-btn" onclick="stepQty(1)" aria-label="Aumenta">+</button>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:5px">0 = degustato ma non posseduto (es. a un evento o al ristorante)</div>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Data acquisto</label><input type="date" id="f-date"></div>
+        <div class="fg"><label>Luogo acquisto</label><input type="text" id="f-shop" placeholder="es. Enoteca Bianchi, Milano"></div>
+      </div>
+      <div class="fg"><label>Finestra di consumo ottimale</label><input type="text" id="f-drink" placeholder="es. 2025–2038"></div>
+      <div class="frow">
+        <div class="fg"><label>Data degustazione</label><input type="date" id="f-tastingdate"></div>
+        <div class="fg"><label>Luogo degustazione</label><input type="text" id="f-tastingplace" placeholder="es. Ristorante Da Marco, Roma"></div>
       </div>
       </div>
     </div>
@@ -1883,14 +1888,14 @@ function toggleSection(sectionId) {
 // Stato di default per un nuovo inserimento: Foto + Identità aperte, resto chiuso
 function resetSections() {
   const open = ['fsec-photo', 'fsec-identity'];
-  const closed = ['fsec-technical', 'fsec-pairing', 'fsec-tasting'];
+  const closed = ['fsec-grapes', 'fsec-technical', 'fsec-pairing', 'fsec-tasting'];
   open.forEach(id => document.getElementById(id)?.classList.remove('collapsed'));
   closed.forEach(id => document.getElementById(id)?.classList.add('collapsed'));
 }
 
 // In modifica: apri tutte le sezioni così l'utente vede subito tutti i dati esistenti
 function openAllSections() {
-  ['fsec-photo', 'fsec-identity', 'fsec-technical', 'fsec-pairing', 'fsec-tasting']
+  ['fsec-photo', 'fsec-identity', 'fsec-grapes', 'fsec-technical', 'fsec-pairing', 'fsec-tasting']
     .forEach(id => document.getElementById(id)?.classList.remove('collapsed'));
 }
 
