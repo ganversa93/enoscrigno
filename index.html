@@ -783,7 +783,7 @@
       <div class="home-card" onclick="showNetworkScreen()">
         <i class="ti ti-users"></i>
         <div class="home-card-title">Network</div>
-        <div class="home-card-sub">Sommelier e feed</div>
+        <div class="home-card-sub">Appassionati e Sommelier</div>
       </div>
       <div class="home-card" onclick="showGuideScreen()">
         <i class="ti ti-book"></i>
@@ -813,7 +813,7 @@
     </div>
 
     <div class="fsec" style="margin-bottom:1rem">
-      <div class="stitle"><i class="ti ti-search"></i>Trova sommelier</div>
+      <div class="stitle"><i class="ti ti-search"></i>Trova appassionati e sommelier</div>
       <div style="position:relative">
         <i class="ti ti-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--muted)"></i>
         <input type="text" id="network-search-input" class="network-search" placeholder="Cerca per nome…" oninput="searchNetworkUsers()">
@@ -822,7 +822,7 @@
     </div>
 
     <div class="stitle" style="margin:0 0 .75rem .1rem"><i class="ti ti-bottle-filled"></i>Ultimi vini da chi segui</div>
-    <div id="network-feed"><div class="empty"><i class="ti ti-users"></i><p>Segui qualche sommelier per vedere qui i loro vini.</p></div></div>
+    <div id="network-feed"><div class="empty"><i class="ti ti-users"></i><p>Segui qualche appassionato o sommelier per vedere qui i loro vini.</p></div></div>
   </div>
 
   <!-- ══ ANTEPRIMA VINO (network, sola lettura) ══ -->
@@ -889,7 +889,7 @@
       <div class="stitle fsec-header" onclick="toggleSection('guide-5')"><i class="ti ti-users"></i>Network — le basi<i class="ti ti-chevron-down fsec-chevron"></i></div>
       <div class="fsec-body">
         <ul class="guide-list">
-          <li>Dalla sezione <b>Network</b> puoi cercare altri sommelier per nome — trovi solo chi ha impostato il proprio profilo come pubblico.</li>
+          <li>Dalla sezione <b>Network</b> puoi cercare altri appassionati e sommelier per nome — trovi solo chi ha impostato il proprio profilo come pubblico.</li>
           <li>Premendo <b>Segui</b> invii una richiesta: la persona deve accettarla dal proprio profilo prima che tu veda i suoi vini.</li>
           <li>Chi ti ha chiesto di seguirti appare nel tuo profilo, sezione <b>Richieste di follow</b>, con Accetta/Rifiuta. La campanella in alto mostra un contatore quando ce ne sono in attesa.</li>
           <li>Il feed Network mostra i vini di chi segui (che ti ha accettato), ordinati dal più recente. Toccando una scheda vedi un'anteprima di sola lettura con abbinamento e note — non puoi modificarla, essendo il vino di un'altra persona.</li>
@@ -1142,7 +1142,7 @@
         <label>Altri abbinamenti / piatti specifici</label>
         <input type="text" id="f-pairing-custom" placeholder="es. Tagliata di manzo, risotto ai funghi porcini…">
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:6px">Questo campo sarà usato per cercare i tuoi vini per abbinamento — e in futuro per scoprire cosa hanno degustato altri sommelier con lo stesso piatto.</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">Questo campo sarà usato per cercare i tuoi vini per abbinamento — e in futuro per scoprire cosa hanno degustato altri utenti con lo stesso piatto.</div>
       </div>
     </div>
 
@@ -3092,7 +3092,7 @@ async function loadNetworkFeed() {
   const { data: myFollows } = await sb.from('follows').select('followee_id').eq('follower_id', currentUser.id).eq('status', 'accepted');
   const followeeIds = (myFollows || []).map(f => f.followee_id);
   if (!followeeIds.length) {
-    feedBox.innerHTML = `<div class="empty"><i class="ti ti-users"></i><p>Segui qualche sommelier per vedere qui i loro vini.</p></div>`;
+    feedBox.innerHTML = `<div class="empty"><i class="ti ti-users"></i><p>Segui qualche appassionato o sommelier per vedere qui i loro vini.</p></div>`;
     return;
   }
   const { data: wines, error } = await sb
@@ -3109,7 +3109,7 @@ async function loadNetworkFeed() {
   networkWinesCache = wines.map(row => ({
     ...row, aisParams: row.ais_params, fisarParams: row.fisar_params, aisScore: row.ais_score, fisarScore: row.fisar_score,
     olfNote: row.olf_note, gustNote: row.gust_note, fpNote: row.fp_note, degSchema: row.deg_schema,
-    frontImg: row.front_img, backImg: row.back_img, ownerName: profMap[row.user_id]?.full_name || 'Sommelier',
+    frontImg: row.front_img, backImg: row.back_img, ownerName: profMap[row.user_id]?.full_name || 'Utente',
     ownerAvatar: profMap[row.user_id]?.avatar_base64 || ''
   }));
 
