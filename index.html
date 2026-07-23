@@ -1222,7 +1222,7 @@ async function doLogin() {
   if (error) {
     err.style.color = '#c0392b';
     if (/email not confirmed/i.test(error.message)) {
-      err.innerHTML = 'Email non confermata. Controlla la posta (anche lo spam) — se il link è scaduto, <a href="#" onclick="resendConfirmation(event)" style="color:var(--wine);text-decoration:underline">richiedine uno nuovo</a>.';
+      err.innerHTML = 'Email non confermata, controlla la tua mail. <a href="#" onclick="resendConfirmation(event)" style="color:var(--wine);text-decoration:underline;font-weight:500">Ri-invia</a>';
     } else {
       err.textContent = 'Email o password non corretti';
     }
@@ -1443,6 +1443,25 @@ function showLoadingOverlay(show) {
 
 /* ── SESSION RESTORE on page load ── */
 (async () => {
+  // Se l'utente arriva da un link email scaduto o non valido, Supabase
+  // mette l'errore nell'URL (es. #error=access_denied&error_code=otp_expired).
+  // Lo intercettiamo per mostrare un messaggio comprensibile invece di
+  // lasciare l'errore tecnico grezzo nell'indirizzo.
+  const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
+  const urlError = hashParams.get('error_code') || hashParams.get('error');
+  if (urlError) {
+    history.replaceState(null, '', window.location.pathname); // pulisce l'URL
+    showScreen('screen-login');
+    setTimeout(() => {
+      const err = document.getElementById('lerr');
+      if (err) {
+        err.style.color = '#c0392b';
+        err.innerHTML = 'Email non confermata, controlla la tua mail. <a href="#" onclick="resendConfirmation(event)" style="color:var(--wine);text-decoration:underline;font-weight:500">Ri-invia</a>';
+        err.style.display = 'block';
+      }
+    }, 50);
+    return;
+  }
   const { data: { session } } = await sb.auth.getSession();
   if (session?.user) {
     await loadProfile(session.user);
