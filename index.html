@@ -258,6 +258,38 @@
 
     .pairing-chips { display: flex; gap: 6px; flex-wrap: wrap; }
 
+    /* ── HOME ── */
+    .home-welcome { font-family: 'Cormorant Garamond', serif; font-size: 22px; color: var(--ink); margin: 1.5rem 0 1.25rem; text-align: center; }
+    .home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .home-card {
+      background: var(--bg); border: 0.5px solid var(--border); border-radius: 16px;
+      padding: 1.75rem 1.25rem; text-align: center; cursor: pointer;
+      transition: transform .15s, border-color .15s;
+    }
+    .home-card:hover { border-color: var(--wine); transform: translateY(-2px); }
+    .home-card i { font-size: 34px; color: var(--wine); margin-bottom: 10px; display: block; }
+    .home-card-title { font-family: 'Cormorant Garamond', serif; font-size: 18px; color: var(--ink); margin-bottom: 3px; }
+    .home-card-sub { font-size: 11px; color: var(--muted); }
+
+    /* ── MENU SEZIONI (dropdown richiamabile da ogni schermata) ── */
+    .nav-menu-overlay {
+      display: none; position: fixed; inset: 0; z-index: 90; background: transparent;
+    }
+    .nav-menu-overlay.open { display: block; }
+    .nav-menu {
+      display: none; position: fixed; top: 64px; left: max(1rem, calc(50vw - 380px + 1rem));
+      background: var(--bg); border: 0.5px solid var(--border); border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.15); z-index: 91; overflow: hidden;
+      min-width: 220px;
+    }
+    .nav-menu.open { display: block; }
+    .nav-menu-item {
+      display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+      font-size: 13px; color: var(--ink); cursor: pointer; transition: background .15s;
+    }
+    .nav-menu-item:hover { background: var(--wine-pale); color: var(--wine); }
+    .nav-menu-item i { font-size: 15px; width: 18px; }
+
     .grape-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
     .grape-tag {
       display: flex; align-items: center; gap: 6px;
@@ -615,12 +647,64 @@
     </div>
   </div>
 
+  <!-- ══ HOME ══ -->
+  <div id="screen-home" class="screen">
+    <div class="nav">
+      <div class="logo" onclick="toggleNavMenu()" style="cursor:pointer">
+        <img src="assets/enoscrigno-icon-white.png" alt="Enoscrigno" class="nav-logo-img">
+        <div class="logo-text">Enoscrigno</div>
+        <i class="ti ti-chevron-down" style="color:#fff;font-size:13px;opacity:.7"></i>
+      </div>
+      <div class="nav-right">
+        <div class="user-pill" onclick="showProfileScreen()" style="cursor:pointer" title="Modifica profilo">
+          <div class="avatar" id="home-nav-avatar">M</div>
+          <span id="home-nav-name">Mario</span>
+        </div>
+        <button class="btn sm danger" onclick="doLogout()" title="Esci"><i class="ti ti-logout"></i></button>
+      </div>
+    </div>
+    <div class="home-welcome">Cosa vuoi fare oggi?</div>
+    <div class="home-grid">
+      <div class="home-card" onclick="showScreen('screen-list')">
+        <i class="ti ti-bottle"></i>
+        <div class="home-card-title">Cantina e Degustazioni</div>
+        <div class="home-card-sub">Il tuo archivio vini</div>
+      </div>
+      <div class="home-card" onclick="showComingSoon('Highlights')">
+        <i class="ti ti-sparkles"></i>
+        <div class="home-card-title">Highlights</div>
+        <div class="home-card-sub">In arrivo</div>
+      </div>
+      <div class="home-card" onclick="showComingSoon('Blog')">
+        <i class="ti ti-news"></i>
+        <div class="home-card-title">Blog</div>
+        <div class="home-card-sub">In arrivo</div>
+      </div>
+      <div class="home-card" onclick="showComingSoon('Eventi')">
+        <i class="ti ti-calendar-event"></i>
+        <div class="home-card-title">Eventi</div>
+        <div class="home-card-sub">In arrivo</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MENU SEZIONI (richiamabile da ogni schermata) ── -->
+  <div class="nav-menu-overlay" id="nav-menu-overlay" onclick="closeNavMenu()"></div>
+  <div class="nav-menu" id="nav-menu">
+    <div class="nav-menu-item" onclick="closeNavMenu();showScreen('screen-home')"><i class="ti ti-home"></i>Home</div>
+    <div class="nav-menu-item" onclick="closeNavMenu();showScreen('screen-list')"><i class="ti ti-bottle"></i>Cantina e Degustazioni</div>
+    <div class="nav-menu-item" onclick="closeNavMenu();showComingSoon('Highlights')"><i class="ti ti-sparkles"></i>Highlights</div>
+    <div class="nav-menu-item" onclick="closeNavMenu();showComingSoon('Blog')"><i class="ti ti-news"></i>Blog</div>
+    <div class="nav-menu-item" onclick="closeNavMenu();showComingSoon('Eventi')"><i class="ti ti-calendar-event"></i>Eventi</div>
+  </div>
+
   <!-- ══ LIST ══ -->
   <div id="screen-list" class="screen">
     <div class="nav">
-      <div class="logo">
+      <div class="logo" onclick="toggleNavMenu()" style="cursor:pointer">
         <img src="assets/enoscrigno-icon-white.png" alt="Enoscrigno" class="nav-logo-img">
         <div class="logo-text">Enoscrigno</div>
+        <i class="ti ti-chevron-down" style="color:#fff;font-size:13px;opacity:.7"></i>
       </div>
       <div class="nav-right">
         <div class="user-pill" onclick="showProfileScreen()" style="cursor:pointer" title="Modifica profilo">
@@ -1536,6 +1620,8 @@ async function initApp() {
   const initials = u.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
   document.getElementById('nav-avatar').textContent = initials;
   document.getElementById('nav-name').textContent   = u.name.split(' ')[0];
+  document.getElementById('home-nav-avatar').textContent = initials;
+  document.getElementById('home-nav-name').textContent   = u.name.split(' ')[0];
   const bc = document.getElementById('nav-badge');
   if (u.assoc) { bc.textContent = u.assoc; bc.className = 'assoc-badge badge-' + u.assoc.toLowerCase(); bc.style.display = ''; }
   else bc.style.display = 'none';
@@ -1544,7 +1630,19 @@ async function initApp() {
   showLoadingOverlay(true);
   winesCache = await loadWines();
   showLoadingOverlay(false);
-  showScreen('screen-list');
+  showScreen('screen-home');
+}
+
+function toggleNavMenu() {
+  document.getElementById('nav-menu').classList.toggle('open');
+  document.getElementById('nav-menu-overlay').classList.toggle('open');
+}
+function closeNavMenu() {
+  document.getElementById('nav-menu').classList.remove('open');
+  document.getElementById('nav-menu-overlay').classList.remove('open');
+}
+function showComingSoon(name) {
+  toast(name + ' — in arrivo prossimamente! 🍷');
 }
 
 function showLoadingOverlay(show) {
@@ -2691,10 +2789,10 @@ calcAIS(); calcFISAR();
    le funzioni dichiarate qui non sono automaticamente globali,
    ma gli onclick="..." nell'HTML devono poterle richiamare. */
 Object.assign(window, {
-  adjustQty, calcAIS, calcFISAR, cancelForm, deleteWine, doLogin, doLogout, doRegister,
+  adjustQty, calcAIS, calcFISAR, cancelForm, closeNavMenu, deleteWine, doLogin, doLogout, doRegister,
   editWine, exportCSV, exportInventory, exportJSON, exportTasting, onAdvCountryChange, previewImg,
-  removeGrapeTag, renderGrid, resendConfirmation, resetAdvFilters, saveProfile, saveWine, scanBothLabels, setFilter, setQtyFilter, showAdd, showDetail,
-  showProfileScreen, showScreen, stepQty, switchDeg, switchLTab, toast, toggleAdvFilters,
+  removeGrapeTag, renderGrid, resendConfirmation, resetAdvFilters, saveProfile, saveWine, scanBothLabels, setFilter, setQtyFilter, showAdd, showComingSoon, showDetail,
+  showProfileScreen, showScreen, stepQty, switchDeg, switchLTab, toast, toggleAdvFilters, toggleNavMenu,
   togglePairing, toggleSection, updateDelegazioniList, updateGrapePct, updateRegionOptions, updateProvinceOptions
 });
 </script>
