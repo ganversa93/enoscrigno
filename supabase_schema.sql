@@ -33,6 +33,7 @@ create table if not exists public.wines (
   -- provenienza
   region        text,
   province      text,             -- solo Italia (es. 'Cuneo' per il Barolo)
+  visibility    boolean not null default true,  -- se visibile nella futura sezione Network
   country       text default 'Italia',
 
   -- tecnico
@@ -217,3 +218,11 @@ alter table public.wines add column if not exists province text;
 -- per aggiungere il campo di classificazione del luogo di acquisto
 -- ════════════════════════════════════════════
 alter table public.wines add column if not exists shop_category text;
+
+-- ════════════════════════════════════════════
+-- VISIBILITÀ NETWORK — se il database esiste già, esegui questa riga
+-- per aggiungere il campo che determina se una scheda vino potrà
+-- essere vista da altri utenti nella futura sezione Network.
+-- Default TRUE per tutti i vini già esistenti.
+-- ════════════════════════════════════════════
+alter table public.wines add column if not exists visibility boolean not null default true;

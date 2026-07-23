@@ -258,6 +258,27 @@
 
     .pairing-chips { display: flex; gap: 6px; flex-wrap: wrap; }
 
+    /* ── VISIBILITÀ NETWORK ── */
+    .visibility-toggle {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      background: var(--bg); border: 0.5px solid var(--border); border-radius: 12px;
+      padding: 12px 14px; margin-bottom: .9rem;
+    }
+    .visibility-toggle-label { font-size: 13px; font-weight: 500; color: var(--ink); }
+    .visibility-toggle-sub { font-size: 11px; color: var(--muted); margin-top: 2px; max-width: 420px; }
+    .switch { position: relative; display: inline-block; width: 42px; height: 24px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .switch-slider {
+      position: absolute; cursor: pointer; inset: 0; background: var(--border2);
+      border-radius: 24px; transition: background .2s;
+    }
+    .switch-slider::before {
+      content: ""; position: absolute; width: 18px; height: 18px; left: 3px; bottom: 3px;
+      background: #fff; border-radius: 50%; transition: transform .2s;
+    }
+    .switch input:checked + .switch-slider { background: var(--wine); }
+    .switch input:checked + .switch-slider::before { transform: translateX(18px); }
+
     /* ── HOME ── */
     .home-welcome { font-family: 'Cormorant Garamond', serif; font-size: 22px; color: var(--ink); margin: 1.5rem 0 1.25rem; text-align: center; }
     .home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -685,6 +706,11 @@
         <div class="home-card-title">Eventi</div>
         <div class="home-card-sub">In arrivo</div>
       </div>
+      <div class="home-card" onclick="showComingSoon('Network')">
+        <i class="ti ti-users"></i>
+        <div class="home-card-title">Network</div>
+        <div class="home-card-sub">In arrivo</div>
+      </div>
     </div>
   </div>
 
@@ -696,6 +722,7 @@
     <div class="nav-menu-item" onclick="closeNavMenu();showComingSoon('Highlights')"><i class="ti ti-sparkles"></i>Highlights</div>
     <div class="nav-menu-item" onclick="closeNavMenu();showComingSoon('Blog')"><i class="ti ti-news"></i>Blog</div>
     <div class="nav-menu-item" onclick="closeNavMenu();showComingSoon('Eventi')"><i class="ti ti-calendar-event"></i>Eventi</div>
+    <div class="nav-menu-item" onclick="closeNavMenu();showComingSoon('Network')"><i class="ti ti-users"></i>Network</div>
   </div>
 
   <!-- ══ LIST ══ -->
@@ -782,6 +809,18 @@
       <h2 id="form-title">Aggiungi vino</h2>
     </div>
     <input type="hidden" id="f-edit-id" value="">
+
+    <div class="visibility-toggle">
+      <div>
+        <div class="visibility-toggle-label"><i class="ti ti-users" style="font-size:13px;vertical-align:-2px;margin-right:4px"></i>Visibile nel Network</div>
+        <div class="visibility-toggle-sub">Se attivo, questa scheda potrà essere vista da altri utenti quando la sezione Network sarà disponibile</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="f-visibility" checked>
+        <span class="switch-slider"></span>
+      </label>
+    </div>
+
 
     <div class="fsec collapsible" id="fsec-photo">
       <div class="stitle fsec-header" onclick="toggleSection('fsec-photo')"><i class="ti ti-photo" aria-hidden="true"></i>Foto etichette<i class="ti ti-chevron-down fsec-chevron"></i></div>
@@ -1562,6 +1601,7 @@ async function dbSaveWine(wine) {
     doc:          wine.doc          || null,
     grapes:       wine.grapes       || null,
     region:       wine.region       || null,
+    visibility:   wine.visibility ?? true,
     country:      wine.country      || null,
     province:     wine.province     || null,
     abv:          wine.abv          || null,
@@ -1867,6 +1907,7 @@ function showAdd() {
   resetSections();
   const clear = ids => ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   clear(['f-name','f-producer','f-doc','f-grapes','f-region','f-country','f-province','f-shop','f-shop-category','f-drink','f-notes','f-tags','ap-olfnote','ap-gustnote','fp-note','f-pairing-custom']);
+  const visToggle = document.getElementById('f-visibility'); if (visToggle) visToggle.checked = true;
   selectedGrapes = []; renderGrapeTags();
   const grapesInput = document.getElementById('f-grapes-input'); if (grapesInput) grapesInput.value = '';
   clear(['f-vintage','f-abv','f-price']);
@@ -2189,6 +2230,7 @@ async function saveWine() {
     date: g('f-date'), shop: g('f-shop'), shopCategory: g('f-shop-category'), drink: g('f-drink'),
     tastingDate: g('f-tastingdate'), tastingPlace: g('f-tastingplace'),
     pairing: computePairingValue(),
+    visibility: document.getElementById('f-visibility')?.checked ?? true,
     degSchema: activeDeg,
     aisParams:   activeDeg === 'ais'   ? getAP() : null,
     aisScore:    activeDeg === 'ais'   ? aisScore : null,
@@ -2259,6 +2301,7 @@ function showDetail(id) {
         ${w.backImg  ? `<img src="${w.backImg}"  class="dimg" alt="Controetichetta">` : ''}
       </div>
       <div class="dinfo" style="flex:1">
+        ${w.visibility === false ? `<div style="font-size:10px;font-weight:600;color:var(--muted);background:var(--surf);border:0.5px solid var(--border);border-radius:20px;padding:2px 9px;display:inline-flex;align-items:center;gap:4px;margin-bottom:8px"><i class="ti ti-lock" style="font-size:10px"></i>Privato — non visibile nel Network</div>` : ''}
         <div class="dname">${w.name}</div>
         <div class="dprod">${w.producer || ''}</div>
         <div class="dvintage">${w.vintage ? 'Annata: ' + w.vintage : ''}</div>
@@ -2332,6 +2375,7 @@ function editWine() {
   document.getElementById('form-save-label').textContent = 'Salva modifiche';
   frontImg = w.frontImg || ''; backImg = w.backImg || '';
   renderAiBanner();
+  const visToggle = document.getElementById('f-visibility'); if (visToggle) visToggle.checked = w.visibility !== false;
   // Restore image previews
   if (w.frontImg) document.getElementById('prev-front').innerHTML = `<img src="${w.frontImg}" style="width:100%;height:80px;object-fit:cover;border-radius:6px" alt="">`;
   if (w.backImg)  document.getElementById('prev-back').innerHTML  = `<img src="${w.backImg}"  style="width:100%;height:80px;object-fit:cover;border-radius:6px" alt="">`;
