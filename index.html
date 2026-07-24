@@ -1084,7 +1084,7 @@
       </div>
       <div class="frow">
         <div class="fg"><label>Tipologia</label>
-          <select id="f-type">
+          <select id="f-type" onchange="updateTonalitaColore()">
             <option value="">Seleziona…</option>
             <option>Rosso</option><option>Bianco</option><option>Rosato</option>
             <option>Spumante</option><option>Dolce</option><option>Passito</option><option>Altro</option>
@@ -1455,49 +1455,51 @@
               <label class="fisar-label">Limpidezza</label>
               <select class="fisar-sel" id="fd-limpidezza">
                 <option value="">— Seleziona —</option>
-                <option>Cristallina</option><option>Limpida</option><option>Abbastanza limpida</option><option>Velata</option><option>Torbida</option>
+                <option>Brillante</option><option>Cristallino</option><option>Limpido</option><option>Velato</option><option>Torbido</option>
               </select>
             </div>
             <div class="fisar-field">
-              <label class="fisar-label">Trasparenza</label>
+              <label class="fisar-label">Trasparenza <small style="color:var(--muted)">(al centro del disco)</small></label>
               <select class="fisar-sel" id="fd-trasparenza">
                 <option value="">— Seleziona —</option>
-                <option>Trasparente</option><option>Abbastanza trasparente</option><option>Poco trasparente</option><option>Opaca</option>
+                <option>Trasparente</option><option>Poco trasparente</option><option>Impenetrabile</option>
               </select>
             </div>
             <div class="fisar-field">
-              <label class="fisar-label">Colore — Tonalità</label>
-              <input type="text" class="fisar-sel" id="fd-tonalita" placeholder="es. Paglierino dorato, Rubino granato">
+              <label class="fisar-label">Tonalità del colore</label>
+              <select class="fisar-sel" id="fd-tonalita">
+                <option value="">— Seleziona una tipologia in Identità —</option>
+              </select>
             </div>
             <div class="fisar-field">
-              <label class="fisar-label">Colore — Intensità</label>
+              <label class="fisar-label">Intensità del colore</label>
               <select class="fisar-sel" id="fd-intensita-colore">
                 <option value="">— Seleziona —</option>
-                <option>Molto intensa</option><option>Intensa</option><option>Abbastanza intensa</option><option>Poco intensa</option><option>Scarica</option>
+                <option>Molto intenso</option><option>Intenso</option><option>Poco intenso</option><option>Tenue</option>
               </select>
             </div>
             <div class="fisar-field">
-              <label class="fisar-label">Fluidità</label>
+              <label class="fisar-label">Fluidità <small style="color:var(--muted)">(Consistenza)</small></label>
               <select class="fisar-sel" id="fd-fluidita">
                 <option value="">— Seleziona —</option>
-                <option>Fluida</option><option>Abbastanza fluida</option><option>Densa / Viscosa</option>
+                <option>Scorrevole</option><option>Poco denso</option><option>Denso</option><option>Molto denso</option>
               </select>
             </div>
           </div>
-          <div style="font-size:11px;color:var(--muted);margin:8px 0 6px">Effervescenza (solo spumanti)</div>
+          <div style="font-size:11px;color:var(--muted);margin:8px 0 6px">Effervescenza <small>(solo spumanti)</small></div>
           <div class="fisar-row">
             <div class="fisar-field">
               <label class="fisar-label">Grana del perlage</label>
               <select class="fisar-sel" id="fd-perlage-grana">
                 <option value="">N/A — non spumante</option>
-                <option>Fine</option><option>Abbastanza fine</option><option>Grossolana</option>
+                <option>Molto fine</option><option>Fine</option><option>Grossolana</option>
               </select>
             </div>
             <div class="fisar-field">
               <label class="fisar-label">Persistenza del perlage</label>
               <select class="fisar-sel" id="fd-perlage-persistenza">
                 <option value="">N/A — non spumante</option>
-                <option>Persistente</option><option>Abbastanza persistente</option><option>Evanescente</option>
+                <option>Molto persistente</option><option>Persistente</option><option>Evanescente</option>
               </select>
             </div>
           </div>
@@ -1511,32 +1513,49 @@
               <label class="fisar-label">Intensità</label>
               <select class="fisar-sel" id="fd-intensita-olf">
                 <option value="">— Seleziona —</option>
-                <option>Molto intenso</option><option>Intenso</option><option>Abbastanza intenso</option><option>Poco intenso</option><option>Debole</option>
+                <option>Molto intenso</option><option>Intenso</option><option>Poco intenso</option><option>Tenue</option>
               </select>
             </div>
             <div class="fisar-field">
               <label class="fisar-label">Qualità — Franchezza</label>
               <select class="fisar-sel" id="fd-franchezza">
                 <option value="">— Seleziona —</option>
-                <option>Netto</option><option>Abbastanza netto</option><option>Poco netto</option><option>Non netto</option>
+                <option>Schietto</option><option>Sufficiente</option><option>Poco schietto</option>
               </select>
             </div>
             <div class="fisar-field">
               <label class="fisar-label">Qualità — Finezza</label>
               <select class="fisar-sel" id="fd-finezza">
                 <option value="">— Seleziona —</option>
-                <option>Fine</option><option>Abbastanza fine</option><option>Comune</option><option>Grossolano</option>
+                <option>Molto fine</option><option>Fine</option><option>Mediamente fine</option><option>Comune</option>
               </select>
             </div>
             <div class="fisar-field">
               <label class="fisar-label">Complessità</label>
               <select class="fisar-sel" id="fd-complessita">
                 <option value="">— Seleziona —</option>
-                <option>Complesso</option><option>Abbastanza complesso</option><option>Poco complesso</option><option>Semplice</option>
+                <option>Sontuoso</option><option>Complesso</option><option>Mediamente complesso</option><option>Semplice</option>
               </select>
             </div>
           </div>
-          <div class="fg" style="margin-top:8px"><label>Natura dei profumi</label><textarea id="fd-natura-profumi" placeholder="es. floreale, fruttato, speziato, tostato…"></textarea></div>
+          <div class="fg" style="margin-top:8px">
+            <label>Natura dei profumi <small style="color:var(--muted)">(una o più)</small></label>
+            <div class="pairing-chips" id="natura-profumi-chips">
+              <div class="p-chip" data-v="Aromatico" onclick="toggleChipIn('natura-profumi-chips',this)">Aromatico</div>
+              <div class="p-chip" data-v="Floreale" onclick="toggleChipIn('natura-profumi-chips',this)">Floreale</div>
+              <div class="p-chip" data-v="Fruttato fresco" onclick="toggleChipIn('natura-profumi-chips',this)">Fruttato fresco</div>
+              <div class="p-chip" data-v="Fruttato secco" onclick="toggleChipIn('natura-profumi-chips',this)">Fruttato secco</div>
+              <div class="p-chip" data-v="Vegetale fresco" onclick="toggleChipIn('natura-profumi-chips',this)">Vegetale fresco</div>
+              <div class="p-chip" data-v="Vegetale secco" onclick="toggleChipIn('natura-profumi-chips',this)">Vegetale secco</div>
+              <div class="p-chip" data-v="Balsamico" onclick="toggleChipIn('natura-profumi-chips',this)">Balsamico</div>
+              <div class="p-chip" data-v="Speziato" onclick="toggleChipIn('natura-profumi-chips',this)">Speziato</div>
+              <div class="p-chip" data-v="Minerale" onclick="toggleChipIn('natura-profumi-chips',this)">Minerale</div>
+              <div class="p-chip" data-v="Boisé" onclick="toggleChipIn('natura-profumi-chips',this)">Boisé</div>
+              <div class="p-chip" data-v="Chimico" onclick="toggleChipIn('natura-profumi-chips',this)">Chimico</div>
+              <div class="p-chip" data-v="Etereo" onclick="toggleChipIn('natura-profumi-chips',this)">Etereo</div>
+              <div class="p-chip" data-v="Vari" onclick="toggleChipIn('natura-profumi-chips',this)">Vari</div>
+            </div>
+          </div>
         </div>
 
         <!-- ESAME GUSTATIVO -->
@@ -1547,71 +1566,67 @@
               <label class="fisar-label">Corpo</label>
               <select class="fisar-sel" id="fd-corpo">
                 <option value="">— Seleziona —</option>
-                <option>Robusto</option><option>Di corpo</option><option>Abbastanza di corpo</option><option>Leggero</option>
+                <option>Robusto</option><option>Strutturato</option><option>Di corpo</option><option>Leggero</option>
               </select>
             </div>
-          </div>
-          <div style="font-size:11px;color:var(--muted);margin:8px 0 6px">Elementi di morbidezza</div>
-          <div class="fisar-row">
             <div class="fisar-field">
               <label class="fisar-label">Alcolicità</label>
               <select class="fisar-sel" id="fd-alcolicita">
                 <option value="">— Seleziona —</option>
-                <option>Caldo</option><option>Abbastanza caldo</option><option>Poco caldo</option><option>Freddo</option>
+                <option>Alcolico</option><option>Molto caldo</option><option>Caldo</option><option>Leggero</option><option>Debole</option>
               </select>
             </div>
             <div class="fisar-field">
               <label class="fisar-label">Morbidezza</label>
               <select class="fisar-sel" id="fd-morbidezza">
                 <option value="">— Seleziona —</option>
-                <option>Morbido</option><option>Abbastanza morbido</option><option>Poco morbido</option><option>Duro</option>
+                <option>Grasso</option><option>Pastoso</option><option>Morbido</option><option>Poco morbido</option>
               </select>
             </div>
             <div class="fisar-field">
               <label class="fisar-label">Zuccheri</label>
               <select class="fisar-sel" id="fd-zuccheri">
                 <option value="">— Seleziona —</option>
-                <option>Dolce</option><option>Amabile</option><option>Abboccato</option><option>Asciutto / Secco</option>
+                <option>Molto dolce</option><option>Dolce</option><option>Amabile</option><option>Abboccato</option><option>Secco</option>
               </select>
             </div>
           </div>
-          <div style="font-size:11px;color:var(--muted);margin:8px 0 6px">Elementi di durezza</div>
-          <div class="fisar-row">
+          <div class="fisar-row" style="margin-top:8px">
             <div class="fisar-field">
               <label class="fisar-label">Acidità</label>
               <select class="fisar-sel" id="fd-acidita">
                 <option value="">— Seleziona —</option>
-                <option>Fresco</option><option>Abbastanza fresco</option><option>Poco fresco</option><option>Piatto</option>
+                <option>Acerbo</option><option>Fresco vivo</option><option>Fresco</option><option>Scarso</option>
               </select>
             </div>
             <div class="fisar-field">
               <label class="fisar-label">Sapidità</label>
               <select class="fisar-sel" id="fd-sapidita">
                 <option value="">— Seleziona —</option>
-                <option>Sapido</option><option>Abbastanza sapido</option><option>Poco sapido</option><option>Scarico</option>
+                <option>Molto sapido</option><option>Sapido</option><option>Leggermente sapido</option><option>Non percettibile</option>
               </select>
             </div>
             <div class="fisar-field">
               <label class="fisar-label">Tannicità</label>
               <select class="fisar-sel" id="fd-tannicita">
-                <option value="">N/A — non tannico</option>
-                <option>Tannico</option><option>Abbastanza tannico</option><option>Poco tannico</option><option>Astringente</option>
+                <option value="">N/A</option>
+                <option>Allappante</option><option>Tannico</option><option>Giustamente tannico</option><option>Poco tannico</option>
+              </select>
+            </div>
+            <div class="fisar-field">
+              <label class="fisar-label">Effervescenza <small style="color:var(--muted)">(solo spumanti)</small></label>
+              <select class="fisar-sel" id="fd-effervescenza-gusto">
+                <option value="">N/A — non spumante</option>
+                <option>Molto fine</option><option>Fine</option><option>Grossolana</option>
               </select>
             </div>
           </div>
           <div class="fisar-row" style="margin-top:8px">
             <div class="fisar-field">
-              <label class="fisar-label">Effervescenza</label>
-              <select class="fisar-sel" id="fd-effervescenza-gusto">
-                <option value="">N/A — non spumante</option>
-                <option>Vivace</option><option>Frizzante</option><option>Poco frizzante</option>
-              </select>
-            </div>
-            <div class="fisar-field">
               <label class="fisar-label">Equilibrio</label>
               <select class="fisar-sel" id="fd-equilibrio">
                 <option value="">— Seleziona —</option>
-                <option>Armonico</option><option>Abbastanza armonico</option><option>Poco armonico</option><option>Disarmonico</option>
+                <option>Armonico</option><option>Equilibrato</option><option>Leggermente disarmonico</option><option>Disarmonico</option>
               </select>
             </div>
           </div>
@@ -1622,28 +1637,28 @@
           <div class="pg-title" style="color:var(--fisar)"><i class="ti ti-arrow-back-up" style="font-size:12px;vertical-align:-1px;margin-right:4px"></i>Sensazioni retro-olfattive</div>
           <div class="fisar-row">
             <div class="fisar-field">
-              <label class="fisar-label">Aroma di bocca — Intensità</label>
+              <label class="fisar-label">Intensità</label>
               <select class="fisar-sel" id="fd-aroma-intensita">
                 <option value="">— Seleziona —</option>
-                <option>Molto intenso</option><option>Intenso</option><option>Abbastanza intenso</option><option>Poco intenso</option><option>Debole</option>
+                <option>Molto intenso</option><option>Intenso</option><option>Poco intenso</option><option>Tenue</option>
               </select>
             </div>
             <div class="fisar-field">
-              <label class="fisar-label">Aroma di bocca — Qualità</label>
+              <label class="fisar-label">Qualità — Finezza</label>
               <select class="fisar-sel" id="fd-aroma-qualita">
                 <option value="">— Seleziona —</option>
-                <option>Fine</option><option>Abbastanza fine</option><option>Comune</option><option>Grossolano</option>
+                <option>Molto fine</option><option>Fine</option><option>Mediamente fine</option><option>Comune</option>
               </select>
             </div>
             <div class="fisar-field">
-              <label class="fisar-label">Fin di bocca (P.A.I.)</label>
+              <label class="fisar-label">Fin di bocca <small style="color:var(--muted)">(P.A.I.)</small></label>
               <select class="fisar-sel" id="fd-pai">
                 <option value="">— Seleziona —</option>
-                <option>Molto persistente</option><option>Persistente</option><option>Abbastanza persistente</option><option>Corto</option>
+                <option>Molto persistente</option><option>Persistente</option><option>Poco persistente</option>
               </select>
             </div>
           </div>
-          <div class="fg" style="margin-top:8px"><label>Natura degli aromi</label><textarea id="fd-natura-aromi" placeholder="Aromi percepiti al retrogusto…"></textarea></div>
+          <div class="fg" style="margin-top:8px"><label>Note sulla natura degli aromi <small style="color:var(--muted)">(verifica corrispondenza con l'olfatto)</small></label><textarea id="fd-natura-aromi" placeholder="Aromi percepiti al retrogusto…"></textarea></div>
         </div>
 
         <!-- STATO EVOLUTIVO E CONSIDERAZIONI FINALI -->
@@ -1653,7 +1668,7 @@
             <label>Stato evolutivo</label>
             <select class="fisar-sel" id="fd-stato">
               <option value="">— Seleziona —</option>
-              <option>Giovane</option><option>Pronto</option><option>Maturo</option><option>Invecchiato</option>
+              <option>Giovane</option><option>Pronto</option><option>Maturo</option><option>Evoluto</option><option>Passato</option>
             </select>
           </div>
           <div class="fg" style="margin-top:8px"><label>Considerazioni finali</label><textarea id="fd-considerazioni" placeholder="Giudizio complessivo, abbinamenti consigliati, eventuali difetti…"></textarea></div>
@@ -2410,9 +2425,11 @@ function showAdd() {
   const clear = ids => ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   clear(['f-name','f-producer','f-doc','f-grapes','f-region','f-country','f-province','f-shop','f-shop-category','f-drink','f-notes','f-tags','ap-olfnote','ap-gustnote','fp-note','f-pairing-custom',
     'fd-limpidezza','fd-trasparenza','fd-tonalita','fd-intensita-colore','fd-fluidita','fd-perlage-grana','fd-perlage-persistenza',
-    'fd-intensita-olf','fd-franchezza','fd-finezza','fd-natura-profumi','fd-complessita',
+    'fd-intensita-olf','fd-franchezza','fd-finezza','fd-complessita',
     'fd-corpo','fd-alcolicita','fd-morbidezza','fd-zuccheri','fd-acidita','fd-sapidita','fd-tannicita','fd-effervescenza-gusto','fd-equilibrio',
     'fd-aroma-intensita','fd-aroma-qualita','fd-natura-aromi','fd-pai','fd-stato','fd-considerazioni']);
+  setActiveChips('natura-profumi-chips', '');
+  updateTonalitaColore();
   const visToggle = document.getElementById('f-visibility'); if (visToggle) visToggle.checked = true;
   selectedGrapes = []; renderGrapeTags();
   const grapesInput = document.getElementById('f-grapes-input'); if (grapesInput) grapesInput.value = '';
@@ -2483,6 +2500,7 @@ function switchDeg(t) {
     const pnl = document.getElementById('deg-' + tab);
     if (pnl) pnl.className = 'deg-schema' + (tab === t ? ' active' : '');
   });
+  if (t === 'fisar_desc') updateTonalitaColore();
 }
 
 /* ── SCORING ── */
@@ -2623,6 +2641,39 @@ function togglePairing(el) {
   el.classList.toggle('active');
 }
 
+// Toggle generico per gruppi di chip multi-selezione scoperti per contenitore
+// (usato da 'Natura dei profumi' nella scheda FISAR descrittiva, indipendente
+// dai chip di abbinamento cibo)
+function toggleChipIn(containerId, el) {
+  el.classList.toggle('active');
+}
+function getActiveChips(containerId) {
+  return [...document.querySelectorAll('#' + containerId + ' .p-chip.active')].map(c => c.dataset.v);
+}
+function setActiveChips(containerId, valueStr) {
+  const values = (valueStr || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  document.querySelectorAll('#' + containerId + ' .p-chip').forEach(chip => {
+    chip.classList.toggle('active', values.includes((chip.dataset.v || '').toLowerCase()));
+  });
+}
+
+// Tonalità del colore — le opzioni cambiano in base alla Tipologia scelta
+// in Identità del vino (Bianco/Rosato/Rosso), secondo la scheda FISAR
+const TONALITA_COLORE = {
+  Bianco:   ['Giallo verdolino', 'Giallo paglierino', 'Giallo dorato', 'Giallo arancio', 'Giallo ambrato'],
+  Rosato:   ['Rosa tenue', 'Rosa cerasuolo', 'Rosa chiaretto', 'Buccia di cipolla'],
+  Rosso:    ['Rosso porpora', 'Rosso rubino', 'Rosso granato', 'Rosso aranciato']
+};
+function updateTonalitaColore() {
+  const sel = document.getElementById('fd-tonalita');
+  if (!sel) return;
+  const type = document.getElementById('f-type')?.value;
+  const prev = sel.value;
+  const list = TONALITA_COLORE[type] || [...TONALITA_COLORE.Bianco, ...TONALITA_COLORE.Rosato, ...TONALITA_COLORE.Rosso];
+  sel.innerHTML = '<option value="">— Seleziona —</option>' + list.map(t => `<option>${t}</option>`).join('');
+  if (list.includes(prev)) sel.value = prev;
+}
+
 function getSelectedPairings() {
   return [...document.querySelectorAll('.p-chip.active')].map(c => c.dataset.p);
 }
@@ -2720,7 +2771,7 @@ async function saveWine() {
   const getFPDesc = () => ({
     limpidezza: g('fd-limpidezza'), trasparenza: g('fd-trasparenza'), tonalita: g('fd-tonalita'), intensitaColore: g('fd-intensita-colore'),
     fluidita: g('fd-fluidita'), perlageGrana: g('fd-perlage-grana'), perlagePersistenza: g('fd-perlage-persistenza'),
-    intensitaOlf: g('fd-intensita-olf'), franchezza: g('fd-franchezza'), finezza: g('fd-finezza'), naturaProfumi: g('fd-natura-profumi'), complessita: g('fd-complessita'),
+    intensitaOlf: g('fd-intensita-olf'), franchezza: g('fd-franchezza'), finezza: g('fd-finezza'), naturaProfumi: getActiveChips('natura-profumi-chips').join(', '), complessita: g('fd-complessita'),
     corpo: g('fd-corpo'), alcolicita: g('fd-alcolicita'), morbidezza: g('fd-morbidezza'), zuccheri: g('fd-zuccheri'),
     acidita: g('fd-acidita'), sapidita: g('fd-sapidita'), tannicita: g('fd-tannicita'), effervescenzaGusto: g('fd-effervescenza-gusto'), equilibrio: g('fd-equilibrio'),
     aromaIntensita: g('fd-aroma-intensita'), aromaQualita: g('fd-aroma-qualita'), naturaAromi: g('fd-natura-aromi'), pai: g('fd-pai'),
@@ -2958,13 +3009,15 @@ function editWine() {
     const dmap = {
       'fd-limpidezza':p.limpidezza, 'fd-trasparenza':p.trasparenza, 'fd-tonalita':p.tonalita, 'fd-intensita-colore':p.intensitaColore,
       'fd-fluidita':p.fluidita, 'fd-perlage-grana':p.perlageGrana, 'fd-perlage-persistenza':p.perlagePersistenza,
-      'fd-intensita-olf':p.intensitaOlf, 'fd-franchezza':p.franchezza, 'fd-finezza':p.finezza, 'fd-natura-profumi':p.naturaProfumi, 'fd-complessita':p.complessita,
+      'fd-intensita-olf':p.intensitaOlf, 'fd-franchezza':p.franchezza, 'fd-finezza':p.finezza, 'fd-complessita':p.complessita,
       'fd-corpo':p.corpo, 'fd-alcolicita':p.alcolicita, 'fd-morbidezza':p.morbidezza, 'fd-zuccheri':p.zuccheri,
       'fd-acidita':p.acidita, 'fd-sapidita':p.sapidita, 'fd-tannicita':p.tannicita, 'fd-effervescenza-gusto':p.effervescenzaGusto, 'fd-equilibrio':p.equilibrio,
       'fd-aroma-intensita':p.aromaIntensita, 'fd-aroma-qualita':p.aromaQualita, 'fd-natura-aromi':p.naturaAromi, 'fd-pai':p.pai,
       'fd-stato':p.stato, 'fd-considerazioni':p.considerazioni
     };
+    updateTonalitaColore();
     Object.entries(dmap).forEach(([id, v]) => { const el = document.getElementById(id); if (el && v != null) el.value = v; });
+    setActiveChips('natura-profumi-chips', p.naturaProfumi);
   } else if (deg === 'free') {
     set('f-score', w.score);
     document.getElementById('score-free').textContent = w.score || 88;
@@ -3615,7 +3668,7 @@ Object.assign(window, {
   scanBothLabels, searchNetworkUsers, sendFollowRequest, setFilter, setQtyFilter, showAdd, showComingSoon, showDetail,
   showNetworkScreen, showNetworkWinePreview, showProfileScreen, showScreen, stepQty, switchDeg, switchLTab, toast,
   showGuideScreen,
-  toggleAdvFilters, toggleFisarMethodField, toggleNavMenu, togglePairing, toggleSection, updateDelegazioniList, updateGrapePct,
+  toggleAdvFilters, toggleChipIn, toggleFisarMethodField, toggleNavMenu, togglePairing, toggleSection, updateDelegazioniList, updateGrapePct, updateTonalitaColore,
   updateRegionOptions, updateProvinceOptions
 });
 </script>
