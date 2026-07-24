@@ -291,3 +291,110 @@ create policy "wines: visibili nel network se seguo l'utente e il vino è pubbli
 -- ════════════════════════════════════════════
 alter table public.profiles add column if not exists fisar_method text not null default 'punteggio'; -- 'punteggio' | 'descrittiva'
 alter table public.wines add column if not exists fisar_desc_params jsonb;
+
+-- ════════════════════════════════════════════
+-- CANTINE CONDIVISE — più utenti possono possedere insieme la
+-- stessa cantina (es. familiari, colleghi). Tutti i membri sono
+-- alla pari: chiunque può aggiungere, modificare ed eliminare
+-- i vini della cantina condivisa.
+-- ════════════════════════════════════════════
+
+create table if not exists public.cellars (
+  id          uuid primary key default gen_random_uuid(),
+  name        text not null,
+  owner_id    uuid not null references auth.users(id) on delete cascade,
+  invite_code text not null unique,
+  created_at  timestamptz default now()
+);
+alter table public.cellars enable row level security;
+
+create table if not exists public.cellar_members (
+  cellar_id   uuid not null references public.cellars(id) on delete cascade,
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  status      text not null default 'pending',  -- 'pending' | 'accepted'
+  invited_by  uuid references auth.users(id),
+  created_at  timestamptz default now(),
+  primary key (cellar_id, user_id)
+);
+alter table public.cellar_members enable row level security;
+
+-- Ogni vino può appartenere a una cantina condivisa (cellar_id) invece
+-- che essere solo personale (cellar_id null = comportamento di sempre)
+alter table public.wines add column if not exists cellar_id uuid references public.cellars(id) on delete set null;
+
+-- ── Policy: cellars ──
+create policy "cellars: vedo le cantine di cui sono owner o membro accettato"
+  on public.cellars for select
+  using (
+    auth.uid() = owner_id
+    or exists (select 1 from public.cellar_members cm where cm.cellar_id = cellars.id and cm.user_id = auth.uid() and cm.status = 'accepted')
+  );
+
+create policy "cellars: chiunque autenticato può crearne una (diventandone owner)"
+  on public.cellars for insert
+  with check (auth.uid() = owner_id);
+
+create policy "cellars: solo owner modifica (nome, rigenera codice)"
+  on public.cellars for update
+  using (auth.uid() = owner_id);
+
+create policy "cellars: solo owner elimina la cantina condivisa"
+  on public.cellars for delete
+  using (auth.uid() = owner_id);
+
+-- ── Policy: cellar_members ──
+create policy "cellar_members: vedo le mie righe, quelle delle cantine che possiedo, o dei membri se sono accettato"
+  on public.cellar_members for select
+  using (
+    auth.uid() = user_id
+    or exists (select 1 from public.cellars c where c.id = cellar_members.cellar_id and c.owner_id = auth.uid())
+    or exists (select 1 from public.cellar_members cm2 where cm2.cellar_id = cellar_members.cellar_id and cm2.user_id = auth.uid() and cm2.status = 'accepted')
+  );
+
+create policy "cellar_members: mi unisco da solo (codice) o vengo invitato da un membro/owner"
+  on public.cellar_members for insert
+  with check (
+    auth.uid() = user_id
+    or exists (select 1 from public.cellars c where c.id = cellar_members.cellar_id and c.owner_id = auth.uid())
+    or exists (select 1 from public.cellar_members cm2 where cm2.cellar_id = cellar_members.cellar_id and cm2.user_id = auth.uid() and cm2.status = 'accepted')
+  );
+
+create policy "cellar_members: accetto il mio invito"
+  on public.cellar_members for update
+  using (auth.uid() = user_id);
+
+create policy "cellar_members: esco da solo, oppure l'owner rimuove un membro"
+  on public.cellar_members for delete
+  using (
+    auth.uid() = user_id
+    or exists (select 1 from public.cellars c where c.id = cellar_members.cellar_id and c.owner_id = auth.uid())
+  );
+
+-- ── Policy: wines — accesso paritario per tutti i membri accettati ──
+create policy "wines: membri accettati vedono i vini della cantina condivisa"
+  on public.wines for select
+  using (
+    cellar_id is not null
+    and exists (select 1 from public.cellar_members cm where cm.cellar_id = wines.cellar_id and cm.user_id = auth.uid() and cm.status = 'accepted')
+  );
+
+create policy "wines: membri accettati aggiungono vini alla cantina condivisa"
+  on public.wines for insert
+  with check (
+    cellar_id is not null
+    and exists (select 1 from public.cellar_members cm where cm.cellar_id = wines.cellar_id and cm.user_id = auth.uid() and cm.status = 'accepted')
+  );
+
+create policy "wines: membri accettati modificano i vini della cantina condivisa"
+  on public.wines for update
+  using (
+    cellar_id is not null
+    and exists (select 1 from public.cellar_members cm where cm.cellar_id = wines.cellar_id and cm.user_id = auth.uid() and cm.status = 'accepted')
+  );
+
+create policy "wines: membri accettati eliminano i vini della cantina condivisa"
+  on public.wines for delete
+  using (
+    cellar_id is not null
+    and exists (select 1 from public.cellar_members cm where cm.cellar_id = wines.cellar_id and cm.user_id = auth.uid() and cm.status = 'accepted')
+  );

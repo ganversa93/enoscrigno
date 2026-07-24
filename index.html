@@ -349,6 +349,19 @@
       border: 2px solid var(--surf);
     }
 
+    .cellar-selector { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 1rem; }
+    .cellar-chip {
+      display: flex; align-items: center; gap: 5px; font-size: 12px; padding: 6px 12px;
+      border-radius: 20px; border: 0.5px solid var(--border); background: var(--bg);
+      color: var(--muted); cursor: pointer; white-space: nowrap;
+    }
+    .cellar-chip.active { background: var(--wine); color: #fff; border-color: var(--wine); font-weight: 500; }
+    .cellar-manage-btn {
+      width: 28px; height: 28px; border-radius: 50%; border: 0.5px solid var(--border);
+      background: var(--bg); color: var(--muted); display: flex; align-items: center;
+      justify-content: center; cursor: pointer; flex-shrink: 0; font-size: 13px;
+    }
+
     /* ── HOME ── */
     .home-welcome { font-family: 'Cormorant Garamond', serif; font-size: 22px; color: var(--ink); margin: 1.5rem 0 1.25rem; text-align: center; }
     .home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -790,6 +803,11 @@
         <div class="home-card-title">Guida</div>
         <div class="home-card-sub">Come funziona Enoscrigno</div>
       </div>
+      <div class="home-card" onclick="showCellarsScreen()">
+        <i class="ti ti-users-group"></i>
+        <div class="home-card-title">Cantine condivise</div>
+        <div class="home-card-sub">Con famiglia o colleghi</div>
+      </div>
     </div>
   </div>
 
@@ -802,7 +820,53 @@
     <div class="nav-menu-item" onclick="closeNavMenu();showComingSoon('Blog')"><i class="ti ti-news"></i>Blog</div>
     <div class="nav-menu-item" onclick="closeNavMenu();showComingSoon('Eventi')"><i class="ti ti-calendar-event"></i>Eventi</div>
     <div class="nav-menu-item" onclick="closeNavMenu();showNetworkScreen()"><i class="ti ti-users"></i>Network</div>
+    <div class="nav-menu-item" onclick="closeNavMenu();showCellarsScreen()"><i class="ti ti-users-group"></i>Cantine condivise</div>
     <div class="nav-menu-item" onclick="closeNavMenu();showGuideScreen()"><i class="ti ti-book"></i>Guida</div>
+  </div>
+
+  <!-- ══ CANTINE CONDIVISE ══ -->
+  <div id="screen-cellars" class="screen">
+    <div class="nav" style="margin-bottom:1.1rem">
+      <button class="btn sm" onclick="showScreen('screen-home')"><i class="ti ti-arrow-left"></i>Home</button>
+      <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--ink)">Le mie cantine</span>
+    </div>
+
+    <div class="fsec" id="cellar-invites-section" style="display:none">
+      <div class="stitle"><i class="ti ti-mail"></i>Inviti ricevuti</div>
+      <div id="cellar-invites-list"></div>
+    </div>
+
+    <div class="fsec">
+      <div class="stitle"><i class="ti ti-list"></i>Cantine di cui fai parte</div>
+      <div id="cellars-list">
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:0.5px solid var(--border)">
+          <i class="ti ti-user" style="font-size:18px;color:var(--wine)"></i>
+          <div style="flex:1;font-size:13px;color:var(--ink)">Cantina personale</div>
+          <span style="font-size:11px;color:var(--muted)">solo tu</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="fsec">
+      <div class="stitle"><i class="ti ti-plus"></i>Crea una cantina condivisa</div>
+      <div class="fg"><label>Nome</label><input type="text" id="new-cellar-name" placeholder="es. Cantina di famiglia"></div>
+      <button class="btn primary sm" onclick="createCellar()" style="margin-top:8px"><i class="ti ti-plus"></i>Crea</button>
+    </div>
+
+    <div class="fsec">
+      <div class="stitle"><i class="ti ti-key"></i>Unisciti con un codice</div>
+      <div class="fg"><label>Codice invito</label><input type="text" id="join-cellar-code" placeholder="es. AB12CD" style="text-transform:uppercase"></div>
+      <button class="btn sm" onclick="joinCellarByCode()" style="margin-top:8px"><i class="ti ti-login"></i>Unisciti</button>
+    </div>
+  </div>
+
+  <!-- ══ GESTIONE SINGOLA CANTINA (membri, invito, codice) ══ -->
+  <div id="screen-cellar-detail" class="screen">
+    <div class="nav" style="margin-bottom:1.1rem">
+      <button class="btn sm" onclick="showScreen('screen-cellars')"><i class="ti ti-arrow-left"></i>Le mie cantine</button>
+      <span id="cellar-detail-name" style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--ink)"></span>
+    </div>
+    <div id="cellar-detail-content"></div>
   </div>
 
   <!-- ══ NETWORK ══ -->
@@ -949,6 +1013,7 @@
         <button class="btn sm danger" onclick="doLogout()" title="Esci"><i class="ti ti-logout"></i></button>
       </div>
     </div>
+    <div class="cellar-selector" id="cellar-selector"></div>
     <div class="stat-row" id="stats-bar"></div>
     <div class="filter-bar">
       <input type="text" id="search-input" placeholder="Cerca nome, produttore, regione, abbinamento…" oninput="renderGrid()">
@@ -2065,11 +2130,11 @@ async function loadProfile(authUser) {
 
 /* ══ WINES — DB layer ══ */
 async function loadWines() {
-  const { data, error } = await sb
-    .from('wines')
-    .select('*')
-    .eq('user_id', currentUser.id)
-    .order('created_at', { ascending: false });
+  let query = sb.from('wines').select('*');
+  query = currentCellarId
+    ? query.eq('cellar_id', currentCellarId)
+    : query.eq('user_id', currentUser.id).is('cellar_id', null);
+  const { data, error } = await query.order('created_at', { ascending: false });
   if (error) { toastErr('Errore caricamento vini: ' + error.message); console.error('loadWines error:', error); return []; }
   // Deserializza i campi JSON
   return (data || []).map(row => ({
@@ -2085,6 +2150,7 @@ async function loadWines() {
     degSchema:   row.deg_schema,
     tastingDate:  row.tasting_date,
     tastingPlace: row.tasting_place,
+    cellarId:     row.cellar_id,
     shopCategory: row.shop_category,
     frontImg:    row.front_img,
     backImg:     row.back_img,
@@ -2104,6 +2170,7 @@ async function dbSaveWine(wine) {
     grapes:       wine.grapes       || null,
     region:       wine.region       || null,
     visibility:   wine.visibility ?? true,
+    cellar_id:    wine.cellarId || null,
     country:      wine.country      || null,
     province:     wine.province     || null,
     abv:          wine.abv          || null,
@@ -2169,16 +2236,257 @@ async function initApp() {
   if (u.assoc) { bc.textContent = u.assoc; bc.className = 'assoc-badge badge-' + u.assoc.toLowerCase(); bc.style.display = ''; }
   else bc.style.display = 'none';
   renderAiBanner();
-  // Carica vini dal DB
+  // Carica cantine e vini dal DB
   showLoadingOverlay(true);
+  await loadMyCellars();
   winesCache = await loadWines();
   showLoadingOverlay(false);
   showScreen('screen-home');
+
+  // Se si arriva da un link di invito diretto (?join=CODICE), precompila
+  const joinCode = new URLSearchParams(window.location.search).get('join');
+  if (joinCode) {
+    history.replaceState(null, '', window.location.pathname);
+    showCellarsScreen();
+    setTimeout(() => {
+      const input = document.getElementById('join-cellar-code');
+      if (input) { input.value = joinCode.toUpperCase(); toast('Codice invito precompilato — premi Unisciti per confermare'); }
+    }, 100);
+  }
 }
 
 function toggleNavMenu() {
   document.getElementById('nav-menu').classList.toggle('open');
   document.getElementById('nav-menu-overlay').classList.toggle('open');
+}
+
+/* ══ CANTINE CONDIVISE ══ */
+let currentCellarId = null; // null = cantina personale
+let myCellars = [];         // [{id, name, isOwner, inviteCode}]
+
+function genInviteCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // esclusi caratteri ambigui (0/O, 1/I)
+  return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
+
+async function loadMyCellars() {
+  const { data: owned } = await sb.from('cellars').select('*').eq('owner_id', currentUser.id);
+  const { data: memberships } = await sb.from('cellar_members').select('cellar_id, cellars(*)').eq('user_id', currentUser.id).eq('status', 'accepted');
+  const map = new Map();
+  (owned || []).forEach(c => map.set(c.id, { id: c.id, name: c.name, isOwner: true, inviteCode: c.invite_code }));
+  (memberships || []).forEach(m => {
+    if (m.cellars && !map.has(m.cellars.id)) {
+      map.set(m.cellars.id, { id: m.cellars.id, name: m.cellars.name, isOwner: m.cellars.owner_id === currentUser.id, inviteCode: m.cellars.invite_code });
+    }
+  });
+  myCellars = [...map.values()];
+  renderCellarSelector();
+}
+
+function renderCellarSelector() {
+  const box = document.getElementById('cellar-selector');
+  if (!box) return;
+  const chips = [{ id: null, name: 'Personale' }, ...myCellars];
+  box.innerHTML = chips.map(c => `
+    <div class="cellar-chip ${currentCellarId === c.id ? 'active' : ''}" onclick="switchCellar(${c.id ? `'${c.id}'` : 'null'})">
+      ${c.id ? '<i class="ti ti-users-group" style="font-size:12px"></i>' : '<i class="ti ti-user" style="font-size:12px"></i>'} ${c.name}
+    </div>`).join('') + `<div class="cellar-manage-btn" onclick="showCellarsScreen()" title="Gestisci cantine"><i class="ti ti-settings"></i></div>`;
+}
+
+async function switchCellar(id) {
+  currentCellarId = id;
+  renderCellarSelector();
+  showLoadingOverlay(true);
+  winesCache = await loadWines();
+  showLoadingOverlay(false);
+  renderAll();
+}
+
+function showCellarsScreen() {
+  showScreen('screen-cellars');
+  renderCellarsListUI();
+  loadCellarInvites();
+}
+
+function renderCellarsListUI() {
+  const box = document.getElementById('cellars-list');
+  const rows = myCellars.map(c => `
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:0.5px solid var(--border);cursor:pointer" onclick="showCellarDetail('${c.id}')">
+      <i class="ti ti-users-group" style="font-size:18px;color:var(--wine)"></i>
+      <div style="flex:1;font-size:13px;color:var(--ink)">${c.name} ${c.isOwner ? '<span style="font-size:10px;color:var(--muted)">(tua)</span>' : ''}</div>
+      <i class="ti ti-chevron-right" style="font-size:14px;color:var(--muted)"></i>
+    </div>`).join('');
+  box.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:0.5px solid var(--border)">
+      <i class="ti ti-user" style="font-size:18px;color:var(--wine)"></i>
+      <div style="flex:1;font-size:13px;color:var(--ink)">Cantina personale</div>
+      <span style="font-size:11px;color:var(--muted)">solo tu</span>
+    </div>
+    ${rows}`;
+}
+
+async function loadCellarInvites() {
+  const section = document.getElementById('cellar-invites-section');
+  const list = document.getElementById('cellar-invites-list');
+  const { data: invites, error } = await sb
+    .from('cellar_members').select('cellar_id, invited_by, cellars(name)')
+    .eq('user_id', currentUser.id).eq('status', 'pending');
+  if (error || !invites?.length) { section.style.display = 'none'; return; }
+  section.style.display = '';
+  list.innerHTML = invites.map(inv => `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border)">
+      <i class="ti ti-users-group" style="font-size:18px;color:var(--wine)"></i>
+      <div style="flex:1;font-size:13px;color:var(--ink)">${inv.cellars?.name || 'Cantina condivisa'}</div>
+      <button class="btn sm primary" onclick="respondCellarInvite('${inv.cellar_id}', true)">Accetta</button>
+      <button class="btn sm" onclick="respondCellarInvite('${inv.cellar_id}', false)">Rifiuta</button>
+    </div>`).join('');
+}
+
+async function respondCellarInvite(cellarId, accept) {
+  if (accept) {
+    await sb.from('cellar_members').update({ status: 'accepted' }).eq('cellar_id', cellarId).eq('user_id', currentUser.id);
+    toast('Invito accettato!');
+  } else {
+    await sb.from('cellar_members').delete().eq('cellar_id', cellarId).eq('user_id', currentUser.id);
+    toast('Invito rifiutato');
+  }
+  await loadMyCellars();
+  loadCellarInvites();
+  renderCellarsListUI();
+}
+
+async function createCellar() {
+  const name = document.getElementById('new-cellar-name').value.trim();
+  if (!name) { toast('Dai un nome alla cantina condivisa'); return; }
+  const code = genInviteCode();
+  const { data: cellar, error } = await sb.from('cellars').insert({ name, owner_id: currentUser.id, invite_code: code }).select().single();
+  if (error) { toastErr('Errore creazione: ' + error.message); return; }
+  await sb.from('cellar_members').insert({ cellar_id: cellar.id, user_id: currentUser.id, status: 'accepted' });
+  document.getElementById('new-cellar-name').value = '';
+  toast('Cantina "' + name + '" creata!');
+  await loadMyCellars();
+  renderCellarsListUI();
+}
+
+async function joinCellarByCode() {
+  const code = document.getElementById('join-cellar-code').value.trim().toUpperCase();
+  if (!code) { toast('Inserisci un codice'); return; }
+  const { data: cellar, error } = await sb.from('cellars').select('id, name').eq('invite_code', code).maybeSingle();
+  if (error || !cellar) { toast('Codice non valido'); return; }
+  const { error: joinErr } = await sb.from('cellar_members').insert({ cellar_id: cellar.id, user_id: currentUser.id, status: 'accepted' });
+  if (joinErr) { toast(joinErr.message.includes('duplicate') ? 'Fai già parte di questa cantina' : 'Errore: ' + joinErr.message); return; }
+  document.getElementById('join-cellar-code').value = '';
+  toast('Ti sei unito a "' + cellar.name + '"!');
+  await loadMyCellars();
+  renderCellarsListUI();
+}
+
+let cellarDetailId = null;
+async function showCellarDetail(cellarId) {
+  cellarDetailId = cellarId;
+  const cellar = myCellars.find(c => c.id === cellarId);
+  if (!cellar) return;
+  document.getElementById('cellar-detail-name').textContent = cellar.name;
+  showScreen('screen-cellar-detail');
+  await renderCellarDetailUI(cellar);
+}
+
+async function renderCellarDetailUI(cellar) {
+  const { data: members } = await sb.from('cellar_members').select('user_id, status').eq('cellar_id', cellar.id);
+  const ids = (members || []).map(m => m.user_id);
+  const { data: profiles } = ids.length ? await sb.from('profiles').select('id, full_name, avatar_base64').in('id', ids) : { data: [] };
+  const profMap = Object.fromEntries((profiles || []).map(p => [p.id, p]));
+  const inviteLink = `${window.location.origin}${window.location.pathname}?join=${cellar.inviteCode}`;
+
+  document.getElementById('cellar-detail-content').innerHTML = `
+    <div class="fsec">
+      <div class="stitle"><i class="ti ti-users"></i>Membri (${(members || []).filter(m => m.status === 'accepted').length})</div>
+      ${(members || []).map(m => {
+        const p = profMap[m.user_id] || {};
+        const initials = (p.full_name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+        return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:0.5px solid var(--border)">
+          ${p.avatar_base64 ? `<img src="${p.avatar_base64}" style="width:32px;height:32px;border-radius:50%;object-fit:cover">` : `<div style="width:32px;height:32px;border-radius:50%;background:var(--wine-pale);color:var(--wine);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600">${initials}</div>`}
+          <div style="flex:1;font-size:13px;color:var(--ink)">${p.full_name || 'Utente'}</div>
+          ${m.status === 'pending' ? '<span style="font-size:10px;color:var(--muted)">invito in attesa</span>' : ''}
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div class="fsec">
+      <div class="stitle"><i class="ti ti-user-plus"></i>Invita cercando il nome</div>
+      <div style="position:relative">
+        <input type="text" id="cellar-invite-search" class="network-search" placeholder="Cerca per nome…" oninput="searchAndInviteToCellar()">
+      </div>
+      <div id="cellar-invite-results" style="margin-top:8px"></div>
+    </div>
+
+    <div class="fsec">
+      <div class="stitle"><i class="ti ti-key"></i>Codice invito</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="flex:1;font-family:monospace;font-size:20px;letter-spacing:3px;color:var(--wine);background:var(--wine-pale);padding:10px;border-radius:8px;text-align:center">${cellar.inviteCode}</div>
+        <button class="btn sm" onclick="copyToClipboard('${cellar.inviteCode}', 'Codice copiato!')"><i class="ti ti-copy"></i></button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px">Oppure condividi il link diretto:</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+        <input type="text" readonly value="${inviteLink}" style="flex:1;font-size:11px;padding:8px;border-radius:8px;border:0.5px solid var(--border);background:var(--surf);color:var(--muted)">
+        <button class="btn sm" onclick="copyToClipboard('${inviteLink}', 'Link copiato!')"><i class="ti ti-copy"></i></button>
+      </div>
+    </div>
+
+    <div class="fsec">
+      ${cellar.isOwner
+        ? `<button class="btn sm danger" onclick="deleteCellarConfirm('${cellar.id}')"><i class="ti ti-trash"></i>Elimina cantina condivisa</button>`
+        : `<button class="btn sm danger" onclick="leaveCellarConfirm('${cellar.id}')"><i class="ti ti-door-exit"></i>Esci da questa cantina</button>`}
+    </div>`;
+}
+
+let cellarInviteTimer = null;
+async function searchAndInviteToCellar() {
+  clearTimeout(cellarInviteTimer);
+  const q = document.getElementById('cellar-invite-search').value.trim();
+  const box = document.getElementById('cellar-invite-results');
+  if (!q) { box.innerHTML = ''; return; }
+  cellarInviteTimer = setTimeout(async () => {
+    const { data: results } = await sb.from('profiles').select('id, full_name, avatar_base64').ilike('full_name', `%${q}%`).neq('id', currentUser.id).limit(10);
+    if (!results?.length) { box.innerHTML = `<div style="font-size:12px;color:var(--muted)">Nessun profilo pubblico trovato</div>`; return; }
+    box.innerHTML = results.map(p => `
+      <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:0.5px solid var(--border)">
+        <div style="flex:1;font-size:13px;color:var(--ink)">${p.full_name}</div>
+        <button class="btn sm primary" onclick="inviteUserToCellar('${p.id}', this)">Invita</button>
+      </div>`).join('');
+  }, 350);
+}
+
+async function inviteUserToCellar(userId, btnEl) {
+  const { error } = await sb.from('cellar_members').insert({ cellar_id: cellarDetailId, user_id: userId, status: 'pending', invited_by: currentUser.id });
+  if (error) { toastErr(error.message.includes('duplicate') ? 'Già invitato o già membro' : 'Errore: ' + error.message); return; }
+  toast('Invito inviato!');
+  if (btnEl) btnEl.outerHTML = `<span style="font-size:11px;color:var(--muted)">Invitato</span>`;
+}
+
+function copyToClipboard(text, msg) {
+  navigator.clipboard?.writeText(text).then(() => toast(msg)).catch(() => toast('Copia manualmente: ' + text));
+}
+
+async function leaveCellarConfirm(cellarId) {
+  if (!confirm('Vuoi uscire da questa cantina condivisa? Non vedrai più i suoi vini.')) return;
+  await sb.from('cellar_members').delete().eq('cellar_id', cellarId).eq('user_id', currentUser.id);
+  toast('Sei uscito dalla cantina');
+  if (currentCellarId === cellarId) { currentCellarId = null; }
+  await loadMyCellars();
+  showScreen('screen-cellars');
+  renderCellarsListUI();
+}
+
+async function deleteCellarConfirm(cellarId) {
+  if (!confirm('Eliminare definitivamente questa cantina condivisa? I vini torneranno personali per chi li ha aggiunti, ma la cantina condivisa sparirà per tutti.')) return;
+  const { error } = await sb.from('cellars').delete().eq('id', cellarId);
+  if (error) { toastErr('Errore: ' + error.message); return; }
+  toast('Cantina eliminata');
+  if (currentCellarId === cellarId) { currentCellarId = null; }
+  await loadMyCellars();
+  showScreen('screen-cellars');
+  renderCellarsListUI();
 }
 function closeNavMenu() {
   document.getElementById('nav-menu').classList.remove('open');
@@ -2799,6 +3107,7 @@ async function saveWine() {
     tastingDate: g('f-tastingdate'), tastingPlace: g('f-tastingplace'),
     pairing: computePairingValue(),
     visibility: document.getElementById('f-visibility')?.checked ?? true,
+    cellarId: currentCellarId || null,
     degSchema: activeDeg,
     aisParams:   activeDeg === 'ais'   ? getAP() : null,
     aisScore:    activeDeg === 'ais'   ? aisScore : null,
@@ -3661,12 +3970,12 @@ calcAIS(); calcFISAR();
    le funzioni dichiarate qui non sono automaticamente globali,
    ma gli onclick="..." nell'HTML devono poterle richiamare. */
 Object.assign(window, {
-  adjustQty, calcAIS, calcFISAR, cancelForm, closeNavMenu, deleteWine, doLogin, doLogout, doRegister,
-  editWine, exportCSV, exportInventory, exportJSON, exportTasting, onAdvCountryChange, previewAvatar, previewImg,
-  removeGrapeTag, renderGrid, resendConfirmation, resendConfirmationFromProfile, resetAdvFilters, respondFollowRequest, saveProfile, saveWine,
-  goBackFromProfile,
-  scanBothLabels, searchNetworkUsers, sendFollowRequest, setFilter, setQtyFilter, showAdd, showComingSoon, showDetail,
-  showNetworkScreen, showNetworkWinePreview, showProfileScreen, showScreen, stepQty, switchDeg, switchLTab, toast,
+  adjustQty, calcAIS, calcFISAR, cancelForm, closeNavMenu, copyToClipboard, createCellar, deleteCellarConfirm, deleteWine, doLogin, doLogout, doRegister,
+  editWine, exportCSV, exportInventory, exportJSON, exportTasting, inviteUserToCellar, joinCellarByCode, leaveCellarConfirm, onAdvCountryChange, previewAvatar, previewImg,
+  removeGrapeTag, renderGrid, resendConfirmation, resendConfirmationFromProfile, resetAdvFilters, respondCellarInvite, respondFollowRequest, saveProfile, saveWine,
+  goBackFromProfile, searchAndInviteToCellar,
+  scanBothLabels, searchNetworkUsers, sendFollowRequest, setFilter, setQtyFilter, showAdd, showCellarDetail, showCellarsScreen, showComingSoon, showDetail,
+  showNetworkScreen, showNetworkWinePreview, showProfileScreen, showScreen, stepQty, switchCellar, switchDeg, switchLTab, toast,
   showGuideScreen,
   toggleAdvFilters, toggleChipIn, toggleFisarMethodField, toggleNavMenu, togglePairing, toggleSection, updateDelegazioniList, updateGrapePct, updateTonalitaColore,
   updateRegionOptions, updateProvinceOptions
