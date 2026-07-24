@@ -801,11 +801,6 @@
         <div class="home-card-title">Guida</div>
         <div class="home-card-sub">Come funziona Enoscrigno</div>
       </div>
-      <div class="home-card" onclick="showCellarsScreen()">
-        <i class="ti ti-users-group"></i>
-        <div class="home-card-title">Cantine condivise</div>
-        <div class="home-card-sub">Con famiglia o colleghi</div>
-      </div>
     </div>
   </div>
 
@@ -2285,10 +2280,11 @@ function renderCellarSelector() {
   const box = document.getElementById('cellar-selector');
   if (!box) return;
   const chips = [{ id: null, name: 'Personale' }, ...myCellars];
-  box.innerHTML = chips.map(c => `
+  const manageBtn = `<div class="cellar-manage-btn" onclick="showCellarsScreen()" title="Crea o unisciti a una cantina condivisa"><i class="ti ti-plus"></i></div>`;
+  box.innerHTML = manageBtn + chips.map(c => `
     <div class="cellar-chip ${currentCellarId === c.id ? 'active' : ''}" onclick="switchCellar(${c.id ? `'${c.id}'` : 'null'})">
       ${c.id ? '<i class="ti ti-users-group" style="font-size:12px"></i>' : '<i class="ti ti-user" style="font-size:12px"></i>'} ${c.name}
-    </div>`).join('') + `<div class="cellar-manage-btn" onclick="showCellarsScreen()" title="Gestisci cantine"><i class="ti ti-settings"></i></div>`;
+    </div>`).join('');
 }
 
 async function switchCellar(id) {
