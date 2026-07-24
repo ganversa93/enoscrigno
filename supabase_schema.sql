@@ -342,7 +342,7 @@ create policy "cellars: vedo le cantine di cui sono owner o membro accettato"
   on public.cellars for select
   using (
     auth.uid() = owner_id
-    or exists (select 1 from public.cellar_members cm where cm.cellar_id = cellars.id and cm.user_id = auth.uid() and cm.status = 'accepted')
+    or public.is_cellar_member(cellars.id, auth.uid())
   );
 
 create policy "cellars: chiunque autenticato può crearne una (diventandone owner)"
