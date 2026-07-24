@@ -831,13 +831,7 @@
 
     <div class="fsec">
       <div class="stitle"><i class="ti ti-list"></i>Cantine di cui fai parte</div>
-      <div id="cellars-list">
-        <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:0.5px solid var(--border)">
-          <i class="ti ti-user" style="font-size:18px;color:var(--wine)"></i>
-          <div style="flex:1;font-size:13px;color:var(--ink)">Cantina personale</div>
-          <span style="font-size:11px;color:var(--muted)">solo tu</span>
-        </div>
-      </div>
+      <div id="cellars-list"></div>
     </div>
 
     <div class="fsec">
@@ -2123,11 +2117,8 @@ async function loadProfile(authUser) {
 
 /* ══ WINES — DB layer ══ */
 async function loadWines() {
-  let query = sb.from('wines').select('*');
-  query = currentCellarId
-    ? query.eq('cellar_id', currentCellarId)
-    : query.eq('user_id', currentUser.id).is('cellar_id', null);
-  const { data, error } = await query.order('created_at', { ascending: false });
+  if (!currentCellarId) return []; // in attesa che venga impostata la cantina principale
+  const { data, error } = await sb.from('wines').select('*').eq('cellar_id', currentCellarId).order('created_at', { ascending: false });
   if (error) { toastErr('Errore caricamento vini: ' + error.message); console.error('loadWines error:', error); return []; }
   // Deserializza i campi JSON
   return (data || []).map(row => ({
@@ -2266,24 +2257,28 @@ async function loadMyCellars() {
   const { data: owned } = await sb.from('cellars').select('*').eq('owner_id', currentUser.id);
   const { data: memberships } = await sb.from('cellar_members').select('cellar_id, cellars(*)').eq('user_id', currentUser.id).eq('status', 'accepted');
   const map = new Map();
-  (owned || []).forEach(c => map.set(c.id, { id: c.id, name: c.name, isOwner: true, inviteCode: c.invite_code }));
+  (owned || []).forEach(c => map.set(c.id, { id: c.id, name: c.name, isOwner: true, isDefault: c.is_default, inviteCode: c.invite_code }));
   (memberships || []).forEach(m => {
     if (m.cellars && !map.has(m.cellars.id)) {
-      map.set(m.cellars.id, { id: m.cellars.id, name: m.cellars.name, isOwner: m.cellars.owner_id === currentUser.id, inviteCode: m.cellars.invite_code });
+      map.set(m.cellars.id, { id: m.cellars.id, name: m.cellars.name, isOwner: m.cellars.owner_id === currentUser.id, isDefault: m.cellars.is_default, inviteCode: m.cellars.invite_code });
     }
   });
-  myCellars = [...map.values()];
+  myCellars = [...map.values()].sort((a, b) => (b.isDefault ? 1 : 0) - (a.isDefault ? 1 : 0));
+  // Al primo caricamento, seleziona automaticamente la cantina principale
+  if (!currentCellarId) {
+    const def = myCellars.find(c => c.isDefault);
+    if (def) currentCellarId = def.id;
+  }
   renderCellarSelector();
 }
 
 function renderCellarSelector() {
   const box = document.getElementById('cellar-selector');
   if (!box) return;
-  const chips = [{ id: null, name: 'Personale' }, ...myCellars];
   const manageBtn = `<div class="cellar-manage-btn" onclick="showCellarsScreen()" title="Crea o unisciti a una cantina condivisa"><i class="ti ti-plus"></i></div>`;
-  box.innerHTML = manageBtn + chips.map(c => `
-    <div class="cellar-chip ${currentCellarId === c.id ? 'active' : ''}" onclick="switchCellar(${c.id ? `'${c.id}'` : 'null'})">
-      ${c.id ? '<i class="ti ti-users-group" style="font-size:12px"></i>' : '<i class="ti ti-user" style="font-size:12px"></i>'} ${c.name}
+  box.innerHTML = manageBtn + myCellars.map(c => `
+    <div class="cellar-chip ${currentCellarId === c.id ? 'active' : ''}" onclick="switchCellar('${c.id}')">
+      ${c.isDefault ? '<i class="ti ti-user" style="font-size:12px"></i>' : '<i class="ti ti-users-group" style="font-size:12px"></i>'} ${c.name}
     </div>`).join('');
 }
 
@@ -2304,19 +2299,12 @@ function showCellarsScreen() {
 
 function renderCellarsListUI() {
   const box = document.getElementById('cellars-list');
-  const rows = myCellars.map(c => `
+  box.innerHTML = myCellars.map(c => `
     <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:0.5px solid var(--border);cursor:pointer" onclick="showCellarDetail('${c.id}')">
-      <i class="ti ti-users-group" style="font-size:18px;color:var(--wine)"></i>
-      <div style="flex:1;font-size:13px;color:var(--ink)">${c.name} ${c.isOwner ? '<span style="font-size:10px;color:var(--muted)">(tua)</span>' : ''}</div>
+      <i class="ti ${c.isDefault ? 'ti-user' : 'ti-users-group'}" style="font-size:18px;color:var(--wine)"></i>
+      <div style="flex:1;font-size:13px;color:var(--ink)">${c.name} ${c.isDefault ? '<span style="font-size:10px;color:var(--muted)">(la tua cantina principale)</span>' : ''}</div>
       <i class="ti ti-chevron-right" style="font-size:14px;color:var(--muted)"></i>
     </div>`).join('');
-  box.innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:0.5px solid var(--border)">
-      <i class="ti ti-user" style="font-size:18px;color:var(--wine)"></i>
-      <div style="flex:1;font-size:13px;color:var(--ink)">Cantina personale</div>
-      <span style="font-size:11px;color:var(--muted)">solo tu</span>
-    </div>
-    ${rows}`;
 }
 
 async function loadCellarInvites() {
@@ -2428,7 +2416,9 @@ async function renderCellarDetailUI(cellar) {
     </div>
 
     <div class="fsec">
-      ${cellar.isOwner
+      ${cellar.isDefault
+        ? `<div style="font-size:11px;color:var(--muted)"><i class="ti ti-info-circle"></i> Questa è la tua cantina principale: non può essere eliminata né lasciata. Invita chi vuoi a condividerla con te.</div>`
+        : cellar.isOwner
         ? `<button class="btn sm danger" onclick="deleteCellarConfirm('${cellar.id}')"><i class="ti ti-trash"></i>Elimina cantina condivisa</button>`
         : `<button class="btn sm danger" onclick="leaveCellarConfirm('${cellar.id}')"><i class="ti ti-door-exit"></i>Esci da questa cantina</button>`}
     </div>`;

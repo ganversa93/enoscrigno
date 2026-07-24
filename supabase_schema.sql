@@ -145,6 +145,8 @@ language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  new_cellar_id uuid;
 begin
   insert into public.profiles (id, full_name, assoc, card, delegazione, delegazione_custom)
   values (
@@ -155,6 +157,18 @@ begin
     '', ''
   )
   on conflict (id) do nothing;
+
+  -- Ogni utente ha sempre una cantina "principale" propria, creata
+  -- automaticamente: condividerla con altri significa semplicemente
+  -- invitarli qui dentro, senza bisogno di un concetto separato di
+  -- "cantina personale" vs "cantina condivisa".
+  insert into public.cellars (name, owner_id, invite_code, is_default)
+  values ('La mia cantina', new.id, upper(substr(md5(random()::text), 1, 6)), true)
+  returning id into new_cellar_id;
+
+  insert into public.cellar_members (cellar_id, user_id, status)
+  values (new_cellar_id, new.id, 'accepted');
+
   return new;
 end;
 $$;
@@ -304,6 +318,7 @@ create table if not exists public.cellars (
   name        text not null,
   owner_id    uuid not null references auth.users(id) on delete cascade,
   invite_code text not null unique,
+  is_default  boolean not null default false,  -- la cantina "principale" creata automaticamente alla registrazione
   created_at  timestamptz default now()
 );
 alter table public.cellars enable row level security;
@@ -340,7 +355,7 @@ create policy "cellars: solo owner modifica (nome, rigenera codice)"
 
 create policy "cellars: solo owner elimina la cantina condivisa"
   on public.cellars for delete
-  using (auth.uid() = owner_id);
+  using (auth.uid() = owner_id and is_default = false);
 
 -- ── Policy: cellar_members ──
 -- Funzione "di sistema" per controllare l'appartenenza a una cantina
@@ -383,7 +398,9 @@ create policy "cellar_members: accetto il mio invito"
 create policy "cellar_members: esco da solo, oppure l'owner rimuove un membro"
   on public.cellar_members for delete
   using (
-    auth.uid() = user_id
+    (auth.uid() = user_id and not exists (
+      select 1 from public.cellars c where c.id = cellar_members.cellar_id and c.owner_id = auth.uid() and c.is_default = true
+    ))
     or exists (select 1 from public.cellars c where c.id = cellar_members.cellar_id and c.owner_id = auth.uid())
   );
 
@@ -415,3 +432,85 @@ create policy "wines: membri accettati eliminano i vini della cantina condivisa"
     cellar_id is not null
     and public.is_cellar_member(wines.cellar_id, auth.uid())
   );
+
+-- ════════════════════════════════════════════
+-- MIGRAZIONE — unifica 'cantina personale' e 'cantine condivise'
+-- in un unico modello: ogni utente ha sempre una cantina 'principale'
+-- reale (is_default = true), condivisibile come tutte le altre.
+-- Da eseguire UNA SOLA VOLTA sul database già esistente.
+-- ════════════════════════════════════════════
+alter table public.cellars add column if not exists is_default boolean not null default false;
+
+-- 1) Crea la cantina principale per ogni utente che non ne ha ancora una
+insert into public.cellars (name, owner_id, invite_code, is_default)
+select 'La mia cantina', u.id, upper(substr(md5(random()::text || u.id::text), 1, 6)), true
+from auth.users u
+where not exists (
+  select 1 from public.cellars c where c.owner_id = u.id and c.is_default = true
+);
+
+-- 2) Iscrive ogni utente come membro accettato della propria cantina principale
+insert into public.cellar_members (cellar_id, user_id, status)
+select c.id, c.owner_id, 'accepted'
+from public.cellars c
+where c.is_default = true
+on conflict (cellar_id, user_id) do nothing;
+
+-- 3) Sposta i vini "personali" (cellar_id null) di ciascun utente
+--    nella sua nuova cantina principale
+update public.wines w
+set cellar_id = c.id
+from public.cellars c
+where c.owner_id = w.user_id
+  and c.is_default = true
+  and w.cellar_id is null;
+
+-- Aggiorna anche la policy di uscita per impedire al proprietario di
+-- uscire per errore dalla propria cantina principale
+drop policy if exists "cellar_members: esco da solo, oppure l'owner rimuove un membro" on public.cellar_members;
+create policy "cellar_members: esco da solo, oppure l'owner rimuove un membro"
+  on public.cellar_members for delete
+  using (
+    (auth.uid() = user_id and not exists (
+      select 1 from public.cellars c where c.id = cellar_members.cellar_id and c.owner_id = auth.uid() and c.is_default = true
+    ))
+    or exists (select 1 from public.cellars c where c.id = cellar_members.cellar_id and c.owner_id = auth.uid())
+  );
+
+-- Aggiorna anche la policy di eliminazione cantina (blocca eliminazione della principale)
+drop policy if exists "cellars: solo owner elimina la cantina condivisa" on public.cellars;
+create policy "cellars: solo owner elimina la cantina condivisa"
+  on public.cellars for delete
+  using (auth.uid() = owner_id and is_default = false);
+
+-- Aggiorna il trigger di registrazione per creare la cantina principale
+-- anche ai nuovi utenti che si registreranno da qui in avanti
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  new_cellar_id uuid;
+begin
+  insert into public.profiles (id, full_name, assoc, card, delegazione, delegazione_custom)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
+    coalesce(new.raw_user_meta_data->>'assoc', ''),
+    coalesce(new.raw_user_meta_data->>'card', ''),
+    '', ''
+  )
+  on conflict (id) do nothing;
+
+  insert into public.cellars (name, owner_id, invite_code, is_default)
+  values ('La mia cantina', new.id, upper(substr(md5(random()::text), 1, 6)), true)
+  returning id into new_cellar_id;
+
+  insert into public.cellar_members (cellar_id, user_id, status)
+  values (new_cellar_id, new.id, 'accepted');
+
+  return new;
+end;
+$$;
