@@ -343,12 +343,29 @@ create policy "cellars: solo owner elimina la cantina condivisa"
   using (auth.uid() = owner_id);
 
 -- ── Policy: cellar_members ──
+-- Funzione "di sistema" per controllare l'appartenenza a una cantina
+-- senza innescare una nuova valutazione delle policy su cellar_members
+-- (altrimenti si genera una ricorsione infinita, dato che la policy
+-- di cellar_members deve poter controllare... cellar_members stessa)
+create or replace function public.is_cellar_member(p_cellar_id uuid, p_user_id uuid)
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.cellar_members
+    where cellar_id = p_cellar_id and user_id = p_user_id and status = 'accepted'
+  );
+$$;
+
 create policy "cellar_members: vedo le mie righe, quelle delle cantine che possiedo, o dei membri se sono accettato"
   on public.cellar_members for select
   using (
     auth.uid() = user_id
     or exists (select 1 from public.cellars c where c.id = cellar_members.cellar_id and c.owner_id = auth.uid())
-    or exists (select 1 from public.cellar_members cm2 where cm2.cellar_id = cellar_members.cellar_id and cm2.user_id = auth.uid() and cm2.status = 'accepted')
+    or public.is_cellar_member(cellar_members.cellar_id, auth.uid())
   );
 
 create policy "cellar_members: mi unisco da solo (codice) o vengo invitato da un membro/owner"
@@ -356,7 +373,7 @@ create policy "cellar_members: mi unisco da solo (codice) o vengo invitato da un
   with check (
     auth.uid() = user_id
     or exists (select 1 from public.cellars c where c.id = cellar_members.cellar_id and c.owner_id = auth.uid())
-    or exists (select 1 from public.cellar_members cm2 where cm2.cellar_id = cellar_members.cellar_id and cm2.user_id = auth.uid() and cm2.status = 'accepted')
+    or public.is_cellar_member(cellar_members.cellar_id, auth.uid())
   );
 
 create policy "cellar_members: accetto il mio invito"
@@ -375,26 +392,26 @@ create policy "wines: membri accettati vedono i vini della cantina condivisa"
   on public.wines for select
   using (
     cellar_id is not null
-    and exists (select 1 from public.cellar_members cm where cm.cellar_id = wines.cellar_id and cm.user_id = auth.uid() and cm.status = 'accepted')
+    and public.is_cellar_member(wines.cellar_id, auth.uid())
   );
 
 create policy "wines: membri accettati aggiungono vini alla cantina condivisa"
   on public.wines for insert
   with check (
     cellar_id is not null
-    and exists (select 1 from public.cellar_members cm where cm.cellar_id = wines.cellar_id and cm.user_id = auth.uid() and cm.status = 'accepted')
+    and public.is_cellar_member(wines.cellar_id, auth.uid())
   );
 
 create policy "wines: membri accettati modificano i vini della cantina condivisa"
   on public.wines for update
   using (
     cellar_id is not null
-    and exists (select 1 from public.cellar_members cm where cm.cellar_id = wines.cellar_id and cm.user_id = auth.uid() and cm.status = 'accepted')
+    and public.is_cellar_member(wines.cellar_id, auth.uid())
   );
 
 create policy "wines: membri accettati eliminano i vini della cantina condivisa"
   on public.wines for delete
   using (
     cellar_id is not null
-    and exists (select 1 from public.cellar_members cm where cm.cellar_id = wines.cellar_id and cm.user_id = auth.uid() and cm.status = 'accepted')
+    and public.is_cellar_member(wines.cellar_id, auth.uid())
   );
