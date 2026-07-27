@@ -2119,7 +2119,14 @@ async function doRegister() {
     return;
   }
   btn.textContent = 'Crea account'; btn.disabled = false;
-  if (error) { err.textContent = error.message; err.style.display = 'block'; return; }
+  if (error) {
+    const msg = /already registered|already exists/i.test(error.message)
+      ? 'Esiste già un account con questa email — prova ad accedere invece di registrarti, o usa "Password dimenticata" se non la ricordi.'
+      : error.message;
+    err.textContent = msg;
+    err.style.display = 'block';
+    return;
+  }
 
   // Il profilo (nome, associazione, tessera) viene creato automaticamente
   // lato database da un trigger su auth.users — funziona anche se la
