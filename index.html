@@ -2701,31 +2701,48 @@ function computePairingValue() {
   return [...chips, ...customTokens].join(', ');
 }
 
-function previewImg(input, previewId, side) {
+async function previewImg(input, previewId, side) {
   const file = input.files[0]; if (!file) return;
-  const r = new FileReader();
-  r.onload = e => {
-    document.getElementById(previewId).innerHTML = `<img src="${e.target.result}" style="width:100%;height:80px;object-fit:cover;border-radius:6px" alt="">`;
-    if (side === 'front') frontImg = e.target.result; else backImg = e.target.result;
-    renderAiBanner();
-  };
-  r.readAsDataURL(file);
+  // Anteprima immediata (locale, temporanea, solo per il feedback visivo)
+  const localPreview = URL.createObjectURL(file);
+  document.getElementById(previewId).innerHTML = `<img src="${localPreview}" style="width:100%;height:80px;object-fit:cover;border-radius:6px;opacity:.6" alt="">`;
+
+  // Upload reale su Supabase Storage — nel database resta solo il link,
+  // non il file intero (molto più leggero e veloce da leggere/scrivere)
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+  const path = `${currentUser.id}/${side}-${Date.now()}.${ext}`;
+  const { error } = await sb.storage.from('wine-labels').upload(path, file, { upsert: true });
+  if (error) { toastErr('Errore caricamento immagine: ' + error.message); return; }
+  const { data: urlData } = sb.storage.from('wine-labels').getPublicUrl(path);
+  if (side === 'front') frontImg = urlData.publicUrl; else backImg = urlData.publicUrl;
+  document.getElementById(previewId).innerHTML = `<img src="${urlData.publicUrl}" style="width:100%;height:80px;object-fit:cover;border-radius:6px" alt="">`;
+  renderAiBanner();
 }
 
 /* ── AI SCAN ── */
 // Helper: estrae media_type e base64 puro da una data URL "data:image/...;base64,...."
-function parseDataUrl(dataUrl) {
-  const match = /^data:([^;]+);base64,(.+)$/.exec(dataUrl || '');
-  return match ? { media_type: match[1], base64: match[2] } : null;
+// Recupera un'immagine (ora un link di Storage, non più base64 diretto)
+// e la converte in base64 al volo, solo per l'invio alla scansione AI
+// (l'API di Anthropic richiede l'immagine, non un link).
+async function urlToBase64(url) {
+  if (!url) return null;
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const base64 = await new Promise(resolve => {
+      const r = new FileReader();
+      r.onloadend = () => resolve(r.result.split(',')[1]);
+      r.readAsDataURL(blob);
+    });
+    return { media_type: blob.type || 'image/jpeg', base64 };
+  } catch { return null; }
 }
 
 async function scanBothLabels() {
-  const front = parseDataUrl(frontImg);
-  const back  = parseDataUrl(backImg);
-  if (!front && !back) { toast('Carica almeno una foto dell\'etichetta prima di analizzare'); return; }
-
+  if (!frontImg && !backImg) { toast('Carica almeno una foto dell\'etichetta prima di analizzare'); return; }
   document.getElementById('ai-spin').classList.add('show');
   try {
+    const [front, back] = await Promise.all([urlToBase64(frontImg), urlToBase64(backImg)]);
     // Chiama la Edge Function di Supabase, che tiene la chiave AI al
     // sicuro lato server, applica i limiti di utilizzo mensili e legge
     // entrambe le immagini insieme (fronte + eventuale retro).
