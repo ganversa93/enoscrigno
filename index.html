@@ -2070,7 +2070,8 @@ async function resendConfirmation(e) {
   const email = document.getElementById('l-email').value.trim();
   const err = document.getElementById('lerr');
   if (!email) { toast('Inserisci prima la tua email nel campo sopra'); return; }
-  const { error } = await sb.auth.resend({ type: 'signup', email });
+  const redirectPath = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1) + 'confirmed.html';
+  const { error } = await sb.auth.resend({ type: 'signup', email, options: { emailRedirectTo: redirectPath } });
   if (error) {
     err.style.color = '#c0392b';
     err.innerHTML = 'Errore nel reinvio: ' + error.message;
@@ -2082,7 +2083,8 @@ async function resendConfirmation(e) {
 }
 
 async function resendConfirmationFromProfile() {
-  const { error } = await sb.auth.resend({ type: 'signup', email: currentUser.email });
+  const redirectPath = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1) + 'confirmed.html';
+  const { error } = await sb.auth.resend({ type: 'signup', email: currentUser.email, options: { emailRedirectTo: redirectPath } });
   if (error) { toastErr('Errore nel reinvio: ' + error.message); return; }
   toast('✓ Email di conferma reinviata! Controlla la posta (anche lo spam).');
 }
@@ -2105,7 +2107,10 @@ async function doRegister() {
   try {
     ({ data, error } = await sb.auth.signUp({
       email, password: pwd,
-      options: { data: { full_name: firstname, assoc, card } }
+      options: {
+        data: { full_name: firstname, assoc, card },
+        emailRedirectTo: window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1) + 'confirmed.html'
+      }
     }));
   } catch (networkErr) {
     btn.textContent = 'Crea account'; btn.disabled = false;
