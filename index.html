@@ -364,6 +364,14 @@
     }
     .cellar-chip.active { background: var(--wine); color: #fff; border-color: var(--wine); font-weight: 500; }
 
+    .migration-notice {
+      background: rgba(184,137,42,.12); border: 0.5px solid rgba(184,137,42,.35);
+      color: var(--gold); font-size: 12px; line-height: 1.5; border-radius: 10px;
+      padding: 10px 14px; margin-bottom: 1.25rem; display: flex; gap: 8px; align-items: flex-start;
+    }
+    .migration-notice i { flex-shrink: 0; margin-top: 1px; }
+    .migration-notice b { color: var(--gold); }
+
     /* ── HOME ── */
     .home-welcome { font-family: 'Cormorant Garamond', serif; font-size: 22px; color: var(--ink); margin: 1.5rem 0 1.25rem; text-align: center; }
     .home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -726,6 +734,10 @@
         <div class="brand-logo-plate">
           <img src="assets/enoscrigno-logo-v2.png" alt="Enoscrigno" class="brand-logo-img">
         </div>
+      </div>
+      <div class="migration-notice">
+        <i class="ti ti-info-circle"></i>
+        Abbiamo aggiornato il sistema alla base — se avevi già un account, i tuoi dati sono al sicuro ma serve <b>registrarti di nuovo</b> con la stessa email.
       </div>
       <div class="ltabs">
         <div class="ltab active" id="ltab-login" onclick="switchLTab('login')">Accedi</div>
