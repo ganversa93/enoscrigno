@@ -349,6 +349,13 @@
       border: 2px solid var(--surf);
     }
 
+    #offline-banner {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      background: var(--gold); color: #2A1B0A; font-size: 12px; font-weight: 500;
+      padding: 8px 16px; text-align: center; display: flex; align-items: center;
+      justify-content: center; gap: 6px;
+    }
+
     /* ── HOME ── */
     .home-welcome { font-family: 'Cormorant Garamond', serif; font-size: 22px; color: var(--ink); margin: 1.5rem 0 1.25rem; text-align: center; }
     .home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -695,6 +702,13 @@
   </style>
 </head>
 <body>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
+</script>
 <div class="app-shell">
 
   <!-- ══ LOGIN ══ -->
@@ -739,6 +753,10 @@
   </div>
 
   <!-- ══ HOME ══ -->
+  <div id="offline-banner" style="display:none">
+    <i class="ti ti-cloud-off"></i> Sei offline — puoi comunque aggiungere vini, si sincronizzeranno da soli quando torna la connessione
+  </div>
+
   <div id="screen-home" class="screen">
     <div class="nav">
       <div class="logo" onclick="toggleNavMenu()" style="cursor:pointer">
@@ -2065,33 +2083,90 @@ async function loadProfile(authUser) {
 
 /* ══ WINES — DB layer ══ */
 async function loadWines() {
-  const { data, error } = await sb
-    .from('wines')
-    .select('*')
-    .eq('user_id', currentUser.id)
-    .order('created_at', { ascending: false });
-  if (error) { toastErr('Errore caricamento vini: ' + error.message); console.error('loadWines error:', error); return []; }
-  // Deserializza i campi JSON
-  return (data || []).map(row => ({
-    ...row,
-    aisParams:   row.ais_params,
-    fisarParams: row.fisar_params,
-    fisarDescParams: row.fisar_desc_params,
-    aisScore:    row.ais_score,
-    fisarScore:  row.fisar_score,
-    olfNote:     row.olf_note,
-    gustNote:    row.gust_note,
-    fpNote:      row.fp_note,
-    degSchema:   row.deg_schema,
-    tastingDate:  row.tasting_date,
-    tastingPlace: row.tasting_place,
-    shopCategory: row.shop_category,
-    frontImg:    row.front_img,
-    backImg:     row.back_img,
-  }));
+  const CACHE_KEY = 'enoscrigno_cache_wines_' + currentUser.id;
+  try {
+    const { data, error } = await sb
+      .from('wines')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    // Deserializza i campi JSON
+    const wines = (data || []).map(row => ({
+      ...row,
+      aisParams:   row.ais_params,
+      fisarParams: row.fisar_params,
+      fisarDescParams: row.fisar_desc_params,
+      aisScore:    row.ais_score,
+      fisarScore:  row.fisar_score,
+      olfNote:     row.olf_note,
+      gustNote:    row.gust_note,
+      fpNote:      row.fp_note,
+      degSchema:   row.deg_schema,
+      tastingDate:  row.tasting_date,
+      tastingPlace: row.tasting_place,
+      shopCategory: row.shop_category,
+      frontImg:    row.front_img,
+      backImg:     row.back_img,
+    }));
+    // Salva un'istantanea locale, usata come riserva se manca la connessione
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify(wines)); } catch {}
+    return wines;
+  } catch (err) {
+    console.warn('loadWines: rete non disponibile, uso la cache locale', err);
+    setOfflineBanner(true);
+    try {
+      const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || '[]');
+      return cached;
+    } catch { return []; }
+  }
 }
 
-function myWines() { return winesCache; }
+function myWines() { return [...winesCache, ...getPendingWines()]; }
+
+/* ══ OFFLINE: coda locale + sincronizzazione automatica ══ */
+function pendingKey() { return 'enoscrigno_pending_wines_' + (currentUser?.id || 'anon'); }
+
+function getPendingWines() {
+  try { return JSON.parse(localStorage.getItem(pendingKey()) || '[]'); }
+  catch { return []; }
+}
+
+function savePendingWine(wine) {
+  const list = getPendingWines();
+  const idx = list.findIndex(w => w.id === wine.id);
+  if (idx >= 0) list[idx] = wine; else list.push(wine);
+  localStorage.setItem(pendingKey(), JSON.stringify(list));
+}
+
+function removePendingWine(id) {
+  const list = getPendingWines().filter(w => w.id !== id);
+  localStorage.setItem(pendingKey(), JSON.stringify(list));
+}
+
+async function syncPendingWines() {
+  const pending = getPendingWines();
+  if (!pending.length || !navigator.onLine) return;
+  let synced = 0;
+  for (const wine of pending) {
+    const { id, _pending, ...toSave } = wine;
+    const savedId = await dbSaveWine(toSave);
+    if (savedId) { removePendingWine(id); synced++; }
+  }
+  if (synced > 0) {
+    winesCache = await loadWines();
+    renderAll();
+    toast(`✓ ${synced} vin${synced > 1 ? 'i sincronizzati' : 'o sincronizzato'} con la cantina`);
+  }
+}
+
+function setOfflineBanner(show) {
+  const el = document.getElementById('offline-banner');
+  if (el) el.style.display = show ? 'flex' : 'none';
+}
+
+window.addEventListener('online', () => { setOfflineBanner(false); syncPendingWines(); });
+window.addEventListener('offline', () => setOfflineBanner(true));
 
 async function dbSaveWine(wine) {
   const row = {
@@ -2169,10 +2244,12 @@ async function initApp() {
   if (u.assoc) { bc.textContent = u.assoc; bc.className = 'assoc-badge badge-' + u.assoc.toLowerCase(); bc.style.display = ''; }
   else bc.style.display = 'none';
   renderAiBanner();
+  setOfflineBanner(!navigator.onLine);
   // Carica vini dal DB
   showLoadingOverlay(true);
   winesCache = await loadWines();
   showLoadingOverlay(false);
+  syncPendingWines();
   showScreen('screen-home');
 }
 
@@ -2409,6 +2486,7 @@ function renderGrid() {
     <div class="wcard" onclick="showDetail('${w.id}')">
       <div class="wimg">${w.frontImg ? `<img src="${w.frontImg}" alt="${w.name}" loading="lazy">` : '<div class="ph"><i class="ti ti-bottle" aria-hidden="true"></i></div>'}${qtyBadge(w)}${w.type ? `<span class="wbadge ${bc(w.type)}">${w.type}</span>` : ''}</div>
       <div class="winfo">
+        ${w._pending ? `<div style="font-size:10px;color:var(--gold);font-weight:600;margin-bottom:3px"><i class="ti ti-cloud-off" style="font-size:11px;vertical-align:-1px"></i> Da sincronizzare</div>` : ''}
         <div class="wname">${w.name}</div>
         <div class="wprod">${[w.producer, w.vintage].filter(Boolean).join(' · ') || '—'}</div>
         <div class="wmeta"><span style="display:flex;align-items:center;gap:4px">${sTag(w)}<span class="stars">${st(w.score)}</span></span><span class="wscore">${w.score || '—'}/100</span></div>
@@ -2703,6 +2781,11 @@ function computePairingValue() {
 
 async function previewImg(input, previewId, side) {
   const file = input.files[0]; if (!file) return;
+  if (!navigator.onLine) {
+    toast('📴 Le foto richiedono una connessione — aggiungila appena torni online');
+    input.value = '';
+    return;
+  }
   // Anteprima immediata (locale, temporanea, solo per il feedback visivo)
   const localPreview = URL.createObjectURL(file);
   document.getElementById(previewId).innerHTML = `<img src="${localPreview}" style="width:100%;height:80px;object-fit:cover;border-radius:6px;opacity:.6" alt="">`;
@@ -2828,6 +2911,19 @@ async function saveWine() {
     score: finalScore, notes: activeDeg === 'free' ? g('f-notes') : '', tags: g('f-tags'),
     frontImg, backImg
   };
+
+  // Offline: salva solo in locale, si sincronizza da solo alla prossima connessione
+  if (!navigator.onLine) {
+    const isPendingEdit = editId && editId.startsWith('pending-');
+    wine.id = isPendingEdit ? editId : 'pending-' + Date.now();
+    wine._pending = true;
+    savePendingWine(wine);
+    toast('📴 Nessuna connessione — salvato in locale, si sincronizzerà da solo quando torna internet');
+    showScreen('screen-list');
+    renderAll();
+    return;
+  }
+
   showLoadingOverlay(true);
   const savedId = await dbSaveWine(wine);
   if (savedId) {
@@ -2965,6 +3061,13 @@ async function adjustQty(id, delta) {
 
 async function deleteWine() {
   if (!confirm('Rimuovere questo vino dalla cantina?')) return;
+  if (currentDetailId?.startsWith('pending-')) {
+    removePendingWine(currentDetailId);
+    toast('Vino eliminato (non era ancora sincronizzato)');
+    showScreen('screen-list');
+    renderAll();
+    return;
+  }
   showLoadingOverlay(true);
   const ok = await dbDeleteWine(currentDetailId);
   if (ok) {
