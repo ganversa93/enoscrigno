@@ -514,3 +514,80 @@ begin
   return new;
 end;
 $$;
+
+-- ════════════════════════════════════════════════════════════════
+-- CONDIVISIONE CANTINA (v2 — semplificata)
+-- Un utente può condividere la PROPRIA cantina personale con altri.
+-- Niente cantine multiple: chi accetta l'invito vede e modifica gli
+-- stessi vini del proprietario, come se fosse la propria — tutti
+-- alla pari. Nessuna tabella "cellars" separata, nessun cellar_id
+-- sui vini: i vini restano legati a un solo user_id (il proprietario
+-- originale), e la condivisione è solo un permesso di accesso in più.
+-- ════════════════════════════════════════════════════════════════
+
+create table if not exists public.cellar_shares (
+  owner_id    uuid not null references auth.users(id) on delete cascade,
+  member_id   uuid not null references auth.users(id) on delete cascade,
+  status      text not null default 'pending',  -- 'pending' | 'accepted'
+  invited_by  uuid references auth.users(id),
+  created_at  timestamptz default now(),
+  primary key (owner_id, member_id),
+  constraint no_self_share check (owner_id <> member_id)
+);
+alter table public.cellar_shares enable row level security;
+
+-- Funzione di supporto: ho accesso alla cantina di p_owner_id?
+-- (sono io stesso, oppure il proprietario mi ha condiviso la sua
+-- cantina e ho accettato)
+create or replace function public.has_cellar_access(p_owner_id uuid, p_viewer_id uuid)
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select p_owner_id = p_viewer_id
+  or exists (
+    select 1 from public.cellar_shares cs
+    where cs.owner_id = p_owner_id and cs.member_id = p_viewer_id and cs.status = 'accepted'
+  );
+$$;
+
+-- ── Policy: cellar_shares ──
+-- Nota: queste policy non interrogano mai cellar_shares al loro
+-- interno, quindi non c'è rischio di ricorsione (lezione imparata
+-- dalla versione precedente con le cantine multiple).
+create policy "cellar_shares: vedo le condivisioni che mi riguardano"
+  on public.cellar_shares for select
+  using (auth.uid() = owner_id or auth.uid() = member_id);
+
+create policy "cellar_shares: solo il proprietario invita qualcuno alla sua cantina"
+  on public.cellar_shares for insert
+  with check (auth.uid() = owner_id);
+
+create policy "cellar_shares: il destinatario accetta il proprio invito"
+  on public.cellar_shares for update
+  using (auth.uid() = member_id);
+
+create policy "cellar_shares: il membro esce da solo, o il proprietario rimuove l'accesso"
+  on public.cellar_shares for delete
+  using (auth.uid() = member_id or auth.uid() = owner_id);
+
+-- ── Policy: wines — estende l'accesso a chi ha una condivisione accettata ──
+-- Si aggiungono alle policy "own" già esistenti (permissive, si
+-- combinano con OR) — non le sostituiscono.
+create policy "wines: accesso in lettura se il proprietario condivide con me"
+  on public.wines for select
+  using (public.has_cellar_access(wines.user_id, auth.uid()));
+
+create policy "wines: accesso in inserimento se il proprietario condivide con me"
+  on public.wines for insert
+  with check (public.has_cellar_access(wines.user_id, auth.uid()));
+
+create policy "wines: accesso in modifica se il proprietario condivide con me"
+  on public.wines for update
+  using (public.has_cellar_access(wines.user_id, auth.uid()));
+
+create policy "wines: accesso in eliminazione se il proprietario condivide con me"
+  on public.wines for delete
+  using (public.has_cellar_access(wines.user_id, auth.uid()));
