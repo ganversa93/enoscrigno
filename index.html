@@ -2071,8 +2071,17 @@ async function doLogout() {
 }
 
 async function loadProfile(authUser) {
-  const { data: profile, error } = await sb.from('profiles').select('*').eq('id', authUser.id).maybeSingle();
-  if (error) { toastErr('Errore caricamento profilo: ' + error.message); }
+  const PROFILE_CACHE_KEY = 'enoscrigno_cache_profile_' + authUser.id;
+  let profile = null;
+  try {
+    const { data, error } = await sb.from('profiles').select('*').eq('id', authUser.id).maybeSingle();
+    if (error) throw error;
+    profile = data;
+    if (profile) { try { localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profile)); } catch {} }
+  } catch (networkErr) {
+    console.warn('loadProfile: rete non disponibile, uso il profilo salvato in locale', networkErr);
+    try { profile = JSON.parse(localStorage.getItem(PROFILE_CACHE_KEY) || 'null'); } catch { profile = null; }
+  }
   currentUser = {
     id:                authUser.id,
     email:             authUser.email,
@@ -2088,12 +2097,15 @@ async function loadProfile(authUser) {
     emailConfirmed:    !!authUser.email_confirmed_at
   };
   // Se non esiste ancora un profilo (caso raro, es. trigger non installato),
-  // lo creiamo ora che l'utente è sicuramente autenticato.
-  if (!profile) {
-    await sb.from('profiles').upsert({
-      id: authUser.id, full_name: currentUser.name,
-      assoc: '', card: '', delegazione: '', delegazione_custom: ''
-    });
+  // lo creiamo ora che l'utente è sicuramente autenticato — solo se online,
+  // altrimenti si sistemerà da solo al prossimo accesso con connessione.
+  if (!profile && navigator.onLine) {
+    try {
+      await sb.from('profiles').upsert({
+        id: authUser.id, full_name: currentUser.name,
+        assoc: '', card: '', delegazione: '', delegazione_custom: ''
+      });
+    } catch {}
   }
   await initApp();
 }
@@ -2315,7 +2327,10 @@ function showLoadingOverlay(show) {
     }, 50);
     return;
   }
-  const { data: { session } } = await sb.auth.getSession();
+  let session = null;
+  try {
+    ({ data: { session } } = await sb.auth.getSession());
+  } catch (e) { console.warn('getSession fallita (probabile assenza di rete):', e); }
   if (session?.user) {
     await loadProfile(session.user);
   } else {
