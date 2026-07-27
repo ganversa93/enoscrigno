@@ -1962,7 +1962,16 @@ async function doLogin() {
   err.innerHTML = '';
   const btn = document.querySelector('#lform-login .lbtn');
   btn.textContent = 'Accesso in corso…'; btn.disabled = true;
-  const { data, error } = await sb.auth.signInWithPassword({ email, password: pwd });
+  let data, error;
+  try {
+    ({ data, error } = await sb.auth.signInWithPassword({ email, password: pwd }));
+  } catch (networkErr) {
+    btn.textContent = 'Accedi'; btn.disabled = false;
+    err.style.color = '#c0392b';
+    err.textContent = '📴 Nessuna connessione — il login richiede internet (una volta entrato, l\'app funziona anche offline)';
+    err.style.display = 'block';
+    return;
+  }
   btn.textContent = 'Accedi'; btn.disabled = false;
   if (error) {
     err.style.color = '#c0392b';
@@ -2013,10 +2022,18 @@ async function doRegister() {
   }
   const btn = document.querySelector('#lform-reg .lbtn');
   btn.textContent = 'Creazione account…'; btn.disabled = true;
-  const { data, error } = await sb.auth.signUp({
-    email, password: pwd,
-    options: { data: { full_name: firstname, assoc, card } }
-  });
+  let data, error;
+  try {
+    ({ data, error } = await sb.auth.signUp({
+      email, password: pwd,
+      options: { data: { full_name: firstname, assoc, card } }
+    }));
+  } catch (networkErr) {
+    btn.textContent = 'Crea account'; btn.disabled = false;
+    err.textContent = '📴 Nessuna connessione — la registrazione richiede internet';
+    err.style.display = 'block';
+    return;
+  }
   btn.textContent = 'Crea account'; btn.disabled = false;
   if (error) { err.textContent = error.message; err.style.display = 'block'; return; }
 
