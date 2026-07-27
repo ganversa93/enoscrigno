@@ -591,3 +591,14 @@ create policy "wines: accesso in modifica se il proprietario condivide con me"
 create policy "wines: accesso in eliminazione se il proprietario condivide con me"
   on public.wines for delete
   using (public.has_cellar_access(wines.user_id, auth.uid()));
+
+-- ════════════════════════════════════════════
+-- ABBONAMENTO PREMIUM (Stripe) — scansione AI
+-- ════════════════════════════════════════════
+alter table public.profiles add column if not exists stripe_customer_id text;
+alter table public.profiles add column if not exists stripe_subscription_id text;
+alter table public.profiles add column if not exists subscription_status text; -- 'active' | 'canceled' | 'past_due' | null
+
+-- ai_scan_enabled riflette lo stato dell'abbonamento: viene attivato/
+-- disattivato automaticamente dal webhook Stripe (vedi Edge Function
+-- stripe-webhook), non più solo a mano dall'amministratore.

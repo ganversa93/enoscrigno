@@ -2367,6 +2367,27 @@ async function initApp() {
   showLoadingOverlay(false);
   syncPendingWines();
   showScreen('screen-home');
+
+  // Ritorno da Stripe dopo il pagamento
+  const premiumResult = new URLSearchParams(window.location.search).get('premium');
+  if (premiumResult) {
+    history.replaceState(null, '', window.location.pathname);
+    if (premiumResult === 'success') {
+      toast('🎉 Pagamento ricevuto! Attivazione in corso…');
+      setTimeout(async () => {
+        const { data } = await sb.from('profiles').select('ai_scan_enabled').eq('id', currentUser.id).maybeSingle();
+        if (data?.ai_scan_enabled) {
+          currentUser.aiScanEnabled = true;
+          renderAiBanner();
+          toast('✨ Premium attivo! La scansione AI è pronta.');
+        } else {
+          toast('Attivazione ancora in corso, ricarica la pagina tra qualche secondo se non vedi il cambiamento.');
+        }
+      }, 3000);
+    } else if (premiumResult === 'cancelled') {
+      toast('Pagamento annullato — nessun addebito effettuato');
+    }
+  }
 }
 
 function toggleNavMenu() {
@@ -2806,9 +2827,9 @@ function renderAiBanner() {
     el.className = 'ai-banner locked';
     el.innerHTML = `
       <span class="premium-pill"><i class="ti ti-crown" style="font-size:10px"></i> Premium</span>
-      <span class="ai-txt">Lettura automatica etichette con AI — funzione premium non ancora attiva sul tuo account</span>
-      <button class="btn sm" onclick="toast('Scrivici per attivare la scansione AI sul tuo account')">
-        <i class="ti ti-lock"></i>Bloccata
+      <span class="ai-txt">Lettura automatica etichette con AI — 2,50€/mese, disdici quando vuoi</span>
+      <button class="btn gold sm" onclick="startPremiumCheckout()" id="premium-upgrade-btn">
+        <i class="ti ti-sparkles"></i>Passa a Premium
       </button>
     `;
   }
@@ -2944,6 +2965,23 @@ async function urlToBase64(url) {
     });
     return { media_type: blob.type || 'image/jpeg', base64 };
   } catch { return null; }
+}
+
+async function startPremiumCheckout() {
+  if (!navigator.onLine) { toast('📴 L\'attivazione di Premium richiede una connessione'); return; }
+  const btn = document.getElementById('premium-upgrade-btn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2"></i>Attendere…'; }
+  try {
+    const { data: sessionData } = await sb.auth.getSession();
+    const { data, error } = await sb.functions.invoke('create-checkout-session', {
+      headers: { Authorization: `Bearer ${sessionData.session.access_token}` }
+    });
+    if (error || !data?.url) throw error || new Error('URL di pagamento non ricevuto');
+    window.location.href = data.url; // Stripe gestisce il pagamento, mai i dati della carta nella nostra app
+  } catch (err) {
+    toastErr('Errore: ' + (err.message || 'impossibile avviare il pagamento'));
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-sparkles"></i>Passa a Premium'; }
+  }
 }
 
 async function scanBothLabels() {
@@ -4029,7 +4067,7 @@ Object.assign(window, {
   removeCellarShareMember, removeGrapeTag, renderGrid, resendConfirmation, resendConfirmationFromProfile, resetAdvFilters, respondCellarShareInvite, respondFollowRequest, saveProfile, saveWine,
   goBackFromProfile, searchUsersToShareCellar, switchCellarOwner,
   scanBothLabels, searchNetworkUsers, sendFollowRequest, setFilter, setQtyFilter, showAdd, showComingSoon, showDetail,
-  showNetworkScreen, showNetworkWinePreview, showProfileScreen, showScreen, stepQty, switchDeg, switchLTab, toast,
+  showNetworkScreen, showNetworkWinePreview, showProfileScreen, showScreen, startPremiumCheckout, stepQty, switchDeg, switchLTab, toast,
   showGuideScreen,
   toggleAdvFilters, toggleChipIn, toggleFisarMethodField, toggleNavMenu, togglePairing, toggleSection, updateDelegazioniList, updateGrapePct, updateTonalitaColore,
   updateRegionOptions, updateProvinceOptions
