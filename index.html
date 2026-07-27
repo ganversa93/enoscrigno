@@ -437,7 +437,7 @@
     .adv-filter-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
     .adv-filter-field { flex: 1; min-width: 130px; }
     .adv-filter-field label { display: block; font-size: 11px; font-weight: 500; color: var(--muted); margin-bottom: 4px; }
-    .adv-filter-field select {
+    .adv-filter-field select, .adv-filter-field input {
       width: 100%; font-family: 'Inter', sans-serif; font-size: 13px;
       padding: 7px 10px; border-radius: 8px; border: 0.5px solid var(--border);
       background: var(--bg); color: var(--ink);
@@ -1061,6 +1061,14 @@
           <select id="af-shopcat" onchange="renderGrid()">
             <option value="">Tutte</option>
           </select>
+        </div>
+        <div class="adv-filter-field" style="flex:0 0 auto;min-width:170px">
+          <label>Valore bottiglia (€)</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="number" id="af-price-min" placeholder="Min" min="0" step="1" oninput="renderGrid()" style="width:70px">
+            <span style="color:var(--muted);font-size:12px">–</span>
+            <input type="number" id="af-price-max" placeholder="Max" min="0" step="1" oninput="renderGrid()" style="width:70px">
+          </div>
         </div>
         <button class="btn sm" onclick="resetAdvFilters()"><i class="ti ti-x"></i>Azzera</button>
       </div>
@@ -2542,12 +2550,14 @@ function resetAdvFilters() {
   document.getElementById('af-pairing').value = '';
   document.getElementById('af-grape').value = '';
   document.getElementById('af-shopcat').value = '';
+  document.getElementById('af-price-min').value = '';
+  document.getElementById('af-price-max').value = '';
   populateAdvRegionOptions();
   renderGrid();
 }
 
 function updateAdvFilterBadge() {
-  const n = ['af-country','af-region','af-pairing','af-grape','af-shopcat'].filter(id => document.getElementById(id)?.value).length;
+  const n = ['af-country','af-region','af-pairing','af-grape','af-shopcat','af-price-min','af-price-max'].filter(id => document.getElementById(id)?.value).length;
   const badge = document.getElementById('adv-filter-badge');
   const toggle = document.getElementById('adv-filter-toggle');
   if (n > 0) { badge.textContent = n; badge.style.display = 'inline-flex'; toggle.classList.add('active'); }
@@ -2560,6 +2570,8 @@ function renderGrid() {
   const afPairing = document.getElementById('af-pairing')?.value || '';
   const afGrape   = document.getElementById('af-grape')?.value || '';
   const afShopCat = document.getElementById('af-shopcat')?.value || '';
+  const afPriceMin = parseFloat(document.getElementById('af-price-min')?.value);
+  const afPriceMax = parseFloat(document.getElementById('af-price-max')?.value);
   updateAdvFilterBadge();
   const list = myWines().filter(w => {
     if (currentFilter !== 'all' && w.type !== currentFilter) return false;
@@ -2577,6 +2589,8 @@ function renderGrid() {
       if (!grapeNames.includes(afGrape)) return false;
     }
     if (afShopCat && w.shopCategory !== afShopCat) return false;
+    if (!isNaN(afPriceMin) && !(w.price >= afPriceMin)) return false;
+    if (!isNaN(afPriceMax) && !(w.price <= afPriceMax)) return false;
     if (q && ![(w.name||''),(w.producer||''),(w.region||''),(w.pairing||'')].join(' ').toLowerCase().includes(q)) return false;
     return true;
   });
