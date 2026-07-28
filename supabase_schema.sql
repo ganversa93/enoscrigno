@@ -630,4 +630,38 @@ as $$
 $$;
 
 revoke all on function public.get_user_id_by_email(text) from public, anon, authenticated;
+
+-- ════════════════════════════════════════════════════════════════
+-- FIX: nome utente non in chiaro nelle richieste di follow e negli
+-- inviti a condividere la cantina. Chi manda una richiesta/invito
+-- non ha necessariamente il profilo pubblico (is_public default
+-- false), quindi la policy "profili pubblici visibili a tutti" non
+-- basta: il destinatario non riusciva a leggere profiles.full_name
+-- di chi gli aveva scritto e vedeva il fallback generico ("Utente").
+-- Queste due policy si aggiungono (OR) a quelle esistenti su
+-- profiles e rendono leggibile il profilo di chi ha con te una
+-- relazione di follow o di condivisione cantina, pending o accettata.
+-- ════════════════════════════════════════════════════════════════
+
+drop policy if exists "profiles: visibili a chi ha una richiesta di follow con me" on public.profiles;
+create policy "profiles: visibili a chi ha una richiesta di follow con me"
+  on public.profiles for select
+  using (
+    exists (
+      select 1 from public.follows f
+      where (f.follower_id = auth.uid() and f.followee_id = profiles.id)
+         or (f.followee_id = auth.uid() and f.follower_id = profiles.id)
+    )
+  );
+
+drop policy if exists "profiles: visibili a chi condivide una cantina con me" on public.profiles;
+create policy "profiles: visibili a chi condivide una cantina con me"
+  on public.profiles for select
+  using (
+    exists (
+      select 1 from public.cellar_shares cs
+      where (cs.owner_id = auth.uid() and cs.member_id = profiles.id)
+         or (cs.member_id = auth.uid() and cs.owner_id = profiles.id)
+    )
+  );
 grant execute on function public.get_user_id_by_email(text) to service_role;
