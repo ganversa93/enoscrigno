@@ -664,12 +664,10 @@
     .install-banner-text b { font-size: 13px; color: var(--ink); }
     .install-banner-text span { font-size: 11.5px; color: var(--muted); line-height: 1.4; }
     .install-banner-text span i { font-size: 12px; vertical-align: -1px; color: var(--wine); }
-    .install-banner-close {
-      flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; background: transparent;
-      color: var(--muted); border: none; display: flex; align-items: center; justify-content: center;
-      font-size: 14px; cursor: pointer;
+    .install-banner-dismiss {
+      font-size: 11px; color: var(--muted); text-decoration: underline; margin-top: 2px;
     }
-    .install-banner-close:hover { color: var(--ink); }
+    .install-banner-dismiss:hover { color: var(--ink); }
     @media (min-width: 480px) { .install-banner { left: auto; right: 1.25rem; width: 380px; } }
 
     /* ── RESPONSIVE ── */
@@ -2007,9 +2005,9 @@
   <div class="install-banner-text">
     <b>Installa Enoscrigno</b>
     <span id="install-banner-msg"></span>
+    <a href="#" class="install-banner-dismiss" onclick="dismissInstallBanner(); return false;">Non mi interessa</a>
   </div>
   <button class="btn sm primary" id="install-banner-cta" onclick="triggerInstallPrompt()" style="display:none">Installa</button>
-  <button class="install-banner-close" onclick="dismissInstallBanner()" aria-label="Chiudi"><i class="ti ti-x"></i></button>
 </div>
 
 <script type="module">
@@ -2340,7 +2338,6 @@ window.addEventListener('offline', () => setOfflineBanner(true));
    istruzioni manuali (Condividi → Aggiungi a Home). */
 let deferredInstallPrompt = null;
 const INSTALL_DISMISS_KEY = 'enoscrigno_install_dismissed';
-const INSTALL_VISITS_KEY  = 'enoscrigno_install_visits';
 
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
@@ -2360,9 +2357,6 @@ function isIosDevice() {
 
 function maybeShowInstallBanner() {
   if (isStandaloneApp() || localStorage.getItem(INSTALL_DISMISS_KEY) === '1') return;
-  const visits = parseInt(localStorage.getItem(INSTALL_VISITS_KEY) || '0', 10) + 1;
-  localStorage.setItem(INSTALL_VISITS_KEY, String(visits));
-  if (visits < 3) return; // non subito: mostra dalla terza visita in poi
   if (isIosDevice()) showInstallBanner('ios');
   else if (deferredInstallPrompt) showInstallBanner('android');
 }
