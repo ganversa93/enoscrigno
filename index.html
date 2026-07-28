@@ -1691,22 +1691,8 @@
             </div>
           </div>
           <div class="fg" style="margin-top:8px">
-            <label>Natura dei profumi <small style="color:var(--muted)">(una o più)</small></label>
-            <div class="pairing-chips" id="natura-profumi-chips">
-              <div class="p-chip" data-v="Aromatico" onclick="toggleChipIn('natura-profumi-chips',this)">Aromatico</div>
-              <div class="p-chip" data-v="Floreale" onclick="toggleChipIn('natura-profumi-chips',this)">Floreale</div>
-              <div class="p-chip" data-v="Fruttato fresco" onclick="toggleChipIn('natura-profumi-chips',this)">Fruttato fresco</div>
-              <div class="p-chip" data-v="Fruttato secco" onclick="toggleChipIn('natura-profumi-chips',this)">Fruttato secco</div>
-              <div class="p-chip" data-v="Vegetale fresco" onclick="toggleChipIn('natura-profumi-chips',this)">Vegetale fresco</div>
-              <div class="p-chip" data-v="Vegetale secco" onclick="toggleChipIn('natura-profumi-chips',this)">Vegetale secco</div>
-              <div class="p-chip" data-v="Balsamico" onclick="toggleChipIn('natura-profumi-chips',this)">Balsamico</div>
-              <div class="p-chip" data-v="Speziato" onclick="toggleChipIn('natura-profumi-chips',this)">Speziato</div>
-              <div class="p-chip" data-v="Minerale" onclick="toggleChipIn('natura-profumi-chips',this)">Minerale</div>
-              <div class="p-chip" data-v="Boisé" onclick="toggleChipIn('natura-profumi-chips',this)">Boisé</div>
-              <div class="p-chip" data-v="Chimico" onclick="toggleChipIn('natura-profumi-chips',this)">Chimico</div>
-              <div class="p-chip" data-v="Etereo" onclick="toggleChipIn('natura-profumi-chips',this)">Etereo</div>
-              <div class="p-chip" data-v="Vari" onclick="toggleChipIn('natura-profumi-chips',this)">Vari</div>
-            </div>
+            <label>Natura dei profumi</label>
+            <input type="text" id="fd-natura-profumi" placeholder="es. Floreale, Fruttato fresco, Speziato, Minerale…">
           </div>
         </div>
 
@@ -2844,10 +2830,9 @@ function showAdd() {
   const clear = ids => ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   clear(['f-name','f-producer','f-doc','f-grapes','f-region','f-country','f-province','f-shop','f-shop-category','f-drink','f-notes','f-tags','ap-olfnote','ap-gustnote','fp-note','f-pairing-custom',
     'fd-limpidezza','fd-trasparenza','fd-tonalita','fd-intensita-colore','fd-fluidita','fd-perlage-grana','fd-perlage-persistenza',
-    'fd-intensita-olf','fd-franchezza','fd-finezza','fd-complessita',
+    'fd-intensita-olf','fd-franchezza','fd-finezza','fd-natura-profumi','fd-complessita',
     'fd-corpo','fd-alcolicita','fd-morbidezza','fd-zuccheri','fd-acidita','fd-sapidita','fd-tannicita','fd-effervescenza-gusto','fd-equilibrio',
     'fd-aroma-intensita','fd-aroma-qualita','fd-natura-aromi','fd-pai','fd-stato','fd-considerazioni']);
-  setActiveChips('natura-profumi-chips', '');
   updateTonalitaColore();
   const visToggle = document.getElementById('f-visibility'); if (visToggle) visToggle.checked = true;
   selectedGrapes = []; renderGrapeTags();
@@ -3060,22 +3045,6 @@ function togglePairing(el) {
   el.classList.toggle('active');
 }
 
-// Toggle generico per gruppi di chip multi-selezione scoperti per contenitore
-// (usato da 'Natura dei profumi' nella scheda FISAR descrittiva, indipendente
-// dai chip di abbinamento cibo)
-function toggleChipIn(containerId, el) {
-  el.classList.toggle('active');
-}
-function getActiveChips(containerId) {
-  return [...document.querySelectorAll('#' + containerId + ' .p-chip.active')].map(c => c.dataset.v);
-}
-function setActiveChips(containerId, valueStr) {
-  const values = (valueStr || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-  document.querySelectorAll('#' + containerId + ' .p-chip').forEach(chip => {
-    chip.classList.toggle('active', values.includes((chip.dataset.v || '').toLowerCase()));
-  });
-}
-
 // Tonalità del colore — le opzioni cambiano in base alla Tipologia scelta
 // in Identità del vino (Bianco/Rosato/Rosso), secondo la scheda FISAR
 const TONALITA_COLORE = {
@@ -3229,7 +3198,7 @@ async function saveWine() {
   const getFPDesc = () => ({
     limpidezza: g('fd-limpidezza'), trasparenza: g('fd-trasparenza'), tonalita: g('fd-tonalita'), intensitaColore: g('fd-intensita-colore'),
     fluidita: g('fd-fluidita'), perlageGrana: g('fd-perlage-grana'), perlagePersistenza: g('fd-perlage-persistenza'),
-    intensitaOlf: g('fd-intensita-olf'), franchezza: g('fd-franchezza'), finezza: g('fd-finezza'), naturaProfumi: getActiveChips('natura-profumi-chips').join(', '), complessita: g('fd-complessita'),
+    intensitaOlf: g('fd-intensita-olf'), franchezza: g('fd-franchezza'), finezza: g('fd-finezza'), naturaProfumi: g('fd-natura-profumi'), complessita: g('fd-complessita'),
     corpo: g('fd-corpo'), alcolicita: g('fd-alcolicita'), morbidezza: g('fd-morbidezza'), zuccheri: g('fd-zuccheri'),
     acidita: g('fd-acidita'), sapidita: g('fd-sapidita'), tannicita: g('fd-tannicita'), effervescenzaGusto: g('fd-effervescenza-gusto'), equilibrio: g('fd-equilibrio'),
     aromaIntensita: g('fd-aroma-intensita'), aromaQualita: g('fd-aroma-qualita'), naturaAromi: g('fd-natura-aromi'), pai: g('fd-pai'),
@@ -3488,7 +3457,7 @@ function editWine() {
     const dmap = {
       'fd-limpidezza':p.limpidezza, 'fd-trasparenza':p.trasparenza, 'fd-tonalita':p.tonalita, 'fd-intensita-colore':p.intensitaColore,
       'fd-fluidita':p.fluidita, 'fd-perlage-grana':p.perlageGrana, 'fd-perlage-persistenza':p.perlagePersistenza,
-      'fd-intensita-olf':p.intensitaOlf, 'fd-franchezza':p.franchezza, 'fd-finezza':p.finezza, 'fd-complessita':p.complessita,
+      'fd-intensita-olf':p.intensitaOlf, 'fd-franchezza':p.franchezza, 'fd-finezza':p.finezza, 'fd-natura-profumi':p.naturaProfumi, 'fd-complessita':p.complessita,
       'fd-corpo':p.corpo, 'fd-alcolicita':p.alcolicita, 'fd-morbidezza':p.morbidezza, 'fd-zuccheri':p.zuccheri,
       'fd-acidita':p.acidita, 'fd-sapidita':p.sapidita, 'fd-tannicita':p.tannicita, 'fd-effervescenza-gusto':p.effervescenzaGusto, 'fd-equilibrio':p.equilibrio,
       'fd-aroma-intensita':p.aromaIntensita, 'fd-aroma-qualita':p.aromaQualita, 'fd-natura-aromi':p.naturaAromi, 'fd-pai':p.pai,
@@ -3496,7 +3465,6 @@ function editWine() {
     };
     updateTonalitaColore();
     Object.entries(dmap).forEach(([id, v]) => { const el = document.getElementById(id); if (el && v != null) el.value = v; });
-    setActiveChips('natura-profumi-chips', p.naturaProfumi);
   } else if (deg === 'free') {
     set('f-score', w.score);
     document.getElementById('score-free').textContent = w.score || 88;
@@ -4371,7 +4339,7 @@ Object.assign(window, {
   scanBothLabels, searchNetworkUsers, sendFollowRequest, setFilter, setQtyFilter, showAdd, showComingSoon, showDetail,
   showNetworkScreen, showNetworkWinePreview, showProfileScreen, showScreen, startPremiumCheckout, stepQty, switchDeg, switchLTab, toast,
   showGuideScreen,
-  toggleAdvFilters, toggleChipIn, toggleFisarMethodField, toggleNavMenu, togglePairing, toggleSection, updateDelegazioniList, updateGrapePct, updateTonalitaColore,
+  toggleAdvFilters, toggleFisarMethodField, toggleNavMenu, togglePairing, toggleSection, updateDelegazioniList, updateGrapePct, updateTonalitaColore,
   updateRegionOptions, updateProvinceOptions, dismissInstallBanner, triggerInstallPrompt, resetInstallBanner,
   setNetworkFilter, toggleNetworkAdvFilters, onNetworkCountryChange, resetNetworkFilters, renderNetworkFeed
 });
