@@ -1591,11 +1591,16 @@
         <div class="fg"><label>Note di degustazione FISAR</label><textarea id="fp-note" placeholder="Aspetto, profumi, gusto, conclusioni e abbinamenti consigliati…"></textarea></div>
       </div>
 
-      <!-- FISAR DESCRITTIVA (senza punteggio) -->
+      <!-- FISAR DESCRITTIVA (con punteggio libero) -->
       <div class="deg-schema" id="deg-fisar_desc">
+        <div class="param-row" style="margin-bottom:14px">
+          <span class="param-label">Punteggio personale</span>
+          <input type="range" min="0" max="100" value="0" step="1" id="fd-score" oninput="document.getElementById('score-fisar-desc').textContent=this.value" style="flex:1;accent-color:var(--fisar)">
+          <span style="font-size:20px;font-family:'Cormorant Garamond',serif;color:var(--fisar);min-width:38px;text-align:right" id="score-fisar-desc">0</span>
+        </div>
         <div style="text-align:center;margin-bottom:1.1rem">
           <div style="display:inline-flex;align-items:center;gap:6px;background:var(--fisar-pale);color:var(--fisar);font-size:12px;font-weight:500;padding:6px 14px;border-radius:20px">
-            <i class="ti ti-info-circle" style="font-size:14px"></i>Scheda descrittiva FISAR — nessun punteggio numerico
+            <i class="ti ti-info-circle" style="font-size:14px"></i>Scheda descrittiva FISAR — il punteggio è libero, non fa parte della griglia ufficiale
           </div>
         </div>
 
@@ -1994,7 +1999,7 @@
         <label>Metodo FISAR preferito</label>
         <select id="p-fisar-method">
           <option value="punteggio">A punteggio (0-100)</option>
-          <option value="descrittiva">Descrittiva (senza punteggio)</option>
+          <option value="descrittiva">Descrittiva (punteggio libero)</option>
         </select>
         <div style="font-size:11px;color:var(--muted);margin-top:5px">Determina quale scheda di degustazione FISAR ti viene proposta quando aggiungi un vino.</div>
       </div>
@@ -2850,6 +2855,8 @@ function showAdd() {
   });
   const fscore = document.getElementById('f-score'); if (fscore) fscore.value = 88;
   document.getElementById('score-free').textContent = '88';
+  const fdscore = document.getElementById('fd-score'); if (fdscore) fdscore.value = 0;
+  document.getElementById('score-fisar-desc').textContent = '0';
   document.getElementById('prev-front').innerHTML = '<i class="ti ti-photo-up" aria-hidden="true"></i><p><b>Carica</b> o scatta foto</p>';
   document.getElementById('prev-back').innerHTML  = '<i class="ti ti-photo-up" aria-hidden="true"></i><p><b>Carica</b> o scatta foto</p>';
   renderDegTabs();
@@ -3193,7 +3200,7 @@ async function saveWine() {
   if (!name) { toast('Inserisci il nome del vino'); return; }
   const aisScore   = recalcAIS();
   const fisarScore = recalcFISAR();
-  const finalScore = activeDeg === 'ais' ? aisScore : activeDeg === 'fisar' ? fisarScore : activeDeg === 'fisar_desc' ? null : +document.getElementById('f-score')?.value || 88;
+  const finalScore = activeDeg === 'ais' ? aisScore : activeDeg === 'fisar' ? fisarScore : activeDeg === 'fisar_desc' ? +document.getElementById('fd-score')?.value || 0 : +document.getElementById('f-score')?.value || 88;
   const getAP = () => { const r = [...document.querySelectorAll('.ais-r')]; return { limp:+r[0]?.value, col:+r[1]?.value, cons:+r[2]?.value, oint:+r[3]?.value, ocomp:+r[4]?.value, oqual:+r[5]?.value, gstr:+r[6]?.value, geq:+r[7]?.value, gigo:+r[8]?.value, gpai:+r[9]?.value, gqual:+r[10]?.value, stato: document.getElementById('ap-stato')?.value, arm:+r[11]?.value }; };
   const getFPDesc = () => ({
     limpidezza: g('fd-limpidezza'), trasparenza: g('fd-trasparenza'), tonalita: g('fd-tonalita'), intensitaColore: g('fd-intensita-colore'),
@@ -3315,6 +3322,7 @@ function showDetail(id) {
     degHTML = `<div class="deg-result-card fisar">
       <div class="deg-result-header">
         <span class="deg-result-label fisar"><i class="ti ti-award"></i>Scheda FISAR — descrittiva</span>
+        ${w.score ? `<span class="deg-score-big fisar">${w.score}<span style="font-size:13px;color:var(--muted)">/100</span></span>` : ''}
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:.75rem">
         ${rows.map(([l,v]) => `<div style="font-size:12px;color:var(--muted)"><b style="color:var(--ink)">${l}:</b> ${v}</div>`).join('')}
@@ -3465,6 +3473,8 @@ function editWine() {
     };
     updateTonalitaColore();
     Object.entries(dmap).forEach(([id, v]) => { const el = document.getElementById(id); if (el && v != null) el.value = v; });
+    set('fd-score', w.score || 0);
+    document.getElementById('score-fisar-desc').textContent = w.score || 0;
   } else if (deg === 'free') {
     set('f-score', w.score);
     document.getElementById('score-free').textContent = w.score || 88;
