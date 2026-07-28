@@ -1008,6 +1008,17 @@
         </ul>
       </div>
     </div>
+
+    <div class="fsec collapsible collapsed" id="guide-10">
+      <div class="stitle fsec-header" onclick="toggleSection('guide-10')"><i class="ti ti-device-mobile"></i>Installare l'app sulla home<i class="ti ti-chevron-down fsec-chevron"></i></div>
+      <div class="fsec-body">
+        <ul class="guide-list">
+          <li>Al login compare un avviso per aggiungere Enoscrigno alla schermata Home del telefono: una volta installata si apre come un'app vera, a schermo intero, anche offline.</li>
+          <li>Su Android/Chrome basta toccare <b>Installa</b> nell'avviso. Su iPhone (Safari o Chrome) non c'è un pulsante automatico: si tocca l'icona <b>Condividi</b> del browser e poi <b>"Aggiungi a Home"</b>.</li>
+          <li>Se hai chiuso l'avviso toccando <b>"Non mi interessa"</b> e vuoi rivederlo, vai su <b>Profilo → App sulla home del telefono</b> e tocca "Mostra di nuovo l'avviso di installazione".</li>
+        </ul>
+      </div>
+    </div>
   </div>
 
   <!-- ══ LIST ══ -->
@@ -1874,6 +1885,13 @@
       </div>
     </div>
 
+    <!-- App sulla home del telefono -->
+    <div class="fsec">
+      <div class="stitle"><i class="ti ti-device-mobile"></i>App sulla home del telefono</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Se hai chiuso l'avviso di installazione toccando "Non mi interessa" e vuoi rivederlo, tocca qui sotto.</p>
+      <button class="btn sm" onclick="resetInstallBanner()"><i class="ti ti-download"></i>Mostra di nuovo l'avviso di installazione</button>
+    </div>
+
     <!-- Richieste di follow in attesa -->
     <div class="fsec" id="follow-requests-section" style="display:none">
       <div class="stitle"><i class="ti ti-user-plus"></i>Richieste di follow</div>
@@ -2392,6 +2410,14 @@ async function triggerInstallPrompt() {
   await deferredInstallPrompt.userChoice;
   deferredInstallPrompt = null;
   dismissInstallBanner();
+}
+
+function resetInstallBanner() {
+  if (isStandaloneApp()) { toast('La app è già installata su questo dispositivo'); return; }
+  localStorage.removeItem(INSTALL_DISMISS_KEY);
+  if (isIosDevice()) { showInstallBanner('ios'); toast('Ecco come installarla'); }
+  else if (deferredInstallPrompt) { showInstallBanner('android'); }
+  else { toast('Il tuo browser non supporta l\'installazione automatica'); }
 }
 
 async function dbSaveWine(wine) {
@@ -4183,7 +4209,7 @@ Object.assign(window, {
   showNetworkScreen, showNetworkWinePreview, showProfileScreen, showScreen, startPremiumCheckout, stepQty, switchDeg, switchLTab, toast,
   showGuideScreen,
   toggleAdvFilters, toggleChipIn, toggleFisarMethodField, toggleNavMenu, togglePairing, toggleSection, updateDelegazioniList, updateGrapePct, updateTonalitaColore,
-  updateRegionOptions, updateProvinceOptions, dismissInstallBanner, triggerInstallPrompt
+  updateRegionOptions, updateProvinceOptions, dismissInstallBanner, triggerInstallPrompt, resetInstallBanner
 });
 </script>
 </body>
