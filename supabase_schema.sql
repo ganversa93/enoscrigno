@@ -665,3 +665,10 @@ create policy "profiles: visibili a chi condivide una cantina con me"
     )
   );
 grant execute on function public.get_user_id_by_email(text) to service_role;
+
+-- ════════════════════════════════════════════
+-- AIS — scheda analitico-descrittiva (in aggiunta a quella a punteggio,
+-- che l'AIS compila sempre entrambe: niente toggle, i due schemi
+-- convivono nello stesso record sotto deg_schema = 'ais')
+-- ════════════════════════════════════════════
+alter table public.wines add column if not exists ais_desc_params jsonb;
