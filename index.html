@@ -2070,21 +2070,23 @@ async function resendConfirmation(e) {
   const email = document.getElementById('l-email').value.trim();
   const err = document.getElementById('lerr');
   if (!email) { toast('Inserisci prima la tua email nel campo sopra'); return; }
-  const redirectPath = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1) + 'confirmed.html';
-  const { error } = await sb.auth.resend({ type: 'signup', email, options: { emailRedirectTo: redirectPath } });
+  // Invio via Edge Function/Resend, indipendente dal sistema nativo di
+  // Supabase (che resta disattivato apposta per non bloccare il login).
+  const { error } = await sb.functions.invoke('send-confirmation-email', { body: { email } });
   if (error) {
     err.style.color = '#c0392b';
     err.innerHTML = 'Errore nel reinvio: ' + error.message;
   } else {
     err.style.color = 'var(--fisar)';
-    err.innerHTML = '✓ Nuova email di conferma inviata! Controlla la posta (anche lo spam).';
+    err.innerHTML = '✓ Se l\'indirizzo è registrato, riceverai a breve una nuova email di conferma (controlla anche lo spam).';
   }
   err.style.display = 'block';
 }
 
 async function resendConfirmationFromProfile() {
-  const redirectPath = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1) + 'confirmed.html';
-  const { error } = await sb.auth.resend({ type: 'signup', email: currentUser.email, options: { emailRedirectTo: redirectPath } });
+  // Chiamata autenticata: la funzione usa l'email della sessione corrente,
+  // non serve passarla nel body.
+  const { error } = await sb.functions.invoke('send-confirmation-email', { body: {} });
   if (error) { toastErr('Errore nel reinvio: ' + error.message); return; }
   toast('✓ Email di conferma reinviata! Controlla la posta (anche lo spam).');
 }
@@ -2141,7 +2143,10 @@ async function doRegister() {
   } catch(_) { /* ignorato: il trigger DB copre già questo caso */ }
 
   if (!data.session) {
-    // Conferma email attiva: nessuna sessione ancora disponibile
+    // Conferma email nativa attiva (caso non standard nella configurazione
+    // attuale, gestito comunque per robustezza): nessuna sessione ancora
+    // disponibile, non possiamo chiamare la Edge Function autenticata.
+    await sb.functions.invoke('send-confirmation-email', { body: { email } }).catch(() => {});
     err.style.color = 'var(--fisar)';
     err.textContent = '✓ Account creato! Controlla la tua email per confermare, poi accedi.';
     err.style.display = 'block';
@@ -2150,9 +2155,10 @@ async function doRegister() {
     return;
   }
   await loadProfile(data.user);
-  if (!data.user.email_confirmed_at) {
-    setTimeout(() => toast('Account creato! Ricordati di confermare l\'email quando puoi (la trovi nel tuo profilo) 📧'), 600);
-  }
+  // Login immediato per scelta (nessuna conferma email bloccante): inviamo
+  // comunque una email di verifica tramite Resend, puramente informativa.
+  sb.functions.invoke('send-confirmation-email', { body: {} }).catch(() => {});
+  setTimeout(() => toast('Account creato! Ti abbiamo inviato una email di conferma — la trovi anche nel tuo profilo 📧'), 600);
 }
 
 async function doLogout() {

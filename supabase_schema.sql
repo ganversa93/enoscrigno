@@ -602,3 +602,32 @@ alter table public.profiles add column if not exists subscription_status text; -
 -- ai_scan_enabled riflette lo stato dell'abbonamento: viene attivato/
 -- disattivato automaticamente dal webhook Stripe (vedi Edge Function
 -- stripe-webhook), non più solo a mano dall'amministratore.
+
+-- ════════════════════════════════════════════
+-- CONFERMA EMAIL CUSTOM (via Resend)
+-- ════════════════════════════════════════════
+create table if not exists public.email_confirmations (
+  token uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  email text not null,
+  sent_at timestamptz not null default now(),
+  confirmed_at timestamptz
+);
+alter table public.email_confirmations enable row level security;
+
+create index if not exists email_confirmations_user_id_idx
+  on public.email_confirmations (user_id);
+
+alter table public.profiles add column if not exists email_confirmed boolean not null default false;
+
+create or replace function public.get_user_id_by_email(lookup_email text)
+returns uuid
+language sql
+security definer
+set search_path = public
+as $$
+  select id from auth.users where email = lookup_email limit 1;
+$$;
+
+revoke all on function public.get_user_id_by_email(text) from public, anon, authenticated;
+grant execute on function public.get_user_id_by_email(text) to service_role;
