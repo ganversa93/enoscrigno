@@ -3645,9 +3645,13 @@ async function previewImg(input, previewId, side) {
   }
 
   // Upload reale su Supabase Storage — nel database resta solo il link,
-  // non il file intero (molto più leggero e veloce da leggere/scrivere)
+  // non il file intero (molto più leggero e veloce da leggere/scrivere).
+  // cacheControl a 1 anno: il nome del file include un timestamp, quindi
+  // il contenuto a quel path non cambia mai — di default Supabase mette
+  // solo 1 ora, che fa riscaricare la stessa foto dall'origine più spesso
+  // del necessario (pesa sull'egress).
   const path = `${currentUser.id}/${side}-${Date.now()}.${ext}`;
-  const { error } = await sb.storage.from('wine-labels').upload(path, toUpload, { upsert: true, contentType: toUpload.type || 'image/jpeg' });
+  const { error } = await sb.storage.from('wine-labels').upload(path, toUpload, { upsert: true, contentType: toUpload.type || 'image/jpeg', cacheControl: '31536000' });
   if (error) { toastErr('Errore caricamento immagine: ' + error.message); return; }
   const { data: urlData } = sb.storage.from('wine-labels').getPublicUrl(path);
   if (side === 'front') frontImg = urlData.publicUrl; else backImg = urlData.publicUrl;

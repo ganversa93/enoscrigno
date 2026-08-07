@@ -48,7 +48,9 @@
   <h1>Ricomprimi immagini esistenti</h1>
   <p class="lead">
     Strumento una tantum per ridurre l'egress di Supabase: ricomprime le foto etichetta
-    già caricate e, se presenti, migra a Supabase Storage quelle salvate come base64
+    già caricate, imposta una cache di 1 anno (di default Supabase la tiene solo 1 ora,
+    quindi le stesse foto vengono riscaricate dall'origine molto più spesso del
+    necessario) e, se presenti, migra a Supabase Storage quelle salvate come base64
     direttamente nel database (le più pesanti, perché vengono ritrasferite ad ogni
     apertura della cantina). Elabora solo i vini di cui sei proprietario. Puoi chiudere
     e riaprire la pagina in sicurezza: rielaborare un'immagine già ottimizzata non la
@@ -195,7 +197,7 @@ async function reprocessWineImages() {
           const side = field === 'front_img' ? 'front' : 'back';
           const path = `${currentUserId}/${side}-migrated-${w.id}-${Date.now()}.jpg`;
           const { error: upErr } = await sb.storage.from('wine-labels')
-            .upload(path, compressed, { upsert: true, contentType: 'image/jpeg' });
+            .upload(path, compressed, { upsert: true, contentType: 'image/jpeg', cacheControl: '31536000' });
           if (upErr) throw upErr;
           const { data: urlData } = sb.storage.from('wine-labels').getPublicUrl(path);
           updates[field] = urlData.publicUrl;
@@ -204,7 +206,7 @@ async function reprocessWineImages() {
           const path = extractStoragePath(url);
           if (!path) { skipped++; continue; }
           const { error: upErr } = await sb.storage.from('wine-labels')
-            .upload(path, compressed, { upsert: true, contentType: 'image/jpeg' });
+            .upload(path, compressed, { upsert: true, contentType: 'image/jpeg', cacheControl: '31536000' });
           if (upErr) throw upErr;
           log(`  ${field === 'front_img' ? 'fronte' : 'retro'}: ricompressa (${kb(origBlob.size)} → ${kb(compressed.size)})`);
         }
