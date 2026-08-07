@@ -465,9 +465,11 @@
     /* Grid invece di flex: le <select> hanno una loro sizing "intrinseca"
        che con flex-grow spesso non si distribuisce sull'intera riga —
        con grid-template-columns le tre select occupano sempre spazio
-       uguale e il resto va al pulsante, riempiendo tutta la card. */
+       uguale, riempiendo tutta la card. Nessun pulsante "Aggiungi": la
+       posizione si imposta e salva scegliendo le select, come lo
+       stepper della quantità. */
     .pos-select-row {
-      display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 6px; width: 100%;
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; width: 100%;
     }
     .pos-select-row select {
       width: 100%; font-family: 'Inter', sans-serif; font-size: 13px;
@@ -475,10 +477,6 @@
       border: 0.5px solid var(--border); background: var(--bg); color: var(--ink);
     }
     .pos-select-row select:focus { outline: none; border-color: var(--wine); }
-    @media (max-width: 480px) {
-      .pos-select-row { grid-template-columns: 1fr 1fr; }
-      .pos-select-row button { grid-column: 1 / -1; }
-    }
     .pos-chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 
     .subhead { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; margin: 18px 0 8px; }
@@ -2188,8 +2186,7 @@
         <div class="pos-select-row" id="f-pos-selects-row">
           <select id="f-pos-l1" onchange="onPosL1Change()"><option value="">Posizione…</option></select>
           <select id="f-pos-l2" onchange="onPosL2Change()"><option value="">Zona…</option></select>
-          <select id="f-pos-l3"><option value="">Piano…</option></select>
-          <button type="button" class="btn sm" onclick="addWinePosition()"><i class="ti ti-plus"></i>Aggiungi</button>
+          <select id="f-pos-l3" onchange="onPosL3Change()"><option value="">Piano…</option></select>
         </div>
         <div class="pos-chip-row" id="wine-pos-tags"></div>
         <div id="f-pos-empty-hint" style="display:none;font-size:11px;color:var(--muted);margin-top:6px">Non hai ancora configurato posizioni per la cantina. Vai al <a href="#" onclick="showProfileScreen();return false;">tuo profilo</a> per aggiungerle.</div>
@@ -4068,8 +4065,7 @@ function showDetail(id) {
         <div class="pos-select-row" style="margin-top:8px" id="detail-pos-selects-row">
           <select id="dp-pos-l1" onchange="onDetailPosL1Change()"><option value="">Posizione…</option></select>
           <select id="dp-pos-l2" onchange="onDetailPosL2Change()"><option value="">Zona…</option></select>
-          <select id="dp-pos-l3"><option value="">Piano…</option></select>
-          <button type="button" class="btn sm" onclick="addDetailPosition()"><i class="ti ti-plus"></i>Aggiungi</button>
+          <select id="dp-pos-l3" onchange="onDetailPosL3Change()"><option value="">Piano…</option></select>
         </div>
         <div id="detail-pos-empty-hint" style="display:none;font-size:11px;color:var(--muted);margin-top:6px">Non hai ancora configurato posizioni per la cantina. Vai al <a href="#" onclick="showProfileScreen();return false;">tuo profilo</a> per aggiungerle.</div>
         <div class="pos-chip-row" id="detail-pos-tags" style="margin-top:8px"></div>
@@ -4088,7 +4084,9 @@ function showDetail(id) {
 
 // Posizione in cantina sulla scheda di dettaglio — modificabile sul posto
 // (aggiunta/rimozione salvate subito, come lo stepper delle bottiglie),
-// senza dover entrare in "Modifica".
+// senza dover entrare in "Modifica". Nessun pulsante "Aggiungi": appena la
+// selezione raggiunge una foglia dell'albero (non ci sono più livelli
+// sotto, o si è scelto il livello 3) si salva da sola su DB.
 function renderDetailPosSelects() {
   fillPosSelect('dp-pos-l1', ownerCellarPosTree.map(n => n.name), 'Posizione…');
   fillPosSelect('dp-pos-l2', [], 'Zona…');
@@ -4101,8 +4099,10 @@ function renderDetailPosSelects() {
 function onDetailPosL1Change() {
   const l1name = document.getElementById('dp-pos-l1')?.value || '';
   const node = ownerCellarPosTree.find(n => n.name === l1name);
-  fillPosSelect('dp-pos-l2', (node?.children || []).map(c => c.name), 'Zona…');
+  const l2opts = (node?.children || []).map(c => c.name);
+  fillPosSelect('dp-pos-l2', l2opts, 'Zona…');
   fillPosSelect('dp-pos-l3', [], 'Piano…');
+  if (l1name && l2opts.length === 0) addDetailPosition();
 }
 
 function onDetailPosL2Change() {
@@ -4110,7 +4110,13 @@ function onDetailPosL2Change() {
   const l2name = document.getElementById('dp-pos-l2')?.value || '';
   const l1node = ownerCellarPosTree.find(n => n.name === l1name);
   const l2node = l1node?.children.find(c => c.name === l2name);
-  fillPosSelect('dp-pos-l3', (l2node?.children || []).map(c => c.name), 'Piano…');
+  const l3opts = (l2node?.children || []).map(c => c.name);
+  fillPosSelect('dp-pos-l3', l3opts, 'Piano…');
+  if (l2name && l3opts.length === 0) addDetailPosition();
+}
+
+function onDetailPosL3Change() {
+  if (document.getElementById('dp-pos-l3')?.value) addDetailPosition();
 }
 
 function renderDetailPosChips(w) {
@@ -4131,10 +4137,16 @@ async function addDetailPosition() {
   const l3 = document.getElementById('dp-pos-l3')?.value || '';
   if (!l1 && !l2 && !l3) return;
   const positions = w.cellarPositions || [];
-  if (positions.some(p => p.l1 === l1 && p.l2 === l2 && p.l3 === l3)) { toast('Posizione già aggiunta'); return; }
-  const updated = [...positions, { l1, l2, l3 }];
-  const ok = await dbUpdatePositions(w.id, updated);
-  if (ok) { w.cellarPositions = updated; renderDetailPosChips(w); }
+  if (positions.some(p => p.l1 === l1 && p.l2 === l2 && p.l3 === l3)) {
+    toast('Posizione già aggiunta');
+  } else {
+    const updated = [...positions, { l1, l2, l3 }];
+    const ok = await dbUpdatePositions(w.id, updated);
+    if (ok) { w.cellarPositions = updated; renderDetailPosChips(w); }
+  }
+  fillPosSelect('dp-pos-l1', ownerCellarPosTree.map(n => n.name), 'Posizione…');
+  fillPosSelect('dp-pos-l2', [], 'Zona…');
+  fillPosSelect('dp-pos-l3', [], 'Piano…');
 }
 
 async function removeDetailPosition(index) {
@@ -4524,7 +4536,10 @@ function fillPosSelect(id, opts, placeholder) {
 // proprietario della cantina in visualizzazione (ownerCellarPosTree,
 // caricato da initApp / switchCellarOwner) e mostra un avviso se non ne ha
 // ancora configurato nessuno. Livello 2 e 3 si popolano a cascata, vedi
-// onPosL1Change/onPosL2Change, perché dipendono dal nodo scelto sopra.
+// onPosL1Change/onPosL2Change/onPosL3Change. Nessun pulsante "Aggiungi":
+// appena la selezione raggiunge una foglia dell'albero (non ci sono più
+// livelli sotto, o si è scelto il livello 3) la posizione si aggiunge da
+// sola, come lo stepper della quantità.
 function renderWinePositionSelects() {
   fillPosSelect('f-pos-l1', ownerCellarPosTree.map(n => n.name), 'Posizione…');
   fillPosSelect('f-pos-l2', [], 'Zona…');
@@ -4537,8 +4552,10 @@ function renderWinePositionSelects() {
 function onPosL1Change() {
   const l1name = document.getElementById('f-pos-l1')?.value || '';
   const node = ownerCellarPosTree.find(n => n.name === l1name);
-  fillPosSelect('f-pos-l2', (node?.children || []).map(c => c.name), 'Zona…');
+  const l2opts = (node?.children || []).map(c => c.name);
+  fillPosSelect('f-pos-l2', l2opts, 'Zona…');
   fillPosSelect('f-pos-l3', [], 'Piano…');
+  if (l1name && l2opts.length === 0) addWinePosition();
 }
 
 function onPosL2Change() {
@@ -4546,7 +4563,13 @@ function onPosL2Change() {
   const l2name = document.getElementById('f-pos-l2')?.value || '';
   const l1node = ownerCellarPosTree.find(n => n.name === l1name);
   const l2node = l1node?.children.find(c => c.name === l2name);
-  fillPosSelect('f-pos-l3', (l2node?.children || []).map(c => c.name), 'Piano…');
+  const l3opts = (l2node?.children || []).map(c => c.name);
+  fillPosSelect('f-pos-l3', l3opts, 'Piano…');
+  if (l2name && l3opts.length === 0) addWinePosition();
+}
+
+function onPosL3Change() {
+  if (document.getElementById('f-pos-l3')?.value) addWinePosition();
 }
 
 function renderWinePositionChips() {
@@ -4565,9 +4588,15 @@ function addWinePosition() {
   const l2 = document.getElementById('f-pos-l2')?.value || '';
   const l3 = document.getElementById('f-pos-l3')?.value || '';
   if (!l1 && !l2 && !l3) return;
-  if (selectedWinePositions.some(p => p.l1 === l1 && p.l2 === l2 && p.l3 === l3)) { toast('Posizione già aggiunta'); return; }
-  selectedWinePositions.push({ l1, l2, l3 });
-  renderWinePositionChips();
+  if (selectedWinePositions.some(p => p.l1 === l1 && p.l2 === l2 && p.l3 === l3)) {
+    toast('Posizione già aggiunta');
+  } else {
+    selectedWinePositions.push({ l1, l2, l3 });
+    renderWinePositionChips();
+  }
+  fillPosSelect('f-pos-l1', ownerCellarPosTree.map(n => n.name), 'Posizione…');
+  fillPosSelect('f-pos-l2', [], 'Zona…');
+  fillPosSelect('f-pos-l3', [], 'Piano…');
 }
 
 function removeWinePosition(index) {
@@ -5437,8 +5466,8 @@ Object.assign(window, {
   setNetworkFilter, toggleNetworkAdvFilters, onNetworkCountryChange, resetNetworkFilters, renderNetworkFeed,
   dismissPublicPrompt, acceptPublicPrompt, markFScoreManual,
   confirmSumDuplicateQty, confirmSaveDuplicateAsNew, closeDuplicateWinePrompt,
-  addPosNode, removePosNode, addWinePosition, removeWinePosition, onPosL1Change, onPosL2Change,
-  addDetailPosition, removeDetailPosition, onDetailPosL1Change, onDetailPosL2Change
+  addPosNode, removePosNode, addWinePosition, removeWinePosition, onPosL1Change, onPosL2Change, onPosL3Change,
+  addDetailPosition, removeDetailPosition, onDetailPosL1Change, onDetailPosL2Change, onDetailPosL3Change
 });
 </script>
 </body>
