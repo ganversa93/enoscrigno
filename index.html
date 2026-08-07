@@ -462,6 +462,13 @@
       border: 0.5px solid var(--border); background: var(--bg); color: var(--ink);
     }
     .pos-add-row input:focus { outline: none; border-color: var(--wine); }
+    .pos-select-row select {
+      font-family: 'Inter', sans-serif; font-size: 13px;
+      padding: 8px 10px; border-radius: 8px;
+      border: 0.5px solid var(--border); background: var(--bg); color: var(--ink);
+    }
+    .pos-select-row select:focus { outline: none; border-color: var(--wine); }
+    .pos-chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 
     .subhead { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; margin: 18px 0 8px; }
     .subhead:first-child { margin-top: 0; }
@@ -2167,13 +2174,13 @@
       </div>
       <div class="fg">
         <label>Posizione in cantina <span style="font-weight:400;color:var(--muted)">(facoltativo, puoi aggiungerne più di una)</span></label>
-        <div style="display:flex;gap:6px;flex-wrap:wrap" id="f-pos-selects-row">
+        <div class="pos-select-row" style="display:flex;gap:6px;flex-wrap:wrap" id="f-pos-selects-row">
           <select id="f-pos-l1" style="flex:1;min-width:100px" onchange="onPosL1Change()"><option value="">Posizione…</option></select>
           <select id="f-pos-l2" style="flex:1;min-width:100px" onchange="onPosL2Change()"><option value="">Zona…</option></select>
           <select id="f-pos-l3" style="flex:1;min-width:100px"><option value="">Piano…</option></select>
           <button type="button" class="btn sm" onclick="addWinePosition()"><i class="ti ti-plus"></i>Aggiungi</button>
         </div>
-        <div class="grape-tags" id="wine-pos-tags"></div>
+        <div class="pos-chip-row" id="wine-pos-tags"></div>
         <div id="f-pos-empty-hint" style="display:none;font-size:11px;color:var(--muted);margin-top:6px">Non hai ancora configurato posizioni per la cantina. Vai al <a href="#" onclick="showProfileScreen();return false;">tuo profilo</a> per aggiungerle.</div>
       </div>
       <div class="frow">
@@ -4047,14 +4054,14 @@ function showDetail(id) {
       ${w.tastingPlace ? `<div class="dfield" style="grid-column:1/-1"><div class="fl">Luogo degustazione</div><div class="fv">${w.tastingPlace}</div></div>` : ''}
       <div class="dfield" style="grid-column:1/-1">
         <div class="fl"><i class="ti ti-map-pin" style="font-size:11px;vertical-align:-1px;margin-right:3px"></i>Posizione in cantina</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px" id="detail-pos-selects-row">
+        <div class="pos-select-row" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px" id="detail-pos-selects-row">
           <select id="dp-pos-l1" style="flex:1;min-width:100px" onchange="onDetailPosL1Change()"><option value="">Posizione…</option></select>
           <select id="dp-pos-l2" style="flex:1;min-width:100px" onchange="onDetailPosL2Change()"><option value="">Zona…</option></select>
           <select id="dp-pos-l3" style="flex:1;min-width:100px"><option value="">Piano…</option></select>
           <button type="button" class="btn sm" onclick="addDetailPosition()"><i class="ti ti-plus"></i>Aggiungi</button>
         </div>
         <div id="detail-pos-empty-hint" style="display:none;font-size:11px;color:var(--muted);margin-top:6px">Non hai ancora configurato posizioni per la cantina. Vai al <a href="#" onclick="showProfileScreen();return false;">tuo profilo</a> per aggiungerle.</div>
-        <div class="grape-tags" id="detail-pos-tags" style="margin-top:8px"></div>
+        <div class="pos-chip-row" id="detail-pos-tags" style="margin-top:8px"></div>
       </div>
     </div>
 
@@ -4099,7 +4106,7 @@ function renderDetailPosChips(w) {
   const box = document.getElementById('detail-pos-tags');
   if (!box) return;
   box.innerHTML = (w.cellarPositions || []).map((p, i) => `
-    <span class="grape-tag">
+    <span class="pos-node-row">
       ${[p.l1, p.l2, p.l3].filter(Boolean).join(' · ')}
       <span class="rm-btn" onclick="removeDetailPosition(${i})">×</span>
     </span>
@@ -4535,7 +4542,7 @@ function renderWinePositionChips() {
   const box = document.getElementById('wine-pos-tags');
   if (!box) return;
   box.innerHTML = selectedWinePositions.map((p, i) => `
-    <span class="grape-tag">
+    <span class="pos-node-row">
       ${[p.l1, p.l2, p.l3].filter(Boolean).join(' · ')}
       <span class="rm-btn" onclick="removeWinePosition(${i})">×</span>
     </span>
