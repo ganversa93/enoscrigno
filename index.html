@@ -449,17 +449,19 @@
     .pos-node { margin-bottom: 6px; }
     .pos-node-row {
       display: flex; align-items: center; gap: 8px;
-      background: var(--wine-pale); border: 0.5px solid rgba(107,24,57,.2);
-      border-radius: 8px; padding: 6px 8px 6px 12px; font-size: 12.5px; color: var(--wine);
+      background: var(--wine); border: 0.5px solid rgba(107,24,57,.2);
+      border-radius: 8px; padding: 6px 8px 6px 12px; font-size: 12.5px; color: #fff; font-weight: 500;
     }
     .pos-node-row .rm-btn { margin-left: auto; cursor: pointer; opacity: .6; font-size: 15px; line-height: 1; padding: 0 2px; }
     .pos-node-row .rm-btn:hover { opacity: 1; }
     .pos-node-children { margin-left: 16px; padding-left: 10px; border-left: 1px dashed var(--border); margin-top: 6px; }
-    .pos-node-children input {
-      font-size: 12px; padding: 7px 9px; margin-bottom: 0;
-      border-radius: 8px; border: 0.5px solid var(--border); background: var(--bg); color: var(--ink);
-    }
     .pos-add-row { display: flex; gap: 6px; margin: 4px 0 10px; }
+    .pos-add-row input {
+      flex: 1; min-width: 0; width: auto; font-family: 'Inter', sans-serif; font-size: 13px;
+      padding: 8px 12px; border-radius: 8px;
+      border: 0.5px solid var(--border); background: var(--bg); color: var(--ink);
+    }
+    .pos-add-row input:focus { outline: none; border-color: var(--wine); }
 
     .subhead { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; margin: 18px 0 8px; }
     .subhead:first-child { margin-top: 0; }
@@ -4549,6 +4551,21 @@ const DELEGAZIONI = {
   FIS: ['Fondazione Roma','Fondazione Milano','Fondazione Napoli','Fondazione Torino']
 };
 
+// Prefisso testuale che ciascuna associazione usa per tutte le sue delegazioni
+// (AIS non ne ha uno: la lista è di soli nomi di regione). Se l'utente scrive
+// liberamente solo il nome del posto (es. "Bergamo"), lo completiamo con la
+// stessa dicitura delle altre voci, per uniformità del dato salvato.
+const DELEGAZIONE_PREFIX = { FISAR: 'Delegazione di ', ONAV: 'Sezione di ', FIS: 'Fondazione ' };
+
+function normalizeDelegazione(raw, assoc) {
+  const trimmed = (raw || '').trim();
+  if (!trimmed) return '';
+  const prefix = DELEGAZIONE_PREFIX[assoc];
+  if (!prefix) return trimmed;
+  if (trimmed.toLowerCase().startsWith(prefix.toLowerCase())) return prefix + trimmed.slice(prefix.length).trim();
+  return prefix + trimmed;
+}
+
 function toggleFisarMethodField() {
   const assoc = document.getElementById('p-assoc')?.value;
   const field = document.getElementById('fisar-method-field');
@@ -5144,12 +5161,16 @@ async function saveProfile() {
     const { error } = await sb.auth.updateUser(authUpdates);
     if (error) { showLoadingOverlay(false); toastErr(error.message); return; }
   }
+  const assocVal = document.getElementById('p-assoc')?.value || '';
+  const delegazioneVal = normalizeDelegazione(document.getElementById('p-delegazione')?.value, assocVal);
+  const delInput = document.getElementById('p-delegazione');
+  if (delInput) delInput.value = delegazioneVal;
   const { error: profErr } = await sb.from('profiles').upsert({
     id:                 currentUser.id,
     full_name:          fullName,
-    assoc:              document.getElementById('p-assoc')?.value || '',
+    assoc:              assocVal,
     card:               document.getElementById('p-card')?.value.trim() || '',
-    delegazione:        document.getElementById('p-delegazione')?.value.trim() || '',
+    delegazione:        delegazioneVal,
     avatar_base64:      pendingAvatarBase64 !== null ? pendingAvatarBase64 : (currentUser.avatarBase64 || null),
     is_public:          document.getElementById('p-is-public')?.checked || false,
     fisar_method:       document.getElementById('p-fisar-method')?.value || 'punteggio',
@@ -5159,9 +5180,9 @@ async function saveProfile() {
   if (profErr) { toastErr('Errore salvataggio profilo: ' + profErr.message); console.error('saveProfile error:', profErr); return; }
   currentUser.name              = fullName;
   currentUser.email             = email;
-  currentUser.assoc             = document.getElementById('p-assoc')?.value || '';
+  currentUser.assoc             = assocVal;
   currentUser.card              = document.getElementById('p-card')?.value.trim() || '';
-  currentUser.delegazione       = document.getElementById('p-delegazione')?.value.trim() || '';
+  currentUser.delegazione       = delegazioneVal;
   if (pendingAvatarBase64 !== null) currentUser.avatarBase64 = pendingAvatarBase64;
   currentUser.isPublic = document.getElementById('p-is-public')?.checked || false;
   currentUser.fisarMethod = document.getElementById('p-fisar-method')?.value || 'punteggio';
@@ -5293,6 +5314,9 @@ attachAutocomplete('f-region',   () => regionSuggestions);
 attachAutocomplete('f-province', () => provinceSuggestions);
 attachAutocomplete('f-doc',      () => docSuggestions);
 attachAutocomplete('p-delegazione', () => DELEGAZIONI[document.getElementById('p-assoc')?.value] || []);
+document.getElementById('p-delegazione')?.addEventListener('blur', e => {
+  e.target.value = normalizeDelegazione(e.target.value, document.getElementById('p-assoc')?.value || '');
+});
 attachAutocomplete('f-grapes-input', () => GRAPE_VARIETIES, name => addGrapeTag(name));
 document.getElementById('f-grapes-input')?.addEventListener('keydown', e => {
   if (e.key === 'Enter') { e.preventDefault(); addGrapeTag(e.target.value); }
