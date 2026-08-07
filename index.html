@@ -913,10 +913,10 @@
       </div>
     </div>
     <div class="home-feedback-row">
-      <a class="home-feedback-btn" href="mailto:enoscrigno@gmail.com?subject=Enoscrigno%20%E2%80%93%20Segnalazione%20bug" title="Segnala un problema tecnico">
+      <a class="home-feedback-btn" href="contattaci.html?tipo=bug" title="Segnala un problema tecnico">
         <i class="ti ti-bug"></i><span>Segnala un bug</span>
       </a>
-      <a class="home-feedback-btn" href="mailto:enoscrigno@gmail.com?subject=Enoscrigno%20%E2%80%93%20Richiesta%20o%20suggerimento" title="Proponi un'idea o una funzione">
+      <a class="home-feedback-btn" href="contattaci.html?tipo=idea" title="Proponi un'idea o una funzione">
         <i class="ti ti-bulb"></i><span>Richiesta o idea</span>
       </a>
     </div>
@@ -932,7 +932,7 @@
     <div class="nav-menu-item" onclick="closeNavMenu();showComingSoon('Eventi')"><i class="ti ti-calendar-event"></i>Eventi</div>
     <div class="nav-menu-item" onclick="closeNavMenu();showNetworkScreen()"><i class="ti ti-users"></i>Network</div>
     <div class="nav-menu-item" onclick="closeNavMenu();showGuideScreen()"><i class="ti ti-book"></i>Guida</div>
-    <a class="nav-menu-item" style="text-decoration:none" href="mailto:enoscrigno@gmail.com?subject=Enoscrigno%20%E2%80%93%20Segnalazione%20o%20suggerimento" onclick="closeNavMenu()"><i class="ti ti-mail"></i>Segnala un problema o un'idea</a>
+    <a class="nav-menu-item" style="text-decoration:none" href="contattaci.html" onclick="closeNavMenu()"><i class="ti ti-mail"></i>Segnala un problema o un'idea</a>
   </div>
 
   <!-- ══ NETWORK ══ -->
@@ -3849,6 +3849,7 @@ function showDuplicateWinePrompt(dup, wine) {
 function closeDuplicateWinePrompt() {
   document.getElementById('duplicate-wine-overlay')?.classList.remove('open');
 }
+
 async function confirmSumDuplicateQty() {
   const el = document.getElementById('duplicate-wine-overlay');
   const dupId = el?.dataset.dupId;
