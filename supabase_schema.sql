@@ -681,3 +681,21 @@ alter table public.wines add column if not exists ais_desc_params jsonb;
 -- richiederlo ad ogni sessione.
 -- ════════════════════════════════════════════
 alter table public.profiles add column if not exists public_prompt_seen boolean not null default false;
+
+-- ════════════════════════════════════════════════════════════════
+-- Posizione in cantina — tre livelli configurabili dal proprietario
+-- della cantina nel proprio profilo (es. livello 1 = luogo fisico
+-- "Cantina casa"/"Stock", livello 2 = zona "Bianchi"/"Rossi", livello
+-- 3 = piano/ripiano "Piano 1"/"Piano 2"/"Piano 3"), poi assegnabili a
+-- ciascun vino. Un vino può avere più posizioni (es. alcune bottiglie
+-- in cantina, altre nello stock), quindi cellar_positions è un array
+-- di combinazioni {l1,l2,l3}. Salviamo uno snapshot testuale delle
+-- etichette scelte (non un riferimento a un id) così una posizione
+-- resta leggibile sul vino anche se poi viene rinominata o rimossa
+-- dalle liste in profiles.
+-- ════════════════════════════════════════════════════════════════
+alter table public.profiles add column if not exists cellar_pos_l1 text[] not null default '{}';
+alter table public.profiles add column if not exists cellar_pos_l2 text[] not null default '{}';
+alter table public.profiles add column if not exists cellar_pos_l3 text[] not null default '{}';
+
+alter table public.wines add column if not exists cellar_positions jsonb not null default '[]';

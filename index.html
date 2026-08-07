@@ -2145,6 +2145,17 @@
           <div style="font-size:11px;color:var(--muted);margin-top:5px">0 = degustato ma non posseduto (es. a un evento o al ristorante)</div>
         </div>
       </div>
+      <div class="fg">
+        <label>Posizione in cantina <span style="font-weight:400;color:var(--muted)">(facoltativo, puoi aggiungerne più di una)</span></label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap" id="f-pos-selects-row">
+          <select id="f-pos-l1" style="flex:1;min-width:100px"><option value="">Posizione…</option></select>
+          <select id="f-pos-l2" style="flex:1;min-width:100px"><option value="">Zona…</option></select>
+          <select id="f-pos-l3" style="flex:1;min-width:100px"><option value="">Piano…</option></select>
+          <button type="button" class="btn sm" onclick="addWinePosition()"><i class="ti ti-plus"></i>Aggiungi</button>
+        </div>
+        <div class="grape-tags" id="wine-pos-tags"></div>
+        <div id="f-pos-empty-hint" style="display:none;font-size:11px;color:var(--muted);margin-top:6px">Non hai ancora configurato posizioni per la cantina. Vai al <a href="#" onclick="showProfileScreen();return false;">tuo profilo</a> per aggiungerle.</div>
+      </div>
       <div class="frow">
         <div class="fg"><label>Data acquisto</label><input type="date" id="f-date"></div>
         <div class="fg"><label>Categoria acquisto</label>
@@ -2254,6 +2265,39 @@
     <div class="fsec" id="cellar-invites-section" style="display:none">
       <div class="stitle"><i class="ti ti-mail"></i>Inviti a cantine condivise</div>
       <div id="cellar-invites-list"></div>
+    </div>
+
+    <!-- Posizioni in cantina -->
+    <div class="fsec">
+      <div class="stitle"><i class="ti ti-map-pin"></i>Posizioni in cantina</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Configura fino a tre livelli per indicare dove tieni le bottiglie (es. luogo fisico, zona, piano/ripiano). Potrai poi assegnare una o più posizioni a ciascun vino della tua cantina.</p>
+
+      <div class="fg">
+        <label>Livello 1 — Posizione <span style="font-weight:400;color:var(--muted)">(es. Cantina casa, Stock)</span></label>
+        <div style="display:flex;gap:6px">
+          <input type="text" id="p-pos-l1-input" placeholder="Aggiungi posizione…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();addPosLabel('l1');}">
+          <button type="button" class="btn sm" onclick="addPosLabel('l1')"><i class="ti ti-plus"></i></button>
+        </div>
+        <div class="grape-tags" id="pos-tags-l1"></div>
+      </div>
+
+      <div class="fg">
+        <label>Livello 2 — Zona <span style="font-weight:400;color:var(--muted)">(es. Bianchi, Rossi)</span></label>
+        <div style="display:flex;gap:6px">
+          <input type="text" id="p-pos-l2-input" placeholder="Aggiungi zona…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();addPosLabel('l2');}">
+          <button type="button" class="btn sm" onclick="addPosLabel('l2')"><i class="ti ti-plus"></i></button>
+        </div>
+        <div class="grape-tags" id="pos-tags-l2"></div>
+      </div>
+
+      <div class="fg" style="margin-bottom:0">
+        <label>Livello 3 — Piano <span style="font-weight:400;color:var(--muted)">(es. Piano 1, Piano 2, Piano 3)</span></label>
+        <div style="display:flex;gap:6px">
+          <input type="text" id="p-pos-l3-input" placeholder="Aggiungi piano…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();addPosLabel('l3');}">
+          <button type="button" class="btn sm" onclick="addPosLabel('l3')"><i class="ti ti-plus"></i></button>
+        </div>
+        <div class="grape-tags" id="pos-tags-l3"></div>
+      </div>
     </div>
 
     <!-- Dati personali -->
@@ -2416,6 +2460,7 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 let currentUser  = null;   // { id, email, name, assoc, card, delegazione, delegazioneCustom }
 let currentCellarOwnerId = null; // di chi è la cantina che sto guardando ora (default: la mia)
 let mySharedCellars = [];  // cantine di altri condivise con me (accettate) — per il selettore
+let ownerCellarPosLabels = { l1: [], l2: [], l3: [] }; // etichette posizione-cantina del proprietario della cantina in visualizzazione
 let winesCache   = [];     // array locale per render veloce
 let currentFilter    = 'all';
 let currentQtyFilter = 'all';
@@ -2610,7 +2655,10 @@ async function loadProfile(authUser) {
     isPublic:          profile?.is_public || false,
     publicPromptSeen:  profile?.public_prompt_seen || false,
     fisarMethod:       profile?.fisar_method || 'punteggio',
-    emailConfirmed:    !!authUser.email_confirmed_at
+    emailConfirmed:    !!authUser.email_confirmed_at,
+    cellarPosL1:       profile?.cellar_pos_l1 || [],
+    cellarPosL2:       profile?.cellar_pos_l2 || [],
+    cellarPosL3:       profile?.cellar_pos_l3 || []
   };
   // Se non esiste ancora un profilo (caso raro, es. trigger non installato),
   // lo creiamo ora che l'utente è sicuramente autenticato — solo se online,
@@ -2657,6 +2705,24 @@ async function acceptPublicPrompt() {
 }
 
 /* ══ WINES — DB layer ══ */
+// Carica le etichette di posizione-cantina (livelli 1/2/3) del proprietario
+// della cantina attualmente in visualizzazione: se è la propria cantina
+// usa direttamente currentUser (già in memoria), altrimenti — cantina
+// condivisa da altri — le legge dal loro profilo (leggibile via RLS
+// "profiles: visibili a chi condivide una cantina con me").
+async function loadOwnerCellarPositionLabels() {
+  if (currentCellarOwnerId === currentUser.id) {
+    ownerCellarPosLabels = { l1: currentUser.cellarPosL1 || [], l2: currentUser.cellarPosL2 || [], l3: currentUser.cellarPosL3 || [] };
+    return;
+  }
+  try {
+    const { data } = await sb.from('profiles').select('cellar_pos_l1, cellar_pos_l2, cellar_pos_l3').eq('id', currentCellarOwnerId).maybeSingle();
+    ownerCellarPosLabels = { l1: data?.cellar_pos_l1 || [], l2: data?.cellar_pos_l2 || [], l3: data?.cellar_pos_l3 || [] };
+  } catch {
+    ownerCellarPosLabels = { l1: [], l2: [], l3: [] };
+  }
+}
+
 async function loadWines() {
   const CACHE_KEY = 'enoscrigno_cache_wines_' + currentCellarOwnerId;
   try {
@@ -2684,6 +2750,7 @@ async function loadWines() {
       shopCategory: row.shop_category,
       frontImg:    row.front_img,
       backImg:     row.back_img,
+      cellarPositions: row.cellar_positions || [],
     }));
     // Salva un'istantanea locale, usata come riserva se manca la connessione
     try { localStorage.setItem(CACHE_KEY, JSON.stringify(wines)); } catch {}
@@ -2861,6 +2928,7 @@ async function dbSaveWine(wine) {
     tags:         wine.tags         || null,
     front_img:    wine.frontImg     || null,
     back_img:     wine.backImg      || null,
+    cellar_positions: wine.cellarPositions || [],
   };
   if (wine.id && typeof wine.id === 'string' && wine.id.length > 10) {
     // update existing (uuid)
@@ -2902,6 +2970,7 @@ async function initApp() {
   setOfflineBanner(!navigator.onLine);
   if (!currentCellarOwnerId) currentCellarOwnerId = currentUser.id;
   await loadSharedCellars();
+  await loadOwnerCellarPositionLabels();
   // Carica vini dal DB
   showLoadingOverlay(true);
   winesCache = await loadWines();
@@ -3225,6 +3294,7 @@ function showAdd() {
   const visToggle = document.getElementById('f-visibility'); if (visToggle) visToggle.checked = true;
   selectedGrapes = []; renderGrapeTags();
   const grapesInput = document.getElementById('f-grapes-input'); if (grapesInput) grapesInput.value = '';
+  selectedWinePositions = []; renderWinePositionSelects(); renderWinePositionChips();
   clear(['f-vintage','f-abv','f-price']);
   updateRegionOptions(); // resetta datalist regione/provincia e stato campo
   document.querySelectorAll('.p-chip').forEach(chip => chip.classList.remove('active'));
@@ -3708,7 +3778,8 @@ async function saveWine() {
     fisarScore:  activeDeg === 'fisar' ? fisarScore : null,
     fpNote:   activeDeg === 'fisar' ? g('fp-note') : '',
     score: finalScore, notes: activeDeg === 'free' ? g('f-notes') : '', tags: g('f-tags'),
-    frontImg, backImg
+    frontImg, backImg,
+    cellarPositions: selectedWinePositions.slice()
   };
 
   // Solo per un inserimento nuovo (non in modifica): se in cantina c'è già
@@ -3944,6 +4015,7 @@ function showDetail(id) {
       <div class="dfield"><div class="fl">Da bere</div><div class="fv">${w.drink || '—'}</div></div>
       <div class="dfield"><div class="fl">Data degustazione</div><div class="fv">${fmtDate(w.tastingDate)}</div></div>
       ${w.tastingPlace ? `<div class="dfield" style="grid-column:1/-1"><div class="fl">Luogo degustazione</div><div class="fv">${w.tastingPlace}</div></div>` : ''}
+      ${w.cellarPositions?.length ? `<div class="dfield" style="grid-column:1/-1"><div class="fl"><i class="ti ti-map-pin" style="font-size:11px;vertical-align:-1px;margin-right:3px"></i>Posizione in cantina</div><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">${w.cellarPositions.map(p => `<span class="tag">${[p.l1,p.l2,p.l3].filter(Boolean).join(' · ')}</span>`).join('')}</div></div>` : ''}
     </div>
 
     ${degHTML}
@@ -4010,6 +4082,9 @@ function editWine() {
   set('f-province', w.province);
   set('f-abv', w.abv);
   set('f-format', w.format); set('f-price', w.price); set('f-qty', w.qty ?? 1);
+  renderWinePositionSelects();
+  selectedWinePositions = (w.cellarPositions || []).map(p => ({ l1: p.l1 || '', l2: p.l2 || '', l3: p.l3 || '' }));
+  renderWinePositionChips();
   set('f-date', w.date); set('f-shop', w.shop); set('f-shop-category', w.shopCategory); set('f-drink', w.drink);
   set('f-tastingdate', w.tastingDate); set('f-tastingplace', w.tastingPlace);
   applyPairingToForm(w.pairing);
@@ -4318,6 +4393,52 @@ function applyGrapesToForm(grapesStr) {
   renderGrapeTags();
 }
 
+/* ── Posizione in cantina sul form vino — un vino può avere più posizioni ── */
+let selectedWinePositions = []; // [{l1,l2,l3}]
+
+// Popola i tre <select> con le etichette configurate dal proprietario della
+// cantina in visualizzazione (ownerCellarPosLabels, caricate da initApp /
+// switchCellarOwner) e mostra un avviso se non ne ha ancora configurate.
+function renderWinePositionSelects() {
+  const fill = (id, opts, placeholder) => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    sel.innerHTML = `<option value="">${placeholder}</option>` + opts.map(o => `<option value="${o}">${o}</option>`).join('');
+  };
+  fill('f-pos-l1', ownerCellarPosLabels.l1 || [], 'Posizione…');
+  fill('f-pos-l2', ownerCellarPosLabels.l2 || [], 'Zona…');
+  fill('f-pos-l3', ownerCellarPosLabels.l3 || [], 'Piano…');
+  const hasAny = (ownerCellarPosLabels.l1?.length || ownerCellarPosLabels.l2?.length || ownerCellarPosLabels.l3?.length);
+  document.getElementById('f-pos-selects-row').style.display = hasAny ? '' : 'none';
+  document.getElementById('f-pos-empty-hint').style.display = hasAny ? 'none' : '';
+}
+
+function renderWinePositionChips() {
+  const box = document.getElementById('wine-pos-tags');
+  if (!box) return;
+  box.innerHTML = selectedWinePositions.map((p, i) => `
+    <span class="grape-tag">
+      ${[p.l1, p.l2, p.l3].filter(Boolean).join(' · ')}
+      <span class="rm-btn" onclick="removeWinePosition(${i})">×</span>
+    </span>
+  `).join('');
+}
+
+function addWinePosition() {
+  const l1 = document.getElementById('f-pos-l1')?.value || '';
+  const l2 = document.getElementById('f-pos-l2')?.value || '';
+  const l3 = document.getElementById('f-pos-l3')?.value || '';
+  if (!l1 && !l2 && !l3) return;
+  if (selectedWinePositions.some(p => p.l1 === l1 && p.l2 === l2 && p.l3 === l3)) { toast('Posizione già aggiunta'); return; }
+  selectedWinePositions.push({ l1, l2, l3 });
+  renderWinePositionChips();
+}
+
+function removeWinePosition(index) {
+  selectedWinePositions.splice(index, 1);
+  renderWinePositionChips();
+}
+
 const SPAIN_DO = {
   'Rioja': ['Rioja DOCa'],
   'Ribera del Duero': ['Ribera del Duero DO'],
@@ -4402,6 +4523,35 @@ function toggleFisarMethodField() {
 }
 
 let profileReturnScreen = 'screen-home';
+/* ── Posizioni in cantina — liste di etichette configurate nel profilo ── */
+let posLevels = { l1: [], l2: [], l3: [] };
+
+function renderPosTags(level) {
+  const box = document.getElementById('pos-tags-' + level);
+  if (!box) return;
+  box.innerHTML = posLevels[level].map((label, i) => `
+    <span class="grape-tag">
+      ${label}
+      <span class="rm-btn" onclick="removePosLabel('${level}',${i})">×</span>
+    </span>
+  `).join('');
+}
+
+function addPosLabel(level) {
+  const input = document.getElementById('p-pos-' + level + '-input');
+  const trimmed = (input?.value || '').trim();
+  if (!trimmed) return;
+  if (posLevels[level].some(l => l.toLowerCase() === trimmed.toLowerCase())) { if (input) input.value = ''; return; }
+  posLevels[level].push(trimmed);
+  renderPosTags(level);
+  if (input) { input.value = ''; input.focus(); }
+}
+
+function removePosLabel(level, index) {
+  posLevels[level].splice(index, 1);
+  renderPosTags(level);
+}
+
 function goBackFromProfile() { showScreen(profileReturnScreen); }
 function showProfileScreen() {
   profileReturnScreen = document.getElementById('screen-list')?.classList.contains('active') ? 'screen-list' : 'screen-home';
@@ -4433,6 +4583,10 @@ function showProfileScreen() {
 
   // Profilo pubblico
   document.getElementById('p-is-public').checked = !!u.isPublic;
+
+  // Posizioni in cantina
+  posLevels = { l1: [...(u.cellarPosL1 || [])], l2: [...(u.cellarPosL2 || [])], l3: [...(u.cellarPosL3 || [])] };
+  renderPosTags('l1'); renderPosTags('l2'); renderPosTags('l3');
 
   // Promemoria email non confermata (non bloccante)
   document.getElementById('email-reminder').style.display = u.emailConfirmed ? 'none' : 'flex';
@@ -4528,6 +4682,7 @@ async function switchCellarOwner(ownerId) {
   currentCellarOwnerId = ownerId;
   renderCellarSelector();
   showLoadingOverlay(true);
+  await loadOwnerCellarPositionLabels();
   winesCache = await loadWines();
   showLoadingOverlay(false);
   renderAll();
@@ -4897,7 +5052,10 @@ async function saveProfile() {
     delegazione_custom: document.getElementById('p-delegazione-custom')?.value.trim() || '',
     avatar_base64:      pendingAvatarBase64 !== null ? pendingAvatarBase64 : (currentUser.avatarBase64 || null),
     is_public:          document.getElementById('p-is-public')?.checked || false,
-    fisar_method:       document.getElementById('p-fisar-method')?.value || 'punteggio'
+    fisar_method:       document.getElementById('p-fisar-method')?.value || 'punteggio',
+    cellar_pos_l1:      posLevels.l1,
+    cellar_pos_l2:      posLevels.l2,
+    cellar_pos_l3:      posLevels.l3
   });
   showLoadingOverlay(false);
   if (profErr) { toastErr('Errore salvataggio profilo: ' + profErr.message); console.error('saveProfile error:', profErr); return; }
@@ -4910,6 +5068,10 @@ async function saveProfile() {
   if (pendingAvatarBase64 !== null) currentUser.avatarBase64 = pendingAvatarBase64;
   currentUser.isPublic = document.getElementById('p-is-public')?.checked || false;
   currentUser.fisarMethod = document.getElementById('p-fisar-method')?.value || 'punteggio';
+  currentUser.cellarPosL1 = [...posLevels.l1];
+  currentUser.cellarPosL2 = [...posLevels.l2];
+  currentUser.cellarPosL3 = [...posLevels.l3];
+  if (currentCellarOwnerId === currentUser.id) ownerCellarPosLabels = { l1: currentUser.cellarPosL1, l2: currentUser.cellarPosL2, l3: currentUser.cellarPosL3 };
   const initials = currentUser.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
   document.getElementById('nav-avatar').textContent = initials;
   document.getElementById('nav-name').textContent   = currentUser.name.split(' ')[0];
@@ -4988,7 +5150,10 @@ function exportInventory() {
   const val = w.reduce((s, x) => s + ((x.price||0)*(x.qty ?? 1)), 0);
   let txt = `INVENTARIO CANTINA\n${currentUser.name}\nAssociazione: ${currentUser.assoc||'—'} | Tessera: ${currentUser.card||'—'}\nData: ${new Date().toLocaleDateString('it-IT')}\n\n`;
   txt += `RIEPILOGO: ${w.length} etichette · ${tot} bottiglie · valore stimato €${val.toFixed(2)}\n\n${'─'.repeat(60)}\n\n`;
-  w.forEach(x => { txt += `${x.name}${x.vintage?' '+x.vintage:''}\n${x.producer||'—'} | ${x.type||'—'} | ${x.doc||'—'}\nBottiglie: ${x.qty ?? 1} | Prezzo: ${x.price?'€'+x.price.toFixed(2):'—'} | Totale: ${x.price?'€'+(x.price*(x.qty ?? 1)).toFixed(2):'—'}\nDa bere: ${x.drink||'—'} | Schema: ${x.degSchema?.toUpperCase()||'—'} | Punteggio: ${x.score||'—'}/100\n${'─'.repeat(40)}\n\n`; });
+  w.forEach(x => {
+    const positions = (x.cellarPositions || []).map(p => [p.l1,p.l2,p.l3].filter(Boolean).join(' · ')).filter(Boolean).join(' | ');
+    txt += `${x.name}${x.vintage?' '+x.vintage:''}\n${x.producer||'—'} | ${x.type||'—'} | ${x.doc||'—'}\nBottiglie: ${x.qty ?? 1} | Prezzo: ${x.price?'€'+x.price.toFixed(2):'—'} | Totale: ${x.price?'€'+(x.price*(x.qty ?? 1)).toFixed(2):'—'}\nDa bere: ${x.drink||'—'} | Schema: ${x.degSchema?.toUpperCase()||'—'} | Punteggio: ${x.score||'—'}/100\nPosizione: ${positions||'—'}\n${'─'.repeat(40)}\n\n`;
+  });
   dl('inventario_cantina.txt', txt, 'text/plain');
   showExportMsg('✓ Inventario esportato');
 }
@@ -5056,7 +5221,8 @@ Object.assign(window, {
   updateRegionOptions, updateProvinceOptions, dismissInstallBanner, triggerInstallPrompt, resetInstallBanner,
   setNetworkFilter, toggleNetworkAdvFilters, onNetworkCountryChange, resetNetworkFilters, renderNetworkFeed,
   dismissPublicPrompt, acceptPublicPrompt, markFScoreManual,
-  confirmSumDuplicateQty, confirmSaveDuplicateAsNew, closeDuplicateWinePrompt
+  confirmSumDuplicateQty, confirmSaveDuplicateAsNew, closeDuplicateWinePrompt,
+  addPosLabel, removePosLabel, addWinePosition, removeWinePosition
 });
 </script>
 </body>
