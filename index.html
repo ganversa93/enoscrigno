@@ -174,6 +174,13 @@
     .wqty-badge.tasted-only { background: rgba(184,137,42,.85); }
     .wimg .ph { font-size: 34px; opacity: .3; color: var(--wine); }
     .wbadge { position: absolute; top: 8px; right: 8px; font-size: 10px; font-weight: 600; padding: 3px 9px; border-radius: 20px; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.25); }
+    .wtasting-btn {
+      position: absolute; bottom: 8px; right: 8px; width: 30px; height: 30px; border-radius: 50%;
+      background: rgba(0,0,0,.55); backdrop-filter: blur(2px); border: none; color: #fff;
+      display: flex; align-items: center; justify-content: center; font-size: 15px; cursor: pointer;
+      z-index: 2;
+    }
+    .wtasting-btn:hover, .wtasting-btn:active { background: var(--wine); }
     .br  { background: rgba(107,30,46,.85); }
     .bb  { background: rgba(184,137,42,.85); }
     .bro { background: rgba(200,100,120,.85); }
@@ -602,6 +609,17 @@
     .score-max { font-size: 10px; color: var(--muted); }
     .score-circle.fisar { border-color: var(--fisar); background: var(--fisar-pale); }
     .score-circle.fisar .score-n { color: var(--fisar); }
+
+    /* ── DEGUSTAZIONE GUIDATA ── */
+    .wizard-topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+    .wizard-topbar span { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+    .wizard-topbar a { font-size: 12px; color: var(--muted); text-decoration: underline; }
+    .wizard-progress-track { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; margin-bottom: 1.1rem; }
+    .wizard-progress-fill { height: 100%; background: var(--wine); border-radius: 2px; transition: width .25s; }
+    .wizard-step-hero { text-align: center; margin-bottom: 1.4rem; }
+    .wizard-step-hero i { font-size: 28px; color: var(--wine); }
+    .wizard-step-hero div { font-family: 'Cormorant Garamond', serif; font-size: 22px; color: var(--ink); margin-top: 4px; }
+    #wizard-footer .btn { flex: 1; justify-content: center; }
 
     .ffoot {
       display: flex; gap: 9px; justify-content: flex-end;
@@ -1297,6 +1315,18 @@
     </div>
     <input type="hidden" id="f-edit-id" value="">
 
+    <div id="wizard-header" style="display:none">
+      <div class="wizard-topbar">
+        <span id="wizard-step-label"></span>
+        <a href="#" onclick="exitWizardMode();cancelForm();return false;">Esci dalla guida</a>
+      </div>
+      <div class="wizard-progress-track"><div class="wizard-progress-fill" id="wizard-progress-bar"></div></div>
+      <div class="wizard-step-hero">
+        <i class="ti" id="wizard-step-icon"></i>
+        <div id="wizard-step-title"></div>
+      </div>
+    </div>
+
     <div class="visibility-toggle">
       <div>
         <div class="visibility-toggle-label"><i class="ti ti-users" style="font-size:13px;vertical-align:-2px;margin-right:4px"></i>Visibile nel Network</div>
@@ -1448,19 +1478,19 @@
           <div class="score-circle"><span class="score-n" id="ais-tot">0</span><span class="score-max">/100</span></div>
           <div style="font-size:11px;color:var(--muted)">Punteggio AIS calcolato automaticamente</div>
         </div>
-        <div class="param-group">
+        <div class="param-group" data-wiz="ais:1">
           <div class="pg-title" style="color:var(--ais)"><i class="ti ti-eye" style="font-size:12px;vertical-align:-1px;margin-right:4px"></i>Esame visivo</div>
           <div class="param-row"><span class="param-label">Limpidezza</span><input type="range" min="1" max="5" value="3" step="1" class="ais-r" oninput="calcAIS(this,'ap-limp')"><span class="param-val" id="ap-limp">3</span></div>
           <div class="param-row"><span class="param-label">Colore (intensità)</span><input type="range" min="1" max="5" value="3" step="1" class="ais-r" oninput="calcAIS(this,'ap-col')"><span class="param-val" id="ap-col">3</span></div>
           <div class="param-row"><span class="param-label">Consistenza</span><input type="range" min="1" max="5" value="3" step="1" class="ais-r" oninput="calcAIS(this,'ap-cons')"><span class="param-val" id="ap-cons">3</span></div>
         </div>
-        <div class="param-group">
+        <div class="param-group" data-wiz="ais:2">
           <div class="pg-title" style="color:var(--ais)"><i class="ti ti-wind" style="font-size:12px;vertical-align:-1px;margin-right:4px"></i>Esame olfattivo</div>
           <div class="param-row"><span class="param-label">Intensità</span><input type="range" min="1" max="5" value="3" step="1" class="ais-r" oninput="calcAIS(this,'ap-oint')"><span class="param-val" id="ap-oint">3</span></div>
           <div class="param-row"><span class="param-label">Complessità</span><input type="range" min="1" max="5" value="3" step="1" class="ais-r" oninput="calcAIS(this,'ap-ocomp')"><span class="param-val" id="ap-ocomp">3</span></div>
           <div class="param-row"><span class="param-label">Qualità olfattiva</span><input type="range" min="1" max="5" value="3" step="1" class="ais-r" oninput="calcAIS(this,'ap-oqual')"><span class="param-val" id="ap-oqual">3</span></div>
         </div>
-        <div class="param-group">
+        <div class="param-group" data-wiz="ais:3">
           <div class="pg-title" style="color:var(--ais)"><i class="ti ti-droplet" style="font-size:12px;vertical-align:-1px;margin-right:4px"></i>Esame gustativo</div>
           <div class="param-row"><span class="param-label">Struttura</span><input type="range" min="1" max="5" value="3" step="1" class="ais-r" oninput="calcAIS(this,'ap-gstr')"><span class="param-val" id="ap-gstr">3</span></div>
           <div class="param-row"><span class="param-label">Equilibrio</span><input type="range" min="1" max="5" value="3" step="1" class="ais-r" oninput="calcAIS(this,'ap-geq')"><span class="param-val" id="ap-geq">3</span></div>
@@ -1468,7 +1498,7 @@
           <div class="param-row"><span class="param-label">Persistenza (PAI)</span><input type="range" min="1" max="5" value="3" step="1" class="ais-r" oninput="calcAIS(this,'ap-gpai')"><span class="param-val" id="ap-gpai">3</span></div>
           <div class="param-row"><span class="param-label">Qualità gustativa</span><input type="range" min="1" max="5" value="3" step="1" class="ais-r" oninput="calcAIS(this,'ap-gqual')"><span class="param-val" id="ap-gqual">3</span></div>
         </div>
-        <div class="param-group">
+        <div class="param-group" data-wiz="ais:4">
           <div class="pg-title" style="color:var(--ais)"><i class="ti ti-clipboard-check" style="font-size:12px;vertical-align:-1px;margin-right:4px"></i>Considerazioni finali</div>
           <div class="param-row"><span class="param-label">Stato evolutivo</span>
             <select class="pselect" id="ap-stato">
@@ -1478,8 +1508,8 @@
           </div>
           <div class="param-row"><span class="param-label">Armonia complessiva</span><input type="range" min="1" max="10" value="7" step="1" class="ais-r" oninput="calcAIS(this,'ap-arm')"><span class="param-val" id="ap-arm">7</span></div>
         </div>
-        <div class="fg"><label>Note olfattive descrittive</label><textarea id="ap-olfnote" placeholder="Famiglia aromatica, descrittori primari/secondari/terziari…"></textarea></div>
-        <div class="fg" style="margin-top:8px"><label>Note gustative descrittive</label><textarea id="ap-gustnote" placeholder="Tannini, acidità, corpo, calore, finale…"></textarea></div>
+        <div class="fg" data-wiz="ais:2"><label>Note olfattive descrittive</label><textarea id="ap-olfnote" placeholder="Famiglia aromatica, descrittori primari/secondari/terziari…"></textarea></div>
+        <div class="fg" style="margin-top:8px" data-wiz="ais:3"><label>Note gustative descrittive</label><textarea id="ap-gustnote" placeholder="Tannini, acidità, corpo, calore, finale…"></textarea></div>
           </div>
         </div>
 
@@ -1494,7 +1524,7 @@
           <div class="fsec-body">
 
         <!-- ESAME VISIVO -->
-        <div class="param-group">
+        <div class="param-group" data-wiz="ais:1">
           <div class="pg-title" style="color:var(--ais)"><i class="ti ti-eye" style="font-size:12px;vertical-align:-1px;margin-right:4px"></i>Esame visivo</div>
           <div class="fisar-row">
             <div class="fisar-field">
@@ -1552,7 +1582,7 @@
         </div>
 
         <!-- ESAME OLFATTIVO -->
-        <div class="param-group">
+        <div class="param-group" data-wiz="ais:2">
           <div class="pg-title" style="color:var(--ais)"><i class="ti ti-wind" style="font-size:12px;vertical-align:-1px;margin-right:4px"></i>Esame olfattivo</div>
           <div class="fisar-row">
             <div class="fisar-field">
@@ -1584,7 +1614,7 @@
         </div>
 
         <!-- ESAME GUSTO-OLFATTIVO -->
-        <div class="param-group">
+        <div class="param-group" data-wiz="ais:3">
           <div class="pg-title" style="color:var(--ais)"><i class="ti ti-droplet" style="font-size:12px;vertical-align:-1px;margin-right:4px"></i>Esame gusto-olfattivo</div>
           <div class="fisar-row">
             <div class="fisar-field">
@@ -1684,7 +1714,7 @@
         </div>
 
         <!-- CONSIDERAZIONI FINALI -->
-        <div class="param-group">
+        <div class="param-group" data-wiz="ais:4">
           <div class="pg-title" style="color:var(--ais)"><i class="ti ti-clipboard-check" style="font-size:12px;vertical-align:-1px;margin-right:4px"></i>Considerazioni finali</div>
           <div class="fisar-row">
             <div class="fisar-field">
@@ -1723,7 +1753,7 @@
         </div>
 
         <!-- ASPETTO -->
-        <div class="param-group">
+        <div class="param-group" data-wiz="fisar:1">
           <div class="pg-title" style="color:var(--fisar)"><i class="ti ti-eye" style="font-size:12px;vertical-align:-1px;margin-right:4px"></i>Aspetto <span style="font-weight:400;color:var(--muted)">(max 20 pt)</span> — <span id="fisar-asp-pts" style="color:var(--fisar);font-weight:600">0</span> pt</div>
           <div class="fisar-row">
             <div class="fisar-field">
@@ -1774,7 +1804,7 @@
         </div>
 
         <!-- PROFUMO -->
-        <div class="param-group">
+        <div class="param-group" data-wiz="fisar:2">
           <div class="pg-title" style="color:var(--fisar)"><i class="ti ti-wind" style="font-size:12px;vertical-align:-1px;margin-right:4px"></i>Profumo <span style="font-weight:400;color:var(--muted)">(max 30 pt)</span> — <span id="fisar-pro-pts" style="color:var(--fisar);font-weight:600">0</span> pt</div>
           <div class="fisar-row">
             <div class="fisar-field">
@@ -1847,7 +1877,7 @@
         </div>
 
         <!-- GUSTO -->
-        <div class="param-group">
+        <div class="param-group" data-wiz="fisar:3">
           <div class="pg-title" style="color:var(--fisar)"><i class="ti ti-droplet" style="font-size:12px;vertical-align:-1px;margin-right:4px"></i>Gusto <span style="font-weight:400;color:var(--muted)">(max 50 pt)</span> — <span id="fisar-gu-pts" style="color:var(--fisar);font-weight:600">0</span> pt</div>
           <div class="fisar-row">
             <div class="fisar-field">
@@ -1959,7 +1989,7 @@
           </div>
         </div>
 
-        <div class="fg"><label>Note di degustazione FISAR</label><textarea id="fp-note" placeholder="Aspetto, profumi, gusto, conclusioni e abbinamenti consigliati…"></textarea></div>
+        <div class="fg" data-wiz="fisar:4"><label>Note di degustazione FISAR</label><textarea id="fp-note" placeholder="Aspetto, profumi, gusto, conclusioni e abbinamenti consigliati…"></textarea></div>
       </div>
 
       <!-- FISAR DESCRITTIVA (con punteggio libero) -->
@@ -1976,7 +2006,7 @@
         </div>
 
         <!-- ESAME VISIVO -->
-        <div class="param-group">
+        <div class="param-group" data-wiz="fisar_desc:1">
           <div class="pg-title" style="color:var(--fisar)"><i class="ti ti-eye" style="font-size:12px;vertical-align:-1px;margin-right:4px"></i>Esame visivo</div>
           <div class="fisar-row">
             <div class="fisar-field">
@@ -2034,7 +2064,7 @@
         </div>
 
         <!-- ESAME OLFATTIVO -->
-        <div class="param-group">
+        <div class="param-group" data-wiz="fisar_desc:2">
           <div class="pg-title" style="color:var(--fisar)"><i class="ti ti-wind" style="font-size:12px;vertical-align:-1px;margin-right:4px"></i>Esame olfattivo</div>
           <div class="fisar-row">
             <div class="fisar-field">
@@ -2073,7 +2103,7 @@
         </div>
 
         <!-- ESAME GUSTATIVO -->
-        <div class="param-group">
+        <div class="param-group" data-wiz="fisar_desc:3">
           <div class="pg-title" style="color:var(--fisar)"><i class="ti ti-droplet" style="font-size:12px;vertical-align:-1px;margin-right:4px"></i>Esame gustativo</div>
           <div class="fisar-row">
             <div class="fisar-field">
@@ -2147,7 +2177,7 @@
         </div>
 
         <!-- SENSAZIONI RETRO-OLFATTIVE -->
-        <div class="param-group">
+        <div class="param-group" data-wiz="fisar_desc:4">
           <div class="pg-title" style="color:var(--fisar)"><i class="ti ti-arrow-back-up" style="font-size:12px;vertical-align:-1px;margin-right:4px"></i>Sensazioni retro-olfattive</div>
           <div class="fisar-row">
             <div class="fisar-field">
@@ -2176,7 +2206,7 @@
         </div>
 
         <!-- STATO EVOLUTIVO E CONSIDERAZIONI FINALI -->
-        <div class="param-group">
+        <div class="param-group" data-wiz="fisar_desc:5">
           <div class="pg-title" style="color:var(--fisar)"><i class="ti ti-clipboard-check" style="font-size:12px;vertical-align:-1px;margin-right:4px"></i>Stato evolutivo e considerazioni finali</div>
           <div class="fg">
             <label>Stato evolutivo</label>
@@ -2247,9 +2277,13 @@
       </div>
     </div>
 
-    <div class="ffoot">
+    <div class="ffoot" id="ffoot-normal">
       <button class="btn" onclick="cancelForm()">Annulla</button>
       <button class="btn primary" onclick="saveWine()"><i class="ti ti-device-floppy"></i><span id="form-save-label">Salva in cantina</span></button>
+    </div>
+    <div class="ffoot" id="wizard-footer" style="display:none">
+      <button class="btn" id="wizard-back-btn" onclick="wizardBack()">Indietro</button>
+      <button class="btn primary" id="wizard-next-btn" onclick="wizardNext()">Avanti<i class="ti ti-arrow-right"></i></button>
     </div>
   </div>
 
@@ -3388,7 +3422,7 @@ function renderGrid() {
   e.style.display = 'none';
   g.innerHTML = sorted.map(w => `
     <div class="wcard" onclick="showDetail('${w.id}')">
-      <div class="wimg">${w.frontImg ? `<img src="${w.frontImg}" alt="${w.name}" loading="lazy">` : '<div class="ph"><i class="ti ti-bottle" aria-hidden="true"></i></div>'}${wineQtyBadge(w)}${w.type ? `<span class="wbadge ${wineTypeBadgeClass(w.type)}">${w.type}</span>` : ''}</div>
+      <div class="wimg">${w.frontImg ? `<img src="${w.frontImg}" alt="${w.name}" loading="lazy">` : '<div class="ph"><i class="ti ti-bottle" aria-hidden="true"></i></div>'}${wineQtyBadge(w)}${w.type ? `<span class="wbadge ${wineTypeBadgeClass(w.type)}">${w.type}</span>` : ''}${(w.qty ?? 1) > 0 ? `<button class="wtasting-btn" onclick="event.stopPropagation();startTastingWizard('${w.id}')" title="Degustazione guidata"><i class="ti ti-clipboard-list"></i></button>` : ''}</div>
       <div class="winfo">
         ${w._pending ? `<div style="font-size:10px;color:var(--gold);font-weight:600;margin-bottom:3px"><i class="ti ti-cloud-off" style="font-size:11px;vertical-align:-1px"></i> Da sincronizzare</div>` : ''}
         <div class="wname">${w.name}</div>
@@ -4417,6 +4451,136 @@ function cancelForm() {
   document.getElementById('form-title').textContent = 'Aggiungi vino';
   document.getElementById('form-save-label').textContent = 'Salva in cantina';
   showScreen('screen-list');
+}
+
+/* ── DEGUSTAZIONE GUIDATA ──
+   Tasto rapido sull'immagine del vino (in cantina) che porta dritto alla
+   scheda di degustazione, un passo alla volta, invece del form completo
+   (foto/identità/vitigni/cantina/posizione). Riusa per intero i campi e
+   la logica di editWine()/saveWine() già esistenti — non duplica nulla:
+   nasconde/mostra le stesse sezioni e gli stessi gruppi via CSS
+   (attributi data-wiz sui .param-group già presenti nello schema), e il
+   salvataggio finale passa dal normale saveWine(). I passi seguono la
+   struttura ufficiale di ciascuna scheda:
+   - AIS: Esame visivo → Olfattivo → Gustativo → Considerazioni finali
+     (mostra insieme, passo per passo, sia la scheda a punti sia quella
+     analitico-descrittiva, perché l'AIS compila sempre entrambe)
+   - FISAR a punteggio: Aspetto → Profumo → Gusto → Note finali
+   - FISAR descrittiva: Visivo → Olfattivo → Gustativo →
+     Sensazioni retro-olfattive → Stato evolutivo e considerazioni finali
+   - Libera: un solo passo (note + punteggio libero) */
+let wizardActive = false;
+let wizardStep = 1;
+
+const WIZARD_STEPS = {
+  ais: [
+    { title: 'Esame visivo', icon: 'ti-eye' },
+    { title: 'Esame olfattivo', icon: 'ti-wind' },
+    { title: 'Esame gustativo', icon: 'ti-droplet' },
+    { title: 'Considerazioni finali', icon: 'ti-clipboard-check' }
+  ],
+  fisar: [
+    { title: 'Aspetto', icon: 'ti-eye' },
+    { title: 'Profumo', icon: 'ti-wind' },
+    { title: 'Gusto', icon: 'ti-droplet' },
+    { title: 'Note finali', icon: 'ti-notes' }
+  ],
+  fisar_desc: [
+    { title: 'Esame visivo', icon: 'ti-eye' },
+    { title: 'Esame olfattivo', icon: 'ti-wind' },
+    { title: 'Esame gustativo', icon: 'ti-droplet' },
+    { title: 'Sensazioni retro-olfattive', icon: 'ti-arrow-back-up' },
+    { title: 'Stato evolutivo e considerazioni finali', icon: 'ti-clipboard-check' }
+  ],
+  free: [
+    { title: 'Degustazione libera', icon: 'ti-notes' }
+  ]
+};
+
+function currentWizardSteps() {
+  return WIZARD_STEPS[activeDeg] || WIZARD_STEPS.free;
+}
+
+function startTastingWizard(id) {
+  const w = myWines().find(x => x.id === id); if (!w) return;
+  currentDetailId = id;
+  editWine();
+  enterWizardMode();
+}
+
+function enterWizardMode() {
+  wizardActive = true;
+  wizardStep = 1;
+  ['fsec-photo', 'fsec-identity', 'fsec-grapes', 'fsec-technical', 'fsec-pairing'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
+  document.querySelector('#fsec-tasting > .fsec-header')?.style.setProperty('display', 'none');
+  document.getElementById('deg-tabs-container').style.display = 'none';
+  // Le due sotto-schede AIS devono essere aperte (non collassate) perché i
+  // loro gruppi data-wiz siano raggiungibili — a differenza delle altre
+  // .fsec, non sono coperte da openAllSections().
+  document.getElementById('fsec-ais-punti')?.classList.remove('collapsed');
+  document.getElementById('fsec-ais-desc')?.classList.remove('collapsed');
+  document.getElementById('ffoot-normal').style.display = 'none';
+  document.getElementById('wizard-header').style.display = '';
+  document.getElementById('wizard-footer').style.display = 'flex';
+  renderWizardStep();
+  window.scrollTo(0, 0);
+}
+
+function exitWizardMode() {
+  wizardActive = false;
+  ['fsec-photo', 'fsec-identity', 'fsec-grapes', 'fsec-technical', 'fsec-pairing'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = '';
+  });
+  document.querySelector('#fsec-tasting > .fsec-header')?.style.setProperty('display', '');
+  const tabs = document.getElementById('deg-tabs-container'); if (tabs) tabs.style.display = '';
+  document.querySelectorAll('[data-wiz]').forEach(el => { el.style.display = ''; });
+  document.getElementById('ffoot-normal').style.display = '';
+  document.getElementById('wizard-header').style.display = 'none';
+  document.getElementById('wizard-footer').style.display = 'none';
+}
+
+function renderWizardStep() {
+  const steps = currentWizardSteps();
+  const total = steps.length;
+  if (wizardStep > total) wizardStep = total;
+  if (wizardStep < 1) wizardStep = 1;
+  const step = steps[wizardStep - 1];
+
+  document.querySelectorAll('[data-wiz]').forEach(el => {
+    const [schema, n] = el.dataset.wiz.split(':');
+    if (schema === activeDeg) el.style.display = (Number(n) === wizardStep) ? '' : 'none';
+  });
+
+  document.getElementById('wizard-step-label').textContent = `Passo ${wizardStep} di ${total}`;
+  document.getElementById('wizard-step-icon').className = 'ti ' + step.icon;
+  document.getElementById('wizard-step-title').textContent = step.title;
+  document.getElementById('wizard-progress-bar').style.width = (wizardStep / total * 100) + '%';
+
+  document.getElementById('wizard-back-btn').disabled = wizardStep === 1;
+  document.getElementById('wizard-next-btn').innerHTML = wizardStep === total
+    ? '<i class="ti ti-check"></i>Fine — salva scheda'
+    : 'Avanti<i class="ti ti-arrow-right"></i>';
+}
+
+function wizardBack() {
+  if (wizardStep <= 1) return;
+  wizardStep--;
+  renderWizardStep();
+  window.scrollTo(0, 0);
+}
+
+async function wizardNext() {
+  const total = currentWizardSteps().length;
+  if (wizardStep < total) {
+    wizardStep++;
+    renderWizardStep();
+    window.scrollTo(0, 0);
+    return;
+  }
+  await saveWine();
+  exitWizardMode();
 }
 
 /* ── PROFILE ── */
@@ -5596,6 +5760,7 @@ calcAIS(); calcFISAR();
 Object.assign(window, {
   adjustQty, calcAIS, calcFISAR, cancelForm, closeNavMenu, deleteWine, doLogin, doLogout, doRegister,
   showForgotPasswordForm, doForgotPassword,
+  startTastingWizard, exitWizardMode, wizardBack, wizardNext,
   editWine, exportCSV, exportInventory, exportJSON, exportTasting, inviteToShareCellar, onAdvCountryChange, previewAvatar, previewImg,
   removeCellarShareMember, removeGrapeTag, renderGrid, resendConfirmation, resendConfirmationFromProfile, resetAdvFilters, respondCellarShareInvite, respondFollowRequest, saveProfile, saveWine,
   goBackFromProfile, searchUsersToShareCellar, switchCellarOwner,
