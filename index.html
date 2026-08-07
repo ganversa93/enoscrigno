@@ -228,6 +228,8 @@
     }
     .lbtn:hover { background: var(--wine-l); }
     .lerr { font-size: 12px; color: #c0392b; text-align: center; margin-top: 8px; display: none; }
+    .lok { font-size: 12px; color: #2e8b57; text-align: center; margin-top: 8px; display: none; }
+    .lforgot-link { display: block; text-align: right; font-size: 12px; color: var(--muted); text-decoration: underline; margin: -6px 0 1rem; }
     .demo-hint { font-size: 11px; color: var(--muted); text-align: center; margin-top: 10px; }
     .demo-hint b { color: var(--ink); }
 
@@ -854,8 +856,17 @@
         <div id="lform-login">
           <div class="lfield"><label>Email</label><input type="email" id="l-email" placeholder="nome@email.it" onkeydown="if(event.key==='Enter')doLogin()"></div>
           <div class="lfield"><label>Password</label><input type="password" id="l-pwd" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+          <a href="#" class="lforgot-link" onclick="showForgotPasswordForm();return false;">Password dimenticata?</a>
           <button class="lbtn" onclick="doLogin()">Accedi</button>
           <div class="lerr" id="lerr">Email o password non corretti</div>
+        </div>
+        <div id="lform-forgot" style="display:none">
+          <p style="font-size:12.5px;color:var(--muted);margin-bottom:1rem;line-height:1.5">Inserisci l'email con cui ti sei registrato: se è associata a un account ti mandiamo un link per reimpostare la password.</p>
+          <div class="lfield"><label>Email</label><input type="email" id="fp-email" placeholder="nome@email.it" onkeydown="if(event.key==='Enter')doForgotPassword()"></div>
+          <button class="lbtn" onclick="doForgotPassword()">Invia link di reset</button>
+          <div class="lerr" id="fperr"></div>
+          <div class="lok" id="fpok">Controlla la tua casella email (anche lo spam) per il link di reimpostazione.</div>
+          <a href="#" class="lforgot-link" style="text-align:center;margin-top:1rem" onclick="switchLTab('login');return false;">← Torna al login</a>
         </div>
         <div id="lform-reg" style="display:none">
           <div class="lfield"><label>Nome e cognome *</label><input type="text" id="r-name" placeholder="Mario Rossi"></div>
@@ -2523,6 +2534,41 @@ function switchLTab(t) {
   document.getElementById('ltab-reg').classList.toggle('active', t === 'reg');
   document.getElementById('lform-login').style.display = t === 'login' ? '' : 'none';
   document.getElementById('lform-reg').style.display   = t === 'reg'   ? '' : 'none';
+  document.getElementById('lform-forgot').style.display = 'none';
+}
+
+function showForgotPasswordForm() {
+  document.getElementById('ltab-login').classList.remove('active');
+  document.getElementById('ltab-reg').classList.remove('active');
+  document.getElementById('lform-login').style.display = 'none';
+  document.getElementById('lform-reg').style.display = 'none';
+  document.getElementById('lform-forgot').style.display = '';
+  document.getElementById('fperr').style.display = 'none';
+  document.getElementById('fpok').style.display = 'none';
+  const fpEmail = document.getElementById('fp-email');
+  fpEmail.value = document.getElementById('l-email')?.value || '';
+  fpEmail.focus();
+}
+
+// Il link di reset punta a reset-password.html, una pagina standalone
+// (stesso principio di confirmed.html/contattaci.html) dove Supabase
+// autentica temporaneamente l'utente tramite il token nell'URL e gli
+// permette di impostare una nuova password.
+async function doForgotPassword() {
+  const email = document.getElementById('fp-email')?.value.trim().toLowerCase();
+  const errEl = document.getElementById('fperr');
+  const okEl = document.getElementById('fpok');
+  errEl.style.display = 'none';
+  okEl.style.display = 'none';
+  if (!email) { errEl.textContent = 'Inserisci la tua email'; errEl.style.display = 'block'; return; }
+  showLoadingOverlay(true);
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: 'https://www.enoscrigno.it/reset-password.html' });
+  showLoadingOverlay(false);
+  // Non riveliamo se l'email è registrata o meno (stesso principio di
+  // send-confirmation-email): messaggio di successo generico in ogni caso,
+  // a meno di un errore tecnico vero e proprio (rete, rate limit).
+  if (error) { errEl.textContent = 'Errore: ' + error.message; errEl.style.display = 'block'; return; }
+  okEl.style.display = 'block';
 }
 
 async function doLogin() {
@@ -5549,6 +5595,7 @@ calcAIS(); calcFISAR();
    ma gli onclick="..." nell'HTML devono poterle richiamare. */
 Object.assign(window, {
   adjustQty, calcAIS, calcFISAR, cancelForm, closeNavMenu, deleteWine, doLogin, doLogout, doRegister,
+  showForgotPasswordForm, doForgotPassword,
   editWine, exportCSV, exportInventory, exportJSON, exportTasting, inviteToShareCellar, onAdvCountryChange, previewAvatar, previewImg,
   removeCellarShareMember, removeGrapeTag, renderGrid, resendConfirmation, resendConfirmationFromProfile, resetAdvFilters, respondCellarShareInvite, respondFollowRequest, saveProfile, saveWine,
   goBackFromProfile, searchUsersToShareCellar, switchCellarOwner,
