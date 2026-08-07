@@ -2936,6 +2936,12 @@ async function dbUpdateQty(id, qty) {
   return true;
 }
 
+async function dbUpdatePositions(id, positions) {
+  const { error } = await sb.from('wines').update({ cellar_positions: positions }).eq('id', id);
+  if (error) { toastErr('Errore aggiornamento: ' + error.message); console.error('dbUpdatePositions error:', error); return false; }
+  return true;
+}
+
 /* ══ APP INIT ══ */
 async function initApp() {
   const u = currentUser;
@@ -4038,7 +4044,17 @@ function showDetail(id) {
       <div class="dfield"><div class="fl">Da bere</div><div class="fv">${w.drink || '—'}</div></div>
       <div class="dfield"><div class="fl">Data degustazione</div><div class="fv">${fmtDate(w.tastingDate)}</div></div>
       ${w.tastingPlace ? `<div class="dfield" style="grid-column:1/-1"><div class="fl">Luogo degustazione</div><div class="fv">${w.tastingPlace}</div></div>` : ''}
-      ${w.cellarPositions?.length ? `<div class="dfield" style="grid-column:1/-1"><div class="fl"><i class="ti ti-map-pin" style="font-size:11px;vertical-align:-1px;margin-right:3px"></i>Posizione in cantina</div><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">${w.cellarPositions.map(p => `<span class="tag">${[p.l1,p.l2,p.l3].filter(Boolean).join(' · ')}</span>`).join('')}</div></div>` : ''}
+      <div class="dfield" style="grid-column:1/-1">
+        <div class="fl"><i class="ti ti-map-pin" style="font-size:11px;vertical-align:-1px;margin-right:3px"></i>Posizione in cantina</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px" id="detail-pos-selects-row">
+          <select id="dp-pos-l1" style="flex:1;min-width:100px" onchange="onDetailPosL1Change()"><option value="">Posizione…</option></select>
+          <select id="dp-pos-l2" style="flex:1;min-width:100px" onchange="onDetailPosL2Change()"><option value="">Zona…</option></select>
+          <select id="dp-pos-l3" style="flex:1;min-width:100px"><option value="">Piano…</option></select>
+          <button type="button" class="btn sm" onclick="addDetailPosition()"><i class="ti ti-plus"></i>Aggiungi</button>
+        </div>
+        <div id="detail-pos-empty-hint" style="display:none;font-size:11px;color:var(--muted);margin-top:6px">Non hai ancora configurato posizioni per la cantina. Vai al <a href="#" onclick="showProfileScreen();return false;">tuo profilo</a> per aggiungerle.</div>
+        <div class="grape-tags" id="detail-pos-tags" style="margin-top:8px"></div>
+      </div>
     </div>
 
     ${degHTML}
@@ -4046,7 +4062,67 @@ function showDetail(id) {
     ${w.notes ? `<div class="dfield" style="margin-bottom:.9rem"><div class="fl">Note di degustazione</div><div class="fv" style="font-style:italic;margin-top:4px;line-height:1.7;font-size:13px;color:var(--muted)">${w.notes}</div></div>` : ''}
     ${w.tags ? `<div class="tag-list">${w.tags.split(',').map(t => `<span class="tag">#${t.trim()}</span>`).join('')}</div>` : ''}
   `;
+  renderDetailPosSelects();
+  renderDetailPosChips(w);
   showScreen('screen-detail');
+}
+
+// Posizione in cantina sulla scheda di dettaglio — modificabile sul posto
+// (aggiunta/rimozione salvate subito, come lo stepper delle bottiglie),
+// senza dover entrare in "Modifica".
+function renderDetailPosSelects() {
+  fillPosSelect('dp-pos-l1', ownerCellarPosTree.map(n => n.name), 'Posizione…');
+  fillPosSelect('dp-pos-l2', [], 'Zona…');
+  fillPosSelect('dp-pos-l3', [], 'Piano…');
+  const hasAny = ownerCellarPosTree.length > 0;
+  document.getElementById('detail-pos-selects-row').style.display = hasAny ? '' : 'none';
+  document.getElementById('detail-pos-empty-hint').style.display = hasAny ? 'none' : '';
+}
+
+function onDetailPosL1Change() {
+  const l1name = document.getElementById('dp-pos-l1')?.value || '';
+  const node = ownerCellarPosTree.find(n => n.name === l1name);
+  fillPosSelect('dp-pos-l2', (node?.children || []).map(c => c.name), 'Zona…');
+  fillPosSelect('dp-pos-l3', [], 'Piano…');
+}
+
+function onDetailPosL2Change() {
+  const l1name = document.getElementById('dp-pos-l1')?.value || '';
+  const l2name = document.getElementById('dp-pos-l2')?.value || '';
+  const l1node = ownerCellarPosTree.find(n => n.name === l1name);
+  const l2node = l1node?.children.find(c => c.name === l2name);
+  fillPosSelect('dp-pos-l3', (l2node?.children || []).map(c => c.name), 'Piano…');
+}
+
+function renderDetailPosChips(w) {
+  const box = document.getElementById('detail-pos-tags');
+  if (!box) return;
+  box.innerHTML = (w.cellarPositions || []).map((p, i) => `
+    <span class="grape-tag">
+      ${[p.l1, p.l2, p.l3].filter(Boolean).join(' · ')}
+      <span class="rm-btn" onclick="removeDetailPosition(${i})">×</span>
+    </span>
+  `).join('');
+}
+
+async function addDetailPosition() {
+  const w = winesCache.find(x => x.id === currentDetailId); if (!w) return;
+  const l1 = document.getElementById('dp-pos-l1')?.value || '';
+  const l2 = document.getElementById('dp-pos-l2')?.value || '';
+  const l3 = document.getElementById('dp-pos-l3')?.value || '';
+  if (!l1 && !l2 && !l3) return;
+  const positions = w.cellarPositions || [];
+  if (positions.some(p => p.l1 === l1 && p.l2 === l2 && p.l3 === l3)) { toast('Posizione già aggiunta'); return; }
+  const updated = [...positions, { l1, l2, l3 }];
+  const ok = await dbUpdatePositions(w.id, updated);
+  if (ok) { w.cellarPositions = updated; renderDetailPosChips(w); }
+}
+
+async function removeDetailPosition(index) {
+  const w = winesCache.find(x => x.id === currentDetailId); if (!w) return;
+  const updated = (w.cellarPositions || []).filter((_, i) => i !== index);
+  const ok = await dbUpdatePositions(w.id, updated);
+  if (ok) { w.cellarPositions = updated; renderDetailPosChips(w); }
 }
 
 async function adjustQty(id, delta) {
@@ -5342,7 +5418,8 @@ Object.assign(window, {
   setNetworkFilter, toggleNetworkAdvFilters, onNetworkCountryChange, resetNetworkFilters, renderNetworkFeed,
   dismissPublicPrompt, acceptPublicPrompt, markFScoreManual,
   confirmSumDuplicateQty, confirmSaveDuplicateAsNew, closeDuplicateWinePrompt,
-  addPosNode, removePosNode, addWinePosition, removeWinePosition, onPosL1Change, onPosL2Change
+  addPosNode, removePosNode, addWinePosition, removeWinePosition, onPosL1Change, onPosL2Change,
+  addDetailPosition, removeDetailPosition, onDetailPosL1Change, onDetailPosL2Change
 });
 </script>
 </body>
