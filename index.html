@@ -2742,9 +2742,16 @@ async function loadOwnerCellarPositionLabels() {
     return;
   }
   try {
-    const { data } = await sb.from('profiles').select('cellar_positions_tree').eq('id', currentCellarOwnerId).maybeSingle();
-    ownerCellarPosTree = data?.cellar_positions_tree || [];
-  } catch {
+    // RPC con controllo di accesso esplicito (vedi commento in
+    // supabase_schema.sql) invece di un select diretto sulla tabella,
+    // che dipendeva dalla policy RLS generale su profiles e per un
+    // membro di cantina condivisa poteva fallire in silenzio (nessun
+    // errore, solo righe filtrate) lasciando l'albero vuoto senza dirlo.
+    const { data, error } = await sb.rpc('get_cellar_position_tree', { p_owner_id: currentCellarOwnerId });
+    if (error) throw error;
+    ownerCellarPosTree = data || [];
+  } catch (e) {
+    console.warn('loadOwnerCellarPositionLabels: caricamento fallito', e);
     ownerCellarPosTree = [];
   }
 }
@@ -4158,13 +4165,26 @@ function showDetail(id) {
 // senza dover entrare in "Modifica". Nessun pulsante "Aggiungi": appena la
 // selezione raggiunge una foglia dell'albero (non ci sono più livelli
 // sotto, o si è scelto il livello 3) si salva da sola su DB.
+// Messaggio quando il proprietario della cantina in visualizzazione non ha
+// ancora configurato posizioni: a chi guarda la propria cantina indichiamo
+// dove andare a configurarle; a un membro di cantina condivisa (per cui
+// "il tuo profilo" sarebbe fuorviante, visto che le posizioni sono quelle
+// del proprietario, non le sue) diciamo solo che non sono ancora pronte.
+function posEmptyHintHtml() {
+  return currentCellarOwnerId === currentUser.id
+    ? 'Non hai ancora configurato posizioni per la cantina. Vai al <a href="#" onclick="showProfileScreen();return false;">tuo profilo</a> per aggiungerle.'
+    : 'Il proprietario di questa cantina non ha ancora configurato posizioni.';
+}
+
 function renderDetailPosSelects() {
   fillPosSelect('dp-pos-l1', ownerCellarPosTree.map(n => n.name), 'Posizione…');
   fillPosSelect('dp-pos-l2', [], 'Zona…');
   fillPosSelect('dp-pos-l3', [], 'Piano…');
   const hasAny = ownerCellarPosTree.length > 0;
   document.getElementById('detail-pos-selects-row').style.display = hasAny ? '' : 'none';
-  document.getElementById('detail-pos-empty-hint').style.display = hasAny ? 'none' : '';
+  const hint = document.getElementById('detail-pos-empty-hint');
+  hint.style.display = hasAny ? 'none' : '';
+  if (!hasAny) hint.innerHTML = posEmptyHintHtml();
 }
 
 function onDetailPosL1Change() {
@@ -4617,7 +4637,9 @@ function renderWinePositionSelects() {
   fillPosSelect('f-pos-l3', [], 'Piano…');
   const hasAny = ownerCellarPosTree.length > 0;
   document.getElementById('f-pos-selects-row').style.display = hasAny ? '' : 'none';
-  document.getElementById('f-pos-empty-hint').style.display = hasAny ? 'none' : '';
+  const hint = document.getElementById('f-pos-empty-hint');
+  hint.style.display = hasAny ? 'none' : '';
+  if (!hasAny) hint.innerHTML = posEmptyHintHtml();
 }
 
 function onPosL1Change() {

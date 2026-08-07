@@ -727,3 +727,41 @@ set cellar_positions_tree = (
 )
 where (cellar_positions_tree = '[]'::jsonb or cellar_positions_tree is null)
   and cellar_pos_l1 is not null and array_length(cellar_pos_l1, 1) > 0;
+
+-- ════════════════════════════════════════════════════════════════
+-- Un membro di cantina condivisa deve poter leggere l'albero posizioni
+-- del proprietario, per popolare le select quando assegna una posizione
+-- a un vino che non è suo. Finora questo passava dalla policy generale
+-- "profiles: visibili a chi condivide una cantina con me" via un
+-- semplice select dal client — ma un membro (es. Samantha) risultava
+-- non vedere affatto le opzioni, segno che quella lettura falliva
+-- silenziosamente lato client (nessun errore: RLS filtra le righe,
+-- non solleva eccezioni). Invece di continuare a fidarsi di una policy
+-- generale su cui il client non ha visibilità diretta in caso di
+-- fallimento, questa funzione fa il controllo di accesso esplicitamente
+-- e restituisce l'albero solo se autorizzato — stesso principio già
+-- usato per get_user_id_by_email.
+-- ════════════════════════════════════════════════════════════════
+create or replace function public.get_cellar_position_tree(p_owner_id uuid)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select p.cellar_positions_tree
+  from public.profiles p
+  where p.id = p_owner_id
+    and (
+      p_owner_id = auth.uid()
+      or exists (
+        select 1 from public.cellar_shares cs
+        where cs.owner_id = p_owner_id
+          and cs.member_id = auth.uid()
+          and cs.status = 'accepted'
+      )
+    );
+$$;
+
+revoke all on function public.get_cellar_position_tree(uuid) from public, anon;
+grant execute on function public.get_cellar_position_tree(uuid) to authenticated;
