@@ -699,3 +699,31 @@ alter table public.profiles add column if not exists cellar_pos_l2 text[] not nu
 alter table public.profiles add column if not exists cellar_pos_l3 text[] not null default '{}';
 
 alter table public.wines add column if not exists cellar_positions jsonb not null default '[]';
+
+-- ════════════════════════════════════════════════════════════════
+-- Posizione in cantina — da tre liste piatte a un albero gerarchico:
+-- il livello 2 (zona) appartiene a uno specifico livello 1 (posizione),
+-- il livello 3 (piano) appartiene a uno specifico livello 2, invece di
+-- essere tre elenchi indipendenti mostrati sempre tutti insieme.
+-- cellar_pos_l1/l2/l3 restano in tabella (non usate più dal frontend)
+-- solo per non perdere lo storico; cellar_positions_tree è la nuova
+-- fonte di verità:
+--   [{ "name": "Cantina casa", "children": [
+--        { "name": "Rossi", "children": [ {"name":"Piano 1","children":[]}, ... ] },
+--        ...
+--   ]}, ...]
+-- wines.cellar_positions non cambia: resta uno snapshot testuale
+-- {l1,l2,l3} per ogni posizione assegnata al vino.
+-- ════════════════════════════════════════════════════════════════
+alter table public.profiles add column if not exists cellar_positions_tree jsonb not null default '[]';
+
+-- Migrazione una tantum: chi aveva già inserito valori nel vecchio
+-- livello 1 piatto (cellar_pos_l1) li ritrova come nodi radice
+-- dell'albero, pronti per aggiungerci sotto zone e piani.
+update public.profiles
+set cellar_positions_tree = (
+  select coalesce(jsonb_agg(jsonb_build_object('name', v, 'children', '[]'::jsonb)), '[]'::jsonb)
+  from unnest(cellar_pos_l1) as v
+)
+where (cellar_positions_tree = '[]'::jsonb or cellar_positions_tree is null)
+  and cellar_pos_l1 is not null and array_length(cellar_pos_l1, 1) > 0;

@@ -446,6 +446,21 @@
     }
     .grape-tag .rm-btn:hover { opacity: 1; }
 
+    .pos-node { margin-bottom: 6px; }
+    .pos-node-row {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--wine-pale); border: 0.5px solid rgba(107,24,57,.2);
+      border-radius: 8px; padding: 6px 8px 6px 12px; font-size: 12.5px; color: var(--wine);
+    }
+    .pos-node-row .rm-btn { margin-left: auto; cursor: pointer; opacity: .6; font-size: 15px; line-height: 1; padding: 0 2px; }
+    .pos-node-row .rm-btn:hover { opacity: 1; }
+    .pos-node-children { margin-left: 16px; padding-left: 10px; border-left: 1px dashed var(--border); margin-top: 6px; }
+    .pos-node-children input {
+      font-size: 12px; padding: 7px 9px; margin-bottom: 0;
+      border-radius: 8px; border: 0.5px solid var(--border); background: var(--bg); color: var(--ink);
+    }
+    .pos-add-row { display: flex; gap: 6px; margin: 4px 0 10px; }
+
     /* ── FILTRI AVANZATI (Paese / Regione / Abbinamento) ── */
     #adv-filter-toggle { display: flex; align-items: center; }
     #adv-filter-badge {
@@ -2148,8 +2163,8 @@
       <div class="fg">
         <label>Posizione in cantina <span style="font-weight:400;color:var(--muted)">(facoltativo, puoi aggiungerne più di una)</span></label>
         <div style="display:flex;gap:6px;flex-wrap:wrap" id="f-pos-selects-row">
-          <select id="f-pos-l1" style="flex:1;min-width:100px"><option value="">Posizione…</option></select>
-          <select id="f-pos-l2" style="flex:1;min-width:100px"><option value="">Zona…</option></select>
+          <select id="f-pos-l1" style="flex:1;min-width:100px" onchange="onPosL1Change()"><option value="">Posizione…</option></select>
+          <select id="f-pos-l2" style="flex:1;min-width:100px" onchange="onPosL2Change()"><option value="">Zona…</option></select>
           <select id="f-pos-l3" style="flex:1;min-width:100px"><option value="">Piano…</option></select>
           <button type="button" class="btn sm" onclick="addWinePosition()"><i class="ti ti-plus"></i>Aggiungi</button>
         </div>
@@ -2270,34 +2285,8 @@
     <!-- Posizioni in cantina -->
     <div class="fsec">
       <div class="stitle"><i class="ti ti-map-pin"></i>Posizioni in cantina</div>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Configura fino a tre livelli per indicare dove tieni le bottiglie (es. luogo fisico, zona, piano/ripiano). Potrai poi assegnare una o più posizioni a ciascun vino della tua cantina.</p>
-
-      <div class="fg">
-        <label>Livello 1 — Posizione <span style="font-weight:400;color:var(--muted)">(es. Cantina casa, Stock)</span></label>
-        <div style="display:flex;gap:6px">
-          <input type="text" id="p-pos-l1-input" placeholder="Aggiungi posizione…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();addPosLabel('l1');}">
-          <button type="button" class="btn sm" onclick="addPosLabel('l1')"><i class="ti ti-plus"></i></button>
-        </div>
-        <div class="grape-tags" id="pos-tags-l1"></div>
-      </div>
-
-      <div class="fg">
-        <label>Livello 2 — Zona <span style="font-weight:400;color:var(--muted)">(es. Bianchi, Rossi)</span></label>
-        <div style="display:flex;gap:6px">
-          <input type="text" id="p-pos-l2-input" placeholder="Aggiungi zona…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();addPosLabel('l2');}">
-          <button type="button" class="btn sm" onclick="addPosLabel('l2')"><i class="ti ti-plus"></i></button>
-        </div>
-        <div class="grape-tags" id="pos-tags-l2"></div>
-      </div>
-
-      <div class="fg" style="margin-bottom:0">
-        <label>Livello 3 — Piano <span style="font-weight:400;color:var(--muted)">(es. Piano 1, Piano 2, Piano 3)</span></label>
-        <div style="display:flex;gap:6px">
-          <input type="text" id="p-pos-l3-input" placeholder="Aggiungi piano…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();addPosLabel('l3');}">
-          <button type="button" class="btn sm" onclick="addPosLabel('l3')"><i class="ti ti-plus"></i></button>
-        </div>
-        <div class="grape-tags" id="pos-tags-l3"></div>
-      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Costruisci una gerarchia a tre livelli per indicare dove tieni le bottiglie: ogni "zona" appartiene a una specifica posizione, ogni "piano" appartiene a una specifica zona (es. Cantina casa → Rossi → Piano 2). Potrai poi assegnare una o più posizioni a ciascun vino.</p>
+      <div id="pos-tree-container"></div>
     </div>
 
     <!-- Dati personali -->
@@ -2460,7 +2449,7 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 let currentUser  = null;   // { id, email, name, assoc, card, delegazione, delegazioneCustom }
 let currentCellarOwnerId = null; // di chi è la cantina che sto guardando ora (default: la mia)
 let mySharedCellars = [];  // cantine di altri condivise con me (accettate) — per il selettore
-let ownerCellarPosLabels = { l1: [], l2: [], l3: [] }; // etichette posizione-cantina del proprietario della cantina in visualizzazione
+let ownerCellarPosTree = []; // albero posizioni-cantina [{name,children:[{name,children:[{name}]}]}] del proprietario della cantina in visualizzazione
 let winesCache   = [];     // array locale per render veloce
 let currentFilter    = 'all';
 let currentQtyFilter = 'all';
@@ -2656,9 +2645,7 @@ async function loadProfile(authUser) {
     publicPromptSeen:  profile?.public_prompt_seen || false,
     fisarMethod:       profile?.fisar_method || 'punteggio',
     emailConfirmed:    !!authUser.email_confirmed_at,
-    cellarPosL1:       profile?.cellar_pos_l1 || [],
-    cellarPosL2:       profile?.cellar_pos_l2 || [],
-    cellarPosL3:       profile?.cellar_pos_l3 || []
+    cellarPosTree:     profile?.cellar_positions_tree || []
   };
   // Se non esiste ancora un profilo (caso raro, es. trigger non installato),
   // lo creiamo ora che l'utente è sicuramente autenticato — solo se online,
@@ -2705,21 +2692,21 @@ async function acceptPublicPrompt() {
 }
 
 /* ══ WINES — DB layer ══ */
-// Carica le etichette di posizione-cantina (livelli 1/2/3) del proprietario
-// della cantina attualmente in visualizzazione: se è la propria cantina
-// usa direttamente currentUser (già in memoria), altrimenti — cantina
-// condivisa da altri — le legge dal loro profilo (leggibile via RLS
-// "profiles: visibili a chi condivide una cantina con me").
+// Carica l'albero di posizione-cantina del proprietario della cantina
+// attualmente in visualizzazione: se è la propria cantina usa direttamente
+// currentUser (già in memoria), altrimenti — cantina condivisa da altri —
+// lo legge dal loro profilo (leggibile via RLS "profiles: visibili a chi
+// condivide una cantina con me").
 async function loadOwnerCellarPositionLabels() {
   if (currentCellarOwnerId === currentUser.id) {
-    ownerCellarPosLabels = { l1: currentUser.cellarPosL1 || [], l2: currentUser.cellarPosL2 || [], l3: currentUser.cellarPosL3 || [] };
+    ownerCellarPosTree = currentUser.cellarPosTree || [];
     return;
   }
   try {
-    const { data } = await sb.from('profiles').select('cellar_pos_l1, cellar_pos_l2, cellar_pos_l3').eq('id', currentCellarOwnerId).maybeSingle();
-    ownerCellarPosLabels = { l1: data?.cellar_pos_l1 || [], l2: data?.cellar_pos_l2 || [], l3: data?.cellar_pos_l3 || [] };
+    const { data } = await sb.from('profiles').select('cellar_positions_tree').eq('id', currentCellarOwnerId).maybeSingle();
+    ownerCellarPosTree = data?.cellar_positions_tree || [];
   } catch {
-    ownerCellarPosLabels = { l1: [], l2: [], l3: [] };
+    ownerCellarPosTree = [];
   }
 }
 
@@ -4438,21 +4425,39 @@ function applyGrapesToForm(grapesStr) {
 /* ── Posizione in cantina sul form vino — un vino può avere più posizioni ── */
 let selectedWinePositions = []; // [{l1,l2,l3}]
 
-// Popola i tre <select> con le etichette configurate dal proprietario della
-// cantina in visualizzazione (ownerCellarPosLabels, caricate da initApp /
-// switchCellarOwner) e mostra un avviso se non ne ha ancora configurate.
+function fillPosSelect(id, opts, placeholder) {
+  const sel = document.getElementById(id);
+  if (!sel) return;
+  sel.innerHTML = `<option value="">${placeholder}</option>` + opts.map(o => `<option value="${o}">${o}</option>`).join('');
+}
+
+// Popola il primo <select> (livello 1) con l'albero configurato dal
+// proprietario della cantina in visualizzazione (ownerCellarPosTree,
+// caricato da initApp / switchCellarOwner) e mostra un avviso se non ne ha
+// ancora configurato nessuno. Livello 2 e 3 si popolano a cascata, vedi
+// onPosL1Change/onPosL2Change, perché dipendono dal nodo scelto sopra.
 function renderWinePositionSelects() {
-  const fill = (id, opts, placeholder) => {
-    const sel = document.getElementById(id);
-    if (!sel) return;
-    sel.innerHTML = `<option value="">${placeholder}</option>` + opts.map(o => `<option value="${o}">${o}</option>`).join('');
-  };
-  fill('f-pos-l1', ownerCellarPosLabels.l1 || [], 'Posizione…');
-  fill('f-pos-l2', ownerCellarPosLabels.l2 || [], 'Zona…');
-  fill('f-pos-l3', ownerCellarPosLabels.l3 || [], 'Piano…');
-  const hasAny = (ownerCellarPosLabels.l1?.length || ownerCellarPosLabels.l2?.length || ownerCellarPosLabels.l3?.length);
+  fillPosSelect('f-pos-l1', ownerCellarPosTree.map(n => n.name), 'Posizione…');
+  fillPosSelect('f-pos-l2', [], 'Zona…');
+  fillPosSelect('f-pos-l3', [], 'Piano…');
+  const hasAny = ownerCellarPosTree.length > 0;
   document.getElementById('f-pos-selects-row').style.display = hasAny ? '' : 'none';
   document.getElementById('f-pos-empty-hint').style.display = hasAny ? 'none' : '';
+}
+
+function onPosL1Change() {
+  const l1name = document.getElementById('f-pos-l1')?.value || '';
+  const node = ownerCellarPosTree.find(n => n.name === l1name);
+  fillPosSelect('f-pos-l2', (node?.children || []).map(c => c.name), 'Zona…');
+  fillPosSelect('f-pos-l3', [], 'Piano…');
+}
+
+function onPosL2Change() {
+  const l1name = document.getElementById('f-pos-l1')?.value || '';
+  const l2name = document.getElementById('f-pos-l2')?.value || '';
+  const l1node = ownerCellarPosTree.find(n => n.name === l1name);
+  const l2node = l1node?.children.find(c => c.name === l2name);
+  fillPosSelect('f-pos-l3', (l2node?.children || []).map(c => c.name), 'Piano…');
 }
 
 function renderWinePositionChips() {
@@ -4565,33 +4570,84 @@ function toggleFisarMethodField() {
 }
 
 let profileReturnScreen = 'screen-home';
-/* ── Posizioni in cantina — liste di etichette configurate nel profilo ── */
-let posLevels = { l1: [], l2: [], l3: [] };
+/* ── Posizioni in cantina — albero gerarchico configurato nel profilo ──
+   posTree: [{ name, children: [{ name, children: [{ name, children: [] }] }] }]
+   Livello 1 (radice) → livello 2 (figli) → livello 3 (nipoti, foglie). */
+let posTree = [];
 
-function renderPosTags(level) {
-  const box = document.getElementById('pos-tags-' + level);
-  if (!box) return;
-  box.innerHTML = posLevels[level].map((label, i) => `
-    <span class="grape-tag">
-      ${label}
-      <span class="rm-btn" onclick="removePosLabel('${level}',${i})">×</span>
-    </span>
-  `).join('');
+function posPathArr(pathStr) { return pathStr === '' ? [] : pathStr.split(',').map(Number); }
+
+// Array che contiene i figli diretti del nodo a questo path (per aggiungerne uno nuovo).
+// Path vuoto = radice dell'albero (livello 1).
+function posChildrenArrayFor(pathStr) {
+  if (pathStr === '') return posTree;
+  const path = posPathArr(pathStr);
+  let node = posTree[path[0]];
+  for (let i = 1; i < path.length; i++) node = node.children[path[i]];
+  return node.children;
 }
 
-function addPosLabel(level) {
-  const input = document.getElementById('p-pos-' + level + '-input');
+// Array che contiene il nodo stesso a questo path (per rimuoverlo).
+function posParentArrayFor(path) {
+  let arr = posTree;
+  for (let i = 0; i < path.length - 1; i++) arr = arr[path[i]].children;
+  return arr;
+}
+
+function renderPosNode(node, path, level) {
+  const pathStr = path.join(',');
+  const canHaveChildren = level < 2; // livello 3 è foglia, non ha ulteriori figli
+  const childLabel = level === 0 ? 'zona' : 'piano';
+  const inputId = 'pos-add-' + pathStr.replace(/,/g, '-');
+  return `
+    <div class="pos-node" style="margin-left:${level * 14}px">
+      <div class="pos-node-row">
+        <span>${node.name}</span>
+        <span class="rm-btn" onclick="removePosNode('${pathStr}')">×</span>
+      </div>
+      ${canHaveChildren ? `
+        <div class="pos-node-children">
+          ${node.children.map((c, i) => renderPosNode(c, [...path, i], level + 1)).join('')}
+          <div class="pos-add-row">
+            <input type="text" id="${inputId}" placeholder="Aggiungi ${childLabel}…" autocomplete="off"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();addPosNode('${pathStr}','${inputId}');}">
+            <button type="button" class="btn sm" onclick="addPosNode('${pathStr}','${inputId}')"><i class="ti ti-plus"></i></button>
+          </div>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+function renderPosTree() {
+  const box = document.getElementById('pos-tree-container');
+  if (!box) return;
+  box.innerHTML = posTree.map((n, i) => renderPosNode(n, [i], 0)).join('') + `
+    <div class="pos-add-row" style="margin-top:${posTree.length ? 4 : 0}px">
+      <input type="text" id="pos-add-root" placeholder="Aggiungi posizione (livello 1)…" autocomplete="off"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();addPosNode('','pos-add-root');}">
+      <button type="button" class="btn sm" onclick="addPosNode('','pos-add-root')"><i class="ti ti-plus"></i>Aggiungi</button>
+    </div>
+  `;
+}
+
+function addPosNode(parentPathStr, inputId) {
+  const input = document.getElementById(inputId);
   const trimmed = (input?.value || '').trim();
   if (!trimmed) return;
-  if (posLevels[level].some(l => l.toLowerCase() === trimmed.toLowerCase())) { if (input) input.value = ''; return; }
-  posLevels[level].push(trimmed);
-  renderPosTags(level);
-  if (input) { input.value = ''; input.focus(); }
+  const siblings = posChildrenArrayFor(parentPathStr);
+  if (siblings.some(n => n.name.toLowerCase() === trimmed.toLowerCase())) { if (input) input.value = ''; return; }
+  siblings.push({ name: trimmed, children: [] });
+  renderPosTree();
+  // Dopo il re-render l'input si azzera insieme al resto: rimettiamo il focus sul nuovo campo omologo
+  document.getElementById(inputId)?.focus();
 }
 
-function removePosLabel(level, index) {
-  posLevels[level].splice(index, 1);
-  renderPosTags(level);
+function removePosNode(pathStr) {
+  const path = posPathArr(pathStr);
+  const arr = posParentArrayFor(path);
+  arr.splice(path[path.length - 1], 1);
+  renderPosTree();
 }
 
 function goBackFromProfile() { showScreen(profileReturnScreen); }
@@ -4626,9 +4682,10 @@ function showProfileScreen() {
   // Profilo pubblico
   document.getElementById('p-is-public').checked = !!u.isPublic;
 
-  // Posizioni in cantina
-  posLevels = { l1: [...(u.cellarPosL1 || [])], l2: [...(u.cellarPosL2 || [])], l3: [...(u.cellarPosL3 || [])] };
-  renderPosTags('l1'); renderPosTags('l2'); renderPosTags('l3');
+  // Posizioni in cantina — copia profonda: gli edit sull'albero non toccano
+  // currentUser finché non si salva davvero il profilo
+  posTree = JSON.parse(JSON.stringify(u.cellarPosTree || []));
+  renderPosTree();
 
   // Promemoria email non confermata (non bloccante)
   document.getElementById('email-reminder').style.display = u.emailConfirmed ? 'none' : 'flex';
@@ -5109,9 +5166,7 @@ async function saveProfile() {
     avatar_base64:      pendingAvatarBase64 !== null ? pendingAvatarBase64 : (currentUser.avatarBase64 || null),
     is_public:          document.getElementById('p-is-public')?.checked || false,
     fisar_method:       document.getElementById('p-fisar-method')?.value || 'punteggio',
-    cellar_pos_l1:      posLevels.l1,
-    cellar_pos_l2:      posLevels.l2,
-    cellar_pos_l3:      posLevels.l3
+    cellar_positions_tree: posTree
   });
   showLoadingOverlay(false);
   if (profErr) { toastErr('Errore salvataggio profilo: ' + profErr.message); console.error('saveProfile error:', profErr); return; }
@@ -5124,10 +5179,8 @@ async function saveProfile() {
   if (pendingAvatarBase64 !== null) currentUser.avatarBase64 = pendingAvatarBase64;
   currentUser.isPublic = document.getElementById('p-is-public')?.checked || false;
   currentUser.fisarMethod = document.getElementById('p-fisar-method')?.value || 'punteggio';
-  currentUser.cellarPosL1 = [...posLevels.l1];
-  currentUser.cellarPosL2 = [...posLevels.l2];
-  currentUser.cellarPosL3 = [...posLevels.l3];
-  if (currentCellarOwnerId === currentUser.id) ownerCellarPosLabels = { l1: currentUser.cellarPosL1, l2: currentUser.cellarPosL2, l3: currentUser.cellarPosL3 };
+  currentUser.cellarPosTree = JSON.parse(JSON.stringify(posTree));
+  if (currentCellarOwnerId === currentUser.id) ownerCellarPosTree = currentUser.cellarPosTree;
   const initials = currentUser.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
   document.getElementById('nav-avatar').textContent = initials;
   document.getElementById('nav-name').textContent   = currentUser.name.split(' ')[0];
@@ -5278,7 +5331,7 @@ Object.assign(window, {
   setNetworkFilter, toggleNetworkAdvFilters, onNetworkCountryChange, resetNetworkFilters, renderNetworkFeed,
   dismissPublicPrompt, acceptPublicPrompt, markFScoreManual,
   confirmSumDuplicateQty, confirmSaveDuplicateAsNew, closeDuplicateWinePrompt,
-  addPosLabel, removePosLabel, addWinePosition, removeWinePosition
+  addPosNode, removePosNode, addWinePosition, removeWinePosition, onPosL1Change, onPosL2Change
 });
 </script>
 </body>
