@@ -137,6 +137,14 @@
       border: 0.5px solid var(--border); background: var(--bg); color: var(--ink);
     }
     .filter-bar input:focus { outline: none; border-color: var(--wine); }
+    .sort-bar { display: flex; gap: 8px; align-items: center; margin: -0.25rem 0 1.25rem; }
+    .sort-bar select {
+      flex: 1; font-family: 'Inter', sans-serif; font-size: 13px;
+      padding: 7px 10px; border-radius: 8px; border: 0.5px solid var(--border);
+      background: var(--bg); color: var(--ink);
+    }
+    .sort-bar select:focus { outline: none; border-color: var(--wine); }
+    .sort-bar .btn.sm { flex-shrink: 0; padding: 7px 11px; }
     .chip {
       font-size: 12px; padding: 5px 12px; border-radius: 20px;
       border: 0.5px solid var(--border); background: var(--bg);
@@ -976,6 +984,15 @@
       <div class="chip" data-nf="Rosato"    onclick="setNetworkFilter('Rosato',this)">Rosato</div>
       <div class="chip" data-nf="Spumante"  onclick="setNetworkFilter('Spumante',this)">Spumante</div>
     </div>
+    <div class="sort-bar">
+      <select id="nf-sort-field" onchange="setNetworkSortField(this.value)">
+        <option value="created">Ordina per: data di aggiunta</option>
+        <option value="vintage">Ordina per: annata</option>
+        <option value="price">Ordina per: valore</option>
+        <option value="type">Ordina per: tipologia</option>
+      </select>
+      <button class="btn sm" id="nf-sort-dir-btn" onclick="toggleNetworkSortDir()" title="Inverti ordine"><i class="ti ti-sort-descending"></i></button>
+    </div>
     <div id="nf-adv-filter-toggle" class="btn adv-filter-toggle-btn" onclick="toggleNetworkAdvFilters()"><i class="ti ti-filter"></i>Filtri<span id="nf-adv-filter-badge" style="display:none"></span></div>
     <div class="adv-filter-panel" id="nf-adv-filter-panel">
       <div class="adv-filter-row">
@@ -1199,6 +1216,15 @@
       <div class="chip active" data-qf="all" onclick="setQtyFilter('all',this)"><i class="ti ti-bottle" style="font-size:11px;vertical-align:-1px;margin-right:3px"></i>Tutte</div>
       <div class="chip" data-qf="owned" onclick="setQtyFilter('owned',this)"><i class="ti ti-building-warehouse" style="font-size:11px;vertical-align:-1px;margin-right:3px"></i>In cantina</div>
       <div class="chip" data-qf="tasted" onclick="setQtyFilter('tasted',this)"><i class="ti ti-glass-full" style="font-size:11px;vertical-align:-1px;margin-right:3px"></i>Solo degustati</div>
+    </div>
+    <div class="sort-bar">
+      <select id="sort-field" onchange="setSortField(this.value)">
+        <option value="created">Ordina per: data di aggiunta</option>
+        <option value="vintage">Ordina per: annata</option>
+        <option value="price">Ordina per: valore</option>
+        <option value="type">Ordina per: tipologia</option>
+      </select>
+      <button class="btn sm" id="sort-dir-btn" onclick="toggleSortDir()" title="Inverti ordine"><i class="ti ti-sort-descending"></i></button>
     </div>
     <div id="adv-filter-toggle" class="btn adv-filter-toggle-btn" onclick="toggleAdvFilters()"><i class="ti ti-filter"></i>Filtri<span id="adv-filter-badge" style="display:none"></span></div>
     <div class="adv-filter-panel" id="adv-filter-panel">
@@ -2463,6 +2489,10 @@ let ownerCellarPosTree = []; // albero posizioni-cantina [{name,children:[{name,
 let winesCache   = [];     // array locale per render veloce
 let currentFilter    = 'all';
 let currentQtyFilter = 'all';
+let sortField = 'created'; // 'created' | 'vintage' | 'price' | 'type' — cantina
+let sortDir   = 'desc';    // 'asc' | 'desc'
+let networkSortField = 'created'; // stessi valori, per il feed Network
+let networkSortDir   = 'desc';
 let currentDetailId  = null;
 let frontImg = '', backImg = '';
 let activeDeg = 'ais';
@@ -3227,6 +3257,46 @@ function matchesSearch(query, fields) {
   return query.trim().split(/\s+/).every(word => haystack.includes(word));
 }
 
+// Ordinamento condiviso tra la Cantina (renderGrid) e il feed Network
+// (renderNetworkFeed): stesso criterio, stato separato per schermata.
+function sortWineList(list, field, dir) {
+  const mult = dir === 'asc' ? 1 : -1;
+  return [...list].sort((a, b) => {
+    let av, bv;
+    switch (field) {
+      case 'vintage': av = a.vintage || 0; bv = b.vintage || 0; break;
+      case 'price':   av = a.price   || 0; bv = b.price   || 0; break;
+      case 'type':    av = (a.type || '').toLowerCase(); bv = (b.type || '').toLowerCase(); break;
+      default:        av = a.created_at || ''; bv = b.created_at || ''; break; // 'created'
+    }
+    if (av < bv) return -1 * mult;
+    if (av > bv) return  1 * mult;
+    return 0;
+  });
+}
+
+function setSortField(value) {
+  sortField = value;
+  renderGrid();
+}
+function toggleSortDir() {
+  sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  const btn = document.getElementById('sort-dir-btn');
+  if (btn) btn.innerHTML = `<i class="ti ${sortDir === 'asc' ? 'ti-sort-ascending' : 'ti-sort-descending'}"></i>`;
+  renderGrid();
+}
+
+function setNetworkSortField(value) {
+  networkSortField = value;
+  renderNetworkFeed();
+}
+function toggleNetworkSortDir() {
+  networkSortDir = networkSortDir === 'asc' ? 'desc' : 'asc';
+  const btn = document.getElementById('nf-sort-dir-btn');
+  if (btn) btn.innerHTML = `<i class="ti ${networkSortDir === 'asc' ? 'ti-sort-ascending' : 'ti-sort-descending'}"></i>`;
+  renderNetworkFeed();
+}
+
 function renderGrid() {
   const q    = (document.getElementById('search-input')?.value || '').toLowerCase();
   const afCountry = document.getElementById('af-country')?.value || '';
@@ -3258,11 +3328,12 @@ function renderGrid() {
     if (!matchesSearch(q, [w.name, w.producer, w.region, w.pairing])) return false;
     return true;
   });
+  const sorted = sortWineList(list, sortField, sortDir);
   const g = document.getElementById('wine-grid');
   const e = document.getElementById('empty-state');
-  if (!list.length) { g.innerHTML = ''; e.style.display = 'block'; return; }
+  if (!sorted.length) { g.innerHTML = ''; e.style.display = 'block'; return; }
   e.style.display = 'none';
-  g.innerHTML = list.map(w => `
+  g.innerHTML = sorted.map(w => `
     <div class="wcard" onclick="showDetail('${w.id}')">
       <div class="wimg">${w.frontImg ? `<img src="${w.frontImg}" alt="${w.name}" loading="lazy">` : '<div class="ph"><i class="ti ti-bottle" aria-hidden="true"></i></div>'}${wineQtyBadge(w)}${w.type ? `<span class="wbadge ${wineTypeBadgeClass(w.type)}">${w.type}</span>` : ''}</div>
       <div class="winfo">
@@ -5215,10 +5286,11 @@ function renderNetworkFeed() {
     if (!matchesSearch(q, [w.name, w.producer, w.region, w.pairing, w.ownerName])) return false;
     return true;
   });
+  const sorted = sortWineList(list, networkSortField, networkSortDir);
 
-  if (!list.length) { feedBox.innerHTML = `<div class="empty"><i class="ti ti-filter"></i><p>Nessun vino corrisponde ai filtri scelti.</p></div>`; return; }
+  if (!sorted.length) { feedBox.innerHTML = `<div class="empty"><i class="ti ti-filter"></i><p>Nessun vino corrisponde ai filtri scelti.</p></div>`; return; }
 
-  feedBox.innerHTML = `<div class="wine-grid">` + list.map(w => {
+  feedBox.innerHTML = `<div class="wine-grid">` + sorted.map(w => {
     const notesText = [w.notes, w.olfNote, w.gustNote, w.fpNote].filter(Boolean).join(' — ');
     return `
     <div class="wcard" onclick="showNetworkWinePreview('${w.id}')">
@@ -5459,6 +5531,7 @@ Object.assign(window, {
   removeCellarShareMember, removeGrapeTag, renderGrid, resendConfirmation, resendConfirmationFromProfile, resetAdvFilters, respondCellarShareInvite, respondFollowRequest, saveProfile, saveWine,
   goBackFromProfile, searchUsersToShareCellar, switchCellarOwner,
   scanBothLabels, searchNetworkUsers, sendFollowRequest, setFilter, setQtyFilter, showAdd, showComingSoon, showDetail,
+  setSortField, toggleSortDir, setNetworkSortField, toggleNetworkSortDir,
   showNetworkScreen, showNetworkWinePreview, showProfileScreen, showScreen, startPremiumCheckout, stepQty, switchDeg, switchLTab, toast,
   showGuideScreen,
   toggleAdvFilters, toggleFisarMethodField, toggleNavMenu, togglePairing, toggleSection, updateGrapePct, updateTonalitaColore, updateAisColore,
