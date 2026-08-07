@@ -1018,6 +1018,7 @@
         <option value="created">Ordina per: data di aggiunta</option>
         <option value="vintage">Ordina per: annata</option>
         <option value="price">Ordina per: valore</option>
+        <option value="score">Ordina per: valutazione</option>
         <option value="type">Ordina per: tipologia</option>
       </select>
       <button class="btn sm" id="nf-sort-dir-btn" onclick="toggleNetworkSortDir()" title="Inverti ordine"><i class="ti ti-sort-descending"></i></button>
@@ -1251,6 +1252,7 @@
         <option value="created">Ordina per: data di aggiunta</option>
         <option value="vintage">Ordina per: annata</option>
         <option value="price">Ordina per: valore</option>
+        <option value="score">Ordina per: valutazione</option>
         <option value="type">Ordina per: tipologia</option>
       </select>
       <button class="btn sm" id="sort-dir-btn" onclick="toggleSortDir()" title="Inverti ordine"><i class="ti ti-sort-descending"></i></button>
@@ -3346,15 +3348,28 @@ function matchesSearch(query, fields) {
 
 // Ordinamento condiviso tra la Cantina (renderGrid) e il feed Network
 // (renderNetworkFeed): stesso criterio, stato separato per schermata.
+// Campi numerici dove 0/vuoto significa "non impostato", non "il valore più
+// basso": annata, prezzo e punteggio mancanti finiscono sempre in fondo,
+// indipendentemente dalla direzione scelta (crescente o decrescente) —
+// altrimenti in ordine crescente i vini senza quel dato comparivano per
+// primi, che è fuorviante.
+const SORT_ZERO_TO_BOTTOM = ['vintage', 'price', 'score'];
+
 function sortWineList(list, field, dir) {
   const mult = dir === 'asc' ? 1 : -1;
+  const zeroToBottom = SORT_ZERO_TO_BOTTOM.includes(field);
   return [...list].sort((a, b) => {
     let av, bv;
     switch (field) {
       case 'vintage': av = a.vintage || 0; bv = b.vintage || 0; break;
       case 'price':   av = a.price   || 0; bv = b.price   || 0; break;
+      case 'score':   av = a.score   || 0; bv = b.score   || 0; break;
       case 'type':    av = (a.type || '').toLowerCase(); bv = (b.type || '').toLowerCase(); break;
       default:        av = a.created_at || ''; bv = b.created_at || ''; break; // 'created'
+    }
+    if (zeroToBottom) {
+      const aZero = !av, bZero = !bv;
+      if (aZero !== bZero) return aZero ? 1 : -1; // chi non ha il dato va sempre in fondo
     }
     if (av < bv) return -1 * mult;
     if (av > bv) return  1 * mult;
