@@ -461,6 +461,9 @@
     }
     .pos-add-row { display: flex; gap: 6px; margin: 4px 0 10px; }
 
+    .subhead { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; margin: 18px 0 8px; }
+    .subhead:first-child { margin-top: 0; }
+
     /* ── FILTRI AVANZATI (Paese / Regione / Abbinamento) ── */
     #adv-filter-toggle { display: flex; align-items: center; }
     #adv-filter-badge {
@@ -2224,9 +2227,9 @@
       <button class="btn sm" onclick="resendConfirmationFromProfile()">Rinvia</button>
     </div>
 
-    <!-- Immagine profilo + visibilità -->
+    <!-- CARD 1: Profilo — immagine, visibilità, dati personali, password (sempre aperta) -->
     <div class="fsec">
-      <div class="stitle"><i class="ti ti-photo"></i>Immagine e visibilità</div>
+      <div class="stitle"><i class="ti ti-user"></i>Profilo</div>
       <div style="display:flex;align-items:center;gap:16px;margin-bottom:1rem">
         <div class="avatar-upload" onclick="document.getElementById('p-avatar-input').click()">
           <img id="p-avatar-preview" src="" alt="" style="display:none">
@@ -2246,62 +2249,15 @@
           <span class="switch-slider"></span>
         </label>
       </div>
-    </div>
 
-    <!-- App sulla home del telefono -->
-    <div class="fsec">
-      <div class="stitle"><i class="ti ti-device-mobile"></i>App sulla home del telefono</div>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Se hai chiuso l'avviso di installazione toccando "Non mi interessa" e vuoi rivederlo, tocca qui sotto.</p>
-      <button class="btn sm" onclick="resetInstallBanner()"><i class="ti ti-download"></i>Mostra di nuovo l'avviso di installazione</button>
-    </div>
-
-    <!-- Richieste di follow in attesa -->
-    <div class="fsec" id="follow-requests-section" style="display:none">
-      <div class="stitle"><i class="ti ti-user-plus"></i>Richieste di follow</div>
-      <div id="follow-requests-list"></div>
-    </div>
-
-    <!-- Condivisione cantina -->
-    <div class="fsec">
-      <div class="stitle"><i class="ti ti-users-group"></i>Condividi la tua cantina</div>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Invita qualcuno a vedere e modificare i tuoi vini insieme a te — come familiari o colleghi. Chi accetta è alla pari con te: può aggiungere, modificare ed eliminare i vini della tua cantina.</p>
-      <div style="position:relative">
-        <input type="text" id="cellar-share-search" class="network-search" placeholder="Cerca per nome…" oninput="searchUsersToShareCellar()">
-      </div>
-      <div id="cellar-share-search-results" style="margin-top:8px"></div>
-
-      <div id="cellar-share-members-box" style="margin-top:14px;display:none">
-        <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px">Persone con cui condividi</div>
-        <div id="cellar-share-members-list"></div>
-      </div>
-    </div>
-
-    <!-- Inviti a cantine di altri, in attesa -->
-    <div class="fsec" id="cellar-invites-section" style="display:none">
-      <div class="stitle"><i class="ti ti-mail"></i>Inviti a cantine condivise</div>
-      <div id="cellar-invites-list"></div>
-    </div>
-
-    <!-- Posizioni in cantina -->
-    <div class="fsec">
-      <div class="stitle"><i class="ti ti-map-pin"></i>Posizioni in cantina</div>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Costruisci una gerarchia a tre livelli per indicare dove tieni le bottiglie: ogni "zona" appartiene a una specifica posizione, ogni "piano" appartiene a una specifica zona (es. Cantina casa → Rossi → Piano 2). Potrai poi assegnare una o più posizioni a ciascun vino.</p>
-      <div id="pos-tree-container"></div>
-    </div>
-
-    <!-- Dati personali -->
-    <div class="fsec">
-      <div class="stitle"><i class="ti ti-user"></i>Dati personali</div>
+      <div class="subhead">Dati personali</div>
       <div class="frow">
         <div class="fg"><label>Nome</label><input type="text" id="p-firstname" placeholder="Mario"></div>
         <div class="fg"><label>Cognome</label><input type="text" id="p-lastname" placeholder="Rossi"></div>
       </div>
       <div class="fg"><label>Email</label><input type="email" id="p-email" placeholder="mario@email.it"></div>
-    </div>
 
-    <!-- Password -->
-    <div class="fsec">
-      <div class="stitle"><i class="ti ti-lock"></i>Cambia password</div>
+      <div class="subhead">Cambia password</div>
       <div class="fg"><label>Password attuale</label><input type="password" id="p-pwd-old" placeholder="••••••••"></div>
       <div class="frow">
         <div class="fg"><label>Nuova password</label><input type="password" id="p-pwd-new" placeholder="min. 6 caratteri"></div>
@@ -2310,40 +2266,77 @@
       <div style="font-size:11px;color:var(--muted);margin-top:4px">Lascia vuoto per non modificare la password.</div>
     </div>
 
-    <!-- Associazione -->
-    <div class="fsec">
-      <div class="stitle"><i class="ti ti-award"></i>Associazione di appartenenza</div>
-      <div class="frow">
-        <div class="fg">
-          <label>Associazione</label>
-          <select id="p-assoc" onchange="updateDelegazioniList();toggleFisarMethodField()">
-            <option value="">Nessuna / Appassionato</option>
-            <option value="AIS">AIS — Associazione Italiana Sommelier</option>
-            <option value="FISAR">FISAR — Fed. Italiana Sommelier Albergatori Ristoratori</option>
-            <option value="ONAV">ONAV — Org. Nazionale Assaggiatori Vino</option>
-            <option value="FIS">FIS — Fondazione Italiana Sommelier</option>
-          </select>
+    <!-- Richieste di follow in attesa -->
+    <div class="fsec" id="follow-requests-section" style="display:none">
+      <div class="stitle"><i class="ti ti-user-plus"></i>Richieste di follow</div>
+      <div id="follow-requests-list"></div>
+    </div>
+
+    <!-- CARD 2: Gestione cantina — condivisione + posizioni (collassabile) -->
+    <div class="fsec collapsible collapsed" id="fsec-cellar-mgmt">
+      <div class="stitle fsec-header" onclick="toggleSection('fsec-cellar-mgmt')"><i class="ti ti-building-warehouse"></i>Gestione cantina<i class="ti ti-chevron-down fsec-chevron"></i></div>
+      <div class="fsec-body">
+        <div class="subhead">Condividi la tua cantina</div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Invita qualcuno a vedere e modificare i tuoi vini insieme a te — come familiari o colleghi. Chi accetta è alla pari con te: può aggiungere, modificare ed eliminare i vini della tua cantina.</p>
+        <div style="position:relative">
+          <input type="text" id="cellar-share-search" class="network-search" placeholder="Cerca per nome…" oninput="searchUsersToShareCellar()">
         </div>
-        <div class="fg"><label>Numero tessera</label><input type="text" id="p-card" placeholder="es. AIS-2024-00123"></div>
+        <div id="cellar-share-search-results" style="margin-top:8px"></div>
+
+        <div id="cellar-share-members-box" style="margin-top:14px;display:none">
+          <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px">Persone con cui condividi</div>
+          <div id="cellar-share-members-list"></div>
+        </div>
+
+        <div id="cellar-invites-section" style="display:none;margin-top:18px">
+          <div class="subhead" style="margin-top:0">Inviti a cantine condivise</div>
+          <div id="cellar-invites-list"></div>
+        </div>
+
+        <div class="subhead">Posizioni in cantina</div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Costruisci una gerarchia a tre livelli per indicare dove tieni le bottiglie: ogni "zona" appartiene a una specifica posizione, ogni "piano" appartiene a una specifica zona (es. Cantina casa → Rossi → Piano 2). Potrai poi assegnare una o più posizioni a ciascun vino.</p>
+        <div id="pos-tree-container"></div>
       </div>
-      <div class="fg" id="fisar-method-field" style="display:none">
-        <label>Metodo FISAR preferito</label>
-        <select id="p-fisar-method">
-          <option value="punteggio">A punteggio (0-100)</option>
-          <option value="descrittiva">Descrittiva (punteggio libero)</option>
-        </select>
-        <div style="font-size:11px;color:var(--muted);margin-top:5px">Determina quale scheda di degustazione FISAR ti viene proposta quando aggiungi un vino.</div>
-      </div>
-      <div class="frow">
-        <div class="fg">
+    </div>
+
+    <!-- CARD 3: Associazione di appartenenza (collassabile) -->
+    <div class="fsec collapsible collapsed" id="fsec-assoc">
+      <div class="stitle fsec-header" onclick="toggleSection('fsec-assoc')"><i class="ti ti-award"></i>Associazione di appartenenza<i class="ti ti-chevron-down fsec-chevron"></i></div>
+      <div class="fsec-body">
+        <div class="frow">
+          <div class="fg">
+            <label>Associazione</label>
+            <select id="p-assoc" onchange="toggleFisarMethodField()">
+              <option value="">Nessuna / Appassionato</option>
+              <option value="AIS">AIS — Associazione Italiana Sommelier</option>
+              <option value="FISAR">FISAR — Fed. Italiana Sommelier Albergatori Ristoratori</option>
+              <option value="ONAV">ONAV — Org. Nazionale Assaggiatori Vino</option>
+              <option value="FIS">FIS — Fondazione Italiana Sommelier</option>
+            </select>
+          </div>
+          <div class="fg"><label>Numero tessera</label><input type="text" id="p-card" placeholder="es. AIS-2024-00123"></div>
+        </div>
+        <div class="fg" id="fisar-method-field" style="display:none">
+          <label>Metodo FISAR preferito</label>
+          <select id="p-fisar-method">
+            <option value="punteggio">A punteggio (0-100)</option>
+            <option value="descrittiva">Descrittiva (punteggio libero)</option>
+          </select>
+          <div style="font-size:11px;color:var(--muted);margin-top:5px">Determina quale scheda di degustazione FISAR ti viene proposta quando aggiungi un vino.</div>
+        </div>
+        <div class="fg" style="position:relative">
           <label>Delegazione</label>
-          <select id="p-delegazione">
-            <option value="">— Seleziona associazione prima —</option>
-          </select>
+          <input type="text" id="p-delegazione" placeholder="Scrivi per cercare o inserisci liberamente…" autocomplete="off">
+          <div style="font-size:11px;color:var(--muted);margin-top:5px">Suggerisce le delegazioni della tua associazione mentre scrivi — se non trovi la tua, scrivila comunque: viene salvata lo stesso.</div>
         </div>
-        <div class="fg"><label>Delegazione (testo libero)</label><input type="text" id="p-delegazione-custom" placeholder="es. Delegazione di Milano"></div>
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px">Puoi selezionare la delegazione dal menu o inserirla manualmente nel campo testo.</div>
+    </div>
+
+    <!-- App sulla home del telefono -->
+    <div class="fsec">
+      <div class="stitle"><i class="ti ti-device-mobile"></i>App sulla home del telefono</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Se hai chiuso l'avviso di installazione toccando "Non mi interessa" e vuoi rivederlo, tocca qui sotto.</p>
+      <button class="btn sm" onclick="resetInstallBanner()"><i class="ti ti-download"></i>Mostra di nuovo l'avviso di installazione</button>
     </div>
 
     <div style="display:flex;gap:9px;justify-content:flex-end;margin-top:1rem;margin-bottom:.5rem">
@@ -2446,7 +2439,7 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 });
 
 /* ── STATE ── */
-let currentUser  = null;   // { id, email, name, assoc, card, delegazione, delegazioneCustom }
+let currentUser  = null;   // { id, email, name, assoc, card, delegazione }
 let currentCellarOwnerId = null; // di chi è la cantina che sto guardando ora (default: la mia)
 let mySharedCellars = [];  // cantine di altri condivise con me (accettate) — per il selettore
 let ownerCellarPosTree = []; // albero posizioni-cantina [{name,children:[{name,children:[{name}]}]}] del proprietario della cantina in visualizzazione
@@ -2590,7 +2583,7 @@ async function doRegister() {
   try {
     await sb.from('profiles').upsert({
       id: data.user.id, full_name: firstname,
-      assoc, card, delegazione: '', delegazione_custom: ''
+      assoc, card, delegazione: ''
     });
   } catch(_) { /* ignorato: il trigger DB copre già questo caso */ }
 
@@ -2637,8 +2630,7 @@ async function loadProfile(authUser) {
     name:              profile?.full_name || authUser.email.split('@')[0],
     assoc:             profile?.assoc || '',
     card:              profile?.card  || '',
-    delegazione:       profile?.delegazione || '',
-    delegazioneCustom: profile?.delegazione_custom || '',
+    delegazione:       profile?.delegazione || profile?.delegazione_custom || '',
     aiScanEnabled:     profile?.ai_scan_enabled || false,
     avatarBase64:      profile?.avatar_base64 || '',
     isPublic:          profile?.is_public || false,
@@ -2654,7 +2646,7 @@ async function loadProfile(authUser) {
     try {
       await sb.from('profiles').upsert({
         id: authUser.id, full_name: currentUser.name,
-        assoc: '', card: '', delegazione: '', delegazione_custom: ''
+        assoc: '', card: '', delegazione: ''
       });
     } catch {}
   }
@@ -4546,22 +4538,16 @@ function updateProvinceOptions() {
   updateDocOptions();
 }
 
+// Suggerimenti per il campo "Delegazione" (autocomplete, non un elenco chiuso —
+// vedi attachAutocomplete('p-delegazione', ...) più sotto). Non è l'elenco
+// ufficiale completo di ciascuna associazione (FISAR ne ha decine, organizzate
+// per provincia): è un punto di partenza, il campo accetta comunque testo libero.
 const DELEGAZIONI = {
   AIS: ['Abruzzo','Basilicata','Calabria','Campania','Emilia Romagna','Friuli Venezia Giulia','Lazio','Liguria','Lombardia','Marche','Molise','Piemonte','Puglia','Sardegna','Sicilia','Toscana','Trentino Alto Adige','Umbria','Valle d\'Aosta','Veneto'],
-  FISAR: ['Delegazione di Bari','Delegazione di Bologna','Delegazione di Firenze','Delegazione di Genova','Delegazione di Milano','Delegazione di Napoli','Delegazione di Palermo','Delegazione di Roma','Delegazione di Torino','Delegazione di Venezia','Delegazione di Verona'],
+  FISAR: ['Delegazione di Alessandria','Delegazione di Bari','Delegazione di Bologna','Delegazione di Caserta','Delegazione di Civitavecchia e Costa Etrusco-Romana','Delegazione di Empoli','Delegazione di Firenze','Delegazione di Genova','Delegazione di Livorno','Delegazione di Lucca','Delegazione di Milano','Delegazione di Napoli','Delegazione di Palermo','Delegazione di Pavia','Delegazione di Pesaro-Urbino-Fano','Delegazione di Pisa','Delegazione di Portogruaro','Delegazione di Prato','Delegazione di Roma','Delegazione di Torino','Delegazione di Venezia','Delegazione di Verona'],
   ONAV: ['Sezione di Bologna','Sezione di Firenze','Sezione di Milano','Sezione di Napoli','Sezione di Padova','Sezione di Roma','Sezione di Torino','Sezione di Venezia'],
   FIS: ['Fondazione Roma','Fondazione Milano','Fondazione Napoli','Fondazione Torino']
 };
-
-function updateDelegazioniList() {
-  const assoc = document.getElementById('p-assoc')?.value;
-  const sel = document.getElementById('p-delegazione');
-  if (!sel) return;
-  const list = DELEGAZIONI[assoc] || [];
-  sel.innerHTML = list.length
-    ? `<option value="">— Seleziona delegazione —</option>` + list.map(d => `<option value="${d}">${d}</option>`).join('')
-    : `<option value="">— Seleziona associazione prima —</option>`;
-}
 
 function toggleFisarMethodField() {
   const assoc = document.getElementById('p-assoc')?.value;
@@ -4665,12 +4651,12 @@ function showProfileScreen() {
   document.getElementById('p-pwd-old').value = '';
   document.getElementById('p-pwd-new').value = '';
   document.getElementById('p-pwd-confirm').value = '';
-  updateDelegazioniList();
-  // Set delegazione
-  const del = document.getElementById('p-delegazione');
-  if (del && u.delegazione) del.value = u.delegazione;
-  const delCustom = document.getElementById('p-delegazione-custom');
-  if (delCustom) delCustom.value = u.delegazioneCustom || '';
+  document.getElementById('p-delegazione').value = u.delegazione || '';
+
+  // Card "Associazione" e "Gestione cantina" partono aperte solo se c'è
+  // già qualcosa di configurato, altrimenti restano chiuse di default
+  document.getElementById('fsec-assoc')?.classList.toggle('collapsed', !u.assoc);
+  document.getElementById('fsec-cellar-mgmt')?.classList.toggle('collapsed', !(u.cellarPosTree && u.cellarPosTree.length));
 
   // Immagine profilo
   pendingAvatarBase64 = null;
@@ -4836,6 +4822,7 @@ async function loadCellarShareMembers() {
   const { data: profiles } = await sb.from('profiles').select('id, full_name, avatar_base64').in('id', ids);
   const profMap = Object.fromEntries((profiles || []).map(p => [p.id, p]));
   box.style.display = '';
+  document.getElementById('fsec-cellar-mgmt')?.classList.remove('collapsed');
   list.innerHTML = shares.map(s => {
     const p = profMap[s.member_id] || {};
     return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:0.5px solid var(--border)">
@@ -4863,6 +4850,7 @@ async function loadCellarInvitesReceived() {
   const { data: profiles } = await sb.from('profiles').select('id, full_name').in('id', ownerIds);
   const profMap = Object.fromEntries((profiles || []).map(p => [p.id, p.full_name]));
   section.style.display = '';
+  document.getElementById('fsec-cellar-mgmt')?.classList.remove('collapsed');
   list.innerHTML = invites.map(inv => `
     <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border)">
       <div style="flex:1;font-size:13px;color:var(--ink)">${profMap[inv.owner_id] || 'Qualcuno'} ti ha invitato nella sua cantina</div>
@@ -5161,8 +5149,7 @@ async function saveProfile() {
     full_name:          fullName,
     assoc:              document.getElementById('p-assoc')?.value || '',
     card:               document.getElementById('p-card')?.value.trim() || '',
-    delegazione:        document.getElementById('p-delegazione')?.value || '',
-    delegazione_custom: document.getElementById('p-delegazione-custom')?.value.trim() || '',
+    delegazione:        document.getElementById('p-delegazione')?.value.trim() || '',
     avatar_base64:      pendingAvatarBase64 !== null ? pendingAvatarBase64 : (currentUser.avatarBase64 || null),
     is_public:          document.getElementById('p-is-public')?.checked || false,
     fisar_method:       document.getElementById('p-fisar-method')?.value || 'punteggio',
@@ -5174,8 +5161,7 @@ async function saveProfile() {
   currentUser.email             = email;
   currentUser.assoc             = document.getElementById('p-assoc')?.value || '';
   currentUser.card              = document.getElementById('p-card')?.value.trim() || '';
-  currentUser.delegazione       = document.getElementById('p-delegazione')?.value || '';
-  currentUser.delegazioneCustom = document.getElementById('p-delegazione-custom')?.value.trim() || '';
+  currentUser.delegazione       = document.getElementById('p-delegazione')?.value.trim() || '';
   if (pendingAvatarBase64 !== null) currentUser.avatarBase64 = pendingAvatarBase64;
   currentUser.isPublic = document.getElementById('p-is-public')?.checked || false;
   currentUser.fisarMethod = document.getElementById('p-fisar-method')?.value || 'punteggio';
@@ -5306,6 +5292,7 @@ function attachAutocomplete(inputId, getSuggestions, onSelect) {
 attachAutocomplete('f-region',   () => regionSuggestions);
 attachAutocomplete('f-province', () => provinceSuggestions);
 attachAutocomplete('f-doc',      () => docSuggestions);
+attachAutocomplete('p-delegazione', () => DELEGAZIONI[document.getElementById('p-assoc')?.value] || []);
 attachAutocomplete('f-grapes-input', () => GRAPE_VARIETIES, name => addGrapeTag(name));
 document.getElementById('f-grapes-input')?.addEventListener('keydown', e => {
   if (e.key === 'Enter') { e.preventDefault(); addGrapeTag(e.target.value); }
@@ -5326,7 +5313,7 @@ Object.assign(window, {
   scanBothLabels, searchNetworkUsers, sendFollowRequest, setFilter, setQtyFilter, showAdd, showComingSoon, showDetail,
   showNetworkScreen, showNetworkWinePreview, showProfileScreen, showScreen, startPremiumCheckout, stepQty, switchDeg, switchLTab, toast,
   showGuideScreen,
-  toggleAdvFilters, toggleFisarMethodField, toggleNavMenu, togglePairing, toggleSection, updateDelegazioniList, updateGrapePct, updateTonalitaColore, updateAisColore,
+  toggleAdvFilters, toggleFisarMethodField, toggleNavMenu, togglePairing, toggleSection, updateGrapePct, updateTonalitaColore, updateAisColore,
   updateRegionOptions, updateProvinceOptions, dismissInstallBanner, triggerInstallPrompt, resetInstallBanner,
   setNetworkFilter, toggleNetworkAdvFilters, onNetworkCountryChange, resetNetworkFilters, renderNetworkFeed,
   dismissPublicPrompt, acceptPublicPrompt, markFScoreManual,
