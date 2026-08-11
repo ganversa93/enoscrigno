@@ -761,6 +761,22 @@
     .install-banner-dismiss:hover { color: var(--ink); }
     @media (min-width: 480px) { .install-banner { left: auto; right: 1.25rem; width: 380px; } }
 
+    /* ── NUOVA VERSIONE DISPONIBILE BANNER ── */
+    .update-banner {
+      display: none; align-items: center; gap: 12px;
+      position: fixed; left: 0.75rem; right: 0.75rem; bottom: max(0.75rem, env(safe-area-inset-bottom));
+      max-width: 460px; margin: 0 auto;
+      background: var(--surf); border: 0.5px solid var(--border); border-radius: 16px;
+      padding: 12px 14px; box-shadow: 0 -4px 24px rgba(0,0,0,.16); z-index: 211;
+    }
+    .update-banner-icon { font-size: 24px; color: var(--gold); flex-shrink: 0; }
+    .update-banner-text { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .update-banner-text b { font-size: 13px; color: var(--ink); }
+    .update-banner-text span { font-size: 11.5px; color: var(--muted); line-height: 1.4; }
+    .update-banner-dismiss { font-size: 11px; color: var(--muted); text-decoration: underline; margin-top: 2px; }
+    .update-banner-dismiss:hover { color: var(--ink); }
+    @media (min-width: 480px) { .update-banner { left: auto; right: 1.25rem; width: 380px; } }
+
     /* ── POP-UP PROFILO PUBBLICO (primo accesso) ── */
     .public-prompt-overlay {
       display: none; position: fixed; inset: 0; z-index: 300;
@@ -2481,6 +2497,17 @@
   <button class="btn sm primary" id="install-banner-cta" onclick="triggerInstallPrompt()" style="display:none">Installa</button>
 </div>
 
+<!-- NUOVA VERSIONE DISPONIBILE BANNER -->
+<div class="update-banner" id="update-banner" style="display:none">
+  <i class="ti ti-refresh update-banner-icon"></i>
+  <div class="update-banner-text">
+    <b>Nuova versione disponibile</b>
+    <span>Aggiorna per avere le ultime novità e correzioni.</span>
+    <a href="#" class="update-banner-dismiss" onclick="dismissUpdateBanner(); return false;">Più tardi</a>
+  </div>
+  <button class="btn sm primary" onclick="reloadApp()">Aggiorna ora</button>
+</div>
+
 <!-- POP-UP PROFILO PUBBLICO (primo accesso) -->
 <div class="public-prompt-overlay" id="public-prompt-overlay">
   <div class="public-prompt-card">
@@ -2987,6 +3014,68 @@ function dismissInstallBanner() {
   localStorage.setItem(INSTALL_DISMISS_KEY, '1');
   hideInstallBanner();
 }
+
+/* ── RILEVAMENTO NUOVA VERSIONE ──
+   Un'app installata (PWA) può restare aperta in background per giorni
+   e riprendere il primo piano senza mai ricaricare: resta bloccata
+   sulla versione JS con cui era stata aperta anche se nel frattempo è
+   uscito un nuovo deploy. Ogni volta che l'app torna in primo piano
+   controlliamo se index.html è cambiato sul server (via ETag/Last-
+   Modified) e, in tal caso, lo segnaliamo invece di lasciare l'utente
+   su codice vecchio senza che se ne accorga. */
+let appVersionMarker = null;
+let updateAvailable = false;
+let updateCheckInFlight = false;
+let lastUpdateCheck = 0;
+
+async function fetchVersionMarker() {
+  const res = await fetch(location.pathname, { cache: 'no-store' });
+  return res.headers.get('etag') || res.headers.get('last-modified');
+}
+
+async function captureVersionMarker() {
+  try { appVersionMarker = await fetchVersionMarker(); } catch {}
+}
+
+async function checkForNewVersion() {
+  if (updateAvailable || updateCheckInFlight || !appVersionMarker || !navigator.onLine) return;
+  const now = Date.now();
+  if (now - lastUpdateCheck < 30000) return;
+  lastUpdateCheck = now;
+  updateCheckInFlight = true;
+  try {
+    const marker = await fetchVersionMarker();
+    if (marker && marker !== appVersionMarker) { updateAvailable = true; showUpdateBanner(); }
+  } catch {} finally {
+    updateCheckInFlight = false;
+  }
+}
+
+function onForegroundResume() {
+  if (updateAvailable) showUpdateBanner();
+  else checkForNewVersion();
+}
+
+function showUpdateBanner() {
+  const el = document.getElementById('update-banner');
+  if (el) el.style.display = 'flex';
+}
+
+function dismissUpdateBanner() {
+  const el = document.getElementById('update-banner');
+  if (el) el.style.display = 'none';
+}
+
+function reloadApp() {
+  location.reload();
+}
+
+captureVersionMarker();
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') onForegroundResume();
+});
+window.addEventListener('pageshow', onForegroundResume);
+setInterval(() => { if (document.visibilityState === 'visible') checkForNewVersion(); }, 20 * 60 * 1000);
 
 async function triggerInstallPrompt() {
   if (!deferredInstallPrompt) return;
@@ -5785,6 +5874,7 @@ Object.assign(window, {
   showGuideScreen,
   toggleAdvFilters, toggleFisarMethodField, toggleNavMenu, togglePairing, toggleSection, updateGrapePct, updateTonalitaColore, updateAisColore,
   updateRegionOptions, updateProvinceOptions, dismissInstallBanner, triggerInstallPrompt, resetInstallBanner,
+  dismissUpdateBanner, reloadApp,
   setNetworkFilter, toggleNetworkAdvFilters, onNetworkCountryChange, resetNetworkFilters, renderNetworkFeed,
   dismissPublicPrompt, acceptPublicPrompt, markFScoreManual,
   confirmSumDuplicateQty, confirmSaveDuplicateAsNew, closeDuplicateWinePrompt,
