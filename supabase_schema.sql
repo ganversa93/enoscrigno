@@ -765,3 +765,92 @@ $$;
 
 revoke all on function public.get_cellar_position_tree(uuid) from public, anon;
 grant execute on function public.get_cellar_position_tree(uuid) to authenticated;
+
+-- ════════════════════════════════════════════════════════════════
+-- Anagrafica cantine (produttori): registro condiviso agganciato ai
+-- vini via wines.winery_id, per dare in futuro una scheda "scopri di
+-- più" (zona, sito, storia, logo) e permettere un primo import da
+-- fonte esterna (es. elenchi delle associazioni di turismo del vino).
+--
+-- Le schede si creano da sole (solo il nome, name_normalized calcolato
+-- lato client con lo stesso criterio case/spazi-insensitive già usato
+-- per i doppioni vino) quando un utente salva un vino con un
+-- produttore che non trova corrispondenza — vedi findOrCreateWinery()
+-- in index.html. I dettagli extra li può scrivere solo l'admin
+-- (profiles.is_admin), per evitare vandalismo su un registro condiviso
+-- da tutti gli utenti.
+-- ════════════════════════════════════════════════════════════════
+alter table public.profiles add column if not exists is_admin boolean not null default false;
+
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce((select p.is_admin from public.profiles p where p.id = auth.uid()), false);
+$$;
+revoke all on function public.is_admin() from public, anon;
+grant execute on function public.is_admin() to authenticated;
+
+create table if not exists public.wineries (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  name_normalized text not null,
+  region text,
+  website text,
+  description text,
+  logo_url text,
+  created_by uuid references public.profiles(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create unique index if not exists wineries_name_normalized_key on public.wineries (name_normalized);
+
+alter table public.wines add column if not exists winery_id uuid references public.wineries(id);
+
+alter table public.wineries enable row level security;
+
+drop policy if exists "wineries: lettura per chiunque autenticato" on public.wineries;
+create policy "wineries: lettura per chiunque autenticato"
+  on public.wineries for select to authenticated using (true);
+
+-- Chiunque autenticato può creare una scheda "stub" (solo nome, nessun
+-- dettaglio) — è quello che succede in automatico salvando un vino.
+-- Solo l'admin può inserire (o modificare) una scheda già arricchita.
+drop policy if exists "wineries: stub per tutti, completa solo admin" on public.wineries;
+create policy "wineries: stub per tutti, completa solo admin"
+  on public.wineries for insert to authenticated
+  with check (
+    public.is_admin()
+    or (region is null and website is null and description is null and logo_url is null)
+  );
+
+drop policy if exists "wineries: modifica solo admin" on public.wineries;
+create policy "wineries: modifica solo admin"
+  on public.wineries for update to authenticated
+  using (public.is_admin()) with check (public.is_admin());
+
+drop policy if exists "wineries: eliminazione solo admin" on public.wineries;
+create policy "wineries: eliminazione solo admin"
+  on public.wineries for delete to authenticated
+  using (public.is_admin());
+
+-- Loghi cantina nello stesso bucket "wine-labels" (già pubblico in
+-- lettura), sotto il prefisso wineries/ — scrittura riservata all'admin.
+drop policy if exists "wine-labels: admin scrive i loghi cantina" on storage.objects;
+create policy "wine-labels: admin scrive i loghi cantina"
+  on storage.objects for insert to authenticated
+  with check (bucket_id = 'wine-labels' and (storage.foldername(name))[1] = 'wineries' and public.is_admin());
+
+drop policy if exists "wine-labels: admin aggiorna i loghi cantina" on storage.objects;
+create policy "wine-labels: admin aggiorna i loghi cantina"
+  on storage.objects for update to authenticated
+  using (bucket_id = 'wine-labels' and (storage.foldername(name))[1] = 'wineries' and public.is_admin())
+  with check (bucket_id = 'wine-labels' and (storage.foldername(name))[1] = 'wineries' and public.is_admin());
+
+-- Da lanciare una volta sola, sostituendo la tua email: ti rende admin
+-- e sblocca la sezione "Amministrazione" nel profilo.
+-- update public.profiles set is_admin = true
+-- where id = (select id from auth.users where email = 'TUA-EMAIL@esempio.it');

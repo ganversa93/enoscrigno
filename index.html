@@ -649,6 +649,23 @@
     .dchips { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
     .dchip { font-size: 11px; padding: 3px 9px; border-radius: 20px; background: #fff; color: var(--wine); font-weight: 500; }
 
+    /* ── SCHEDA CANTINA (produttore) ── */
+    .winery-hero { display: flex; align-items: center; gap: 14px; }
+    .winery-logo { width: 64px; height: 64px; border-radius: 12px; object-fit: cover; flex-shrink: 0; border: 0.5px solid var(--border); }
+    .winery-logo-ph { display: flex; align-items: center; justify-content: center; background: var(--wine-pale); color: var(--wine); font-size: 24px; }
+    .winery-name { font-family: 'Cormorant Garamond', serif; font-size: 21px; font-weight: 500; color: var(--ink); line-height: 1.25; }
+    .winery-wine-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+    .winery-wine-row { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+    .winery-wine-row img, .winery-wine-noimg { width: 36px; height: 48px; border-radius: 6px; object-fit: cover; flex-shrink: 0; }
+    .winery-wine-noimg { display: flex; align-items: center; justify-content: center; background: var(--bg); color: var(--wine); opacity: .4; border: 0.5px solid var(--border); }
+    .winery-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 12px 4px; border-bottom: 0.5px solid var(--border); cursor: pointer; color: var(--ink);
+    }
+    .winery-row:last-child { border-bottom: none; }
+    .winery-row-name { font-size: 13.5px; display: flex; align-items: center; gap: 8px; }
+    .winery-row-name i { color: var(--wine); }
+
     /* ── Desktop: immagini grandi a destra, info a sinistra ── */
     @media (min-width: 700px) {
       .dhero { align-items: stretch; padding: 1.75rem; gap: 1.75rem; }
@@ -2317,6 +2334,23 @@
     <div id="detail-content"></div>
   </div>
 
+  <!-- ══ SCHEDA CANTINA (produttore) ══ -->
+  <div id="screen-winery" class="screen">
+    <div class="nav" style="margin-bottom:.9rem">
+      <button class="btn sm" onclick="goBackFromWinery()"><i class="ti ti-arrow-left"></i>Indietro</button>
+    </div>
+    <div id="winery-detail-body"></div>
+  </div>
+
+  <!-- ══ ADMIN: CANTINE DA COMPLETARE ══ -->
+  <div id="screen-admin-wineries" class="screen">
+    <div class="nav" style="margin-bottom:.9rem">
+      <button class="btn sm" onclick="showScreen('screen-profile')"><i class="ti ti-arrow-left"></i>Indietro</button>
+      <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--ink)">Cantine da completare (<span id="admin-wineries-count">0</span>)</span>
+    </div>
+    <div id="admin-wineries-list"></div>
+  </div>
+
   <!-- ══ PROFILE ══ -->
   <div id="screen-profile" class="screen">
     <div class="nav" style="margin-bottom:1.25rem">
@@ -2445,6 +2479,13 @@
       <button class="btn sm" onclick="resetInstallBanner()"><i class="ti ti-download"></i>Mostra di nuovo l'avviso di installazione</button>
     </div>
 
+    <!-- Amministrazione (visibile solo all'admin) -->
+    <div class="fsec" id="fsec-admin" style="display:none">
+      <div class="stitle"><i class="ti ti-building-warehouse"></i>Amministrazione</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Cantine create in automatico dagli inserimenti degli utenti, ancora senza scheda compilata.</p>
+      <button class="btn sm" onclick="showAdminWineriesScreen()"><i class="ti ti-list"></i>Cantine da completare</button>
+    </div>
+
     <div style="display:flex;gap:9px;justify-content:flex-end;margin-top:1rem;margin-bottom:.5rem">
       <button class="btn" onclick="goBackFromProfile()">Annulla</button>
       <button class="btn primary" onclick="saveProfile()"><i class="ti ti-device-floppy"></i>Salva profilo</button>
@@ -2561,6 +2602,10 @@ let currentCellarOwnerId = null; // di chi è la cantina che sto guardando ora (
 let mySharedCellars = [];  // cantine di altri condivise con me (accettate) — per il selettore
 let ownerCellarPosTree = []; // albero posizioni-cantina [{name,children:[{name,children:[{name}]}]}] del proprietario della cantina in visualizzazione
 let winesCache   = [];     // array locale per render veloce
+let wineriesCache = [];    // [{id,name,region}] anagrafica cantine/produttori, per autocomplete e aggancio
+let selectedWineryId = null; // cantina scelta esplicitamente nel form vino (autocomplete "Produttore"), null = risolvi per nome al salvataggio
+let currentWineryId = null;  // cantina aperta sulla schermata scheda-cantina
+let wineryReturnScreen = 'screen-list'; // schermata da cui si è aperta la scheda-cantina
 let currentFilter    = 'all';
 let currentQtyFilter = 'all';
 let sortField = 'created'; // 'created' | 'vintage' | 'price' | 'type' — cantina
@@ -2793,7 +2838,8 @@ async function loadProfile(authUser) {
     publicPromptSeen:  profile?.public_prompt_seen || false,
     fisarMethod:       profile?.fisar_method || 'punteggio',
     emailConfirmed:    !!authUser.email_confirmed_at,
-    cellarPosTree:     profile?.cellar_positions_tree || []
+    cellarPosTree:     profile?.cellar_positions_tree || [],
+    isAdmin:           profile?.is_admin || false
   };
   // Se non esiste ancora un profilo (caso raro, es. trigger non installato),
   // lo creiamo ora che l'utente è sicuramente autenticato — solo se online,
@@ -2893,6 +2939,7 @@ async function loadWines() {
       frontImg:    row.front_img,
       backImg:     row.back_img,
       cellarPositions: row.cellar_positions || [],
+      wineryId:    row.winery_id || null,
     }));
     // Salva un'istantanea locale, usata come riserva se manca la connessione
     try { localStorage.setItem(CACHE_KEY, JSON.stringify(wines)); } catch {}
@@ -2940,6 +2987,7 @@ async function syncPendingWines() {
   for (const wine of pending) {
     const { id, _pending, _targetOwnerId, ...toSave } = wine;
     currentCellarOwnerId = _targetOwnerId || originalOwnerId;
+    if (!toSave.wineryId && toSave.producer) toSave.wineryId = await findOrCreateWinery(toSave.producer);
     const savedId = await dbSaveWine(toSave);
     if (savedId) { removePendingWine(id); synced++; }
   }
@@ -3133,6 +3181,7 @@ async function dbSaveWine(wine) {
     front_img:    wine.frontImg     || null,
     back_img:     wine.backImg      || null,
     cellar_positions: wine.cellarPositions || [],
+    winery_id:    wine.wineryId     || null,
   };
   if (wine.id && typeof wine.id === 'string' && wine.id.length > 10) {
     // update existing (uuid)
@@ -3165,6 +3214,157 @@ async function dbUpdatePositions(id, positions) {
   return true;
 }
 
+/* ══ ANAGRAFICA CANTINE (produttori) ══
+   Registro condiviso dei produttori, agganciato ai vini via wines.winery_id.
+   Le schede si creano da sole (solo nome) quando un vino salvato non trova
+   corrispondenza; i dettagli (zona, sito, storia, logo) li cura solo
+   l'admin dalla scheda cantina. */
+function normalizeWineryName(s) {
+  return (s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+async function loadWineriesCache() {
+  try {
+    const { data, error } = await sb.from('wineries').select('id,name,region').order('name');
+    if (error) throw error;
+    wineriesCache = data || [];
+  } catch (err) {
+    console.warn('loadWineriesCache: rete non disponibile', err);
+  }
+}
+
+function wineryLabel(w) { return w.region ? `${w.name} — ${w.region}` : w.name; }
+
+// Trova la cantina per nome (case/spazi-insensitive) o la crea come "stub"
+// (solo nome) se non esiste ancora. Se un'altra sessione la crea nello
+// stesso istante, l'inserimento fallisce per il vincolo di unicità sul
+// nome normalizzato: recuperiamo comunque l'id con una seconda lettura.
+async function findOrCreateWinery(rawName) {
+  const name = (rawName || '').trim();
+  if (!name) return null;
+  const norm = normalizeWineryName(name);
+  const { data: existing } = await sb.from('wineries').select('id').eq('name_normalized', norm).maybeSingle();
+  if (existing) return existing.id;
+  const { data: created, error } = await sb.from('wineries')
+    .insert({ name, name_normalized: norm, created_by: currentUser.id })
+    .select('id').single();
+  if (!error) return created.id;
+  const { data: retry } = await sb.from('wineries').select('id').eq('name_normalized', norm).maybeSingle();
+  return retry?.id || null;
+}
+
+async function showWineryDetail(id) {
+  wineryReturnScreen = document.querySelector('.screen.active')?.id || 'screen-list';
+  showScreen('screen-winery');
+  const body = document.getElementById('winery-detail-body');
+  body.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted)">Caricamento…</div>';
+  const { data: w, error } = await sb.from('wineries').select('*').eq('id', id).maybeSingle();
+  if (error || !w) { body.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted)">Cantina non trovata.</div>'; return; }
+  currentWineryId = w.id;
+
+  const { data: wines } = await sb.from('wines')
+    .select('id,name,vintage,type,score,front_img')
+    .eq('winery_id', id)
+    .order('vintage', { ascending: false });
+
+  const winesHtml = (wines && wines.length)
+    ? wines.map(x => `
+      <div class="winery-wine-row" onclick="showDetail('${x.id}')">
+        ${x.front_img ? `<img src="${x.front_img}" alt="">` : `<div class="winery-wine-noimg"><i class="ti ti-bottle"></i></div>`}
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${x.name}</div>
+          <div style="font-size:11px;color:var(--muted)">${[x.type, x.vintage].filter(Boolean).join(' · ') || '—'}</div>
+        </div>
+        ${x.score ? `<div style="font-size:13px;color:var(--gold)">${x.score}</div>` : ''}
+      </div>`).join('')
+    : `<div style="font-size:12px;color:var(--muted);padding:.5rem 0">Nessun vino di questa cantina ancora visibile nel tuo Enoscrigno.</div>`;
+
+  const adminForm = currentUser?.isAdmin ? `
+    <div class="fsec" style="margin-top:1.25rem">
+      <div class="stitle"><i class="ti ti-edit"></i>Modifica scheda (admin)</div>
+      <div class="fg"><label>Zona / regione</label><input type="text" id="wy-region" value="${w.region || ''}" placeholder="es. Valpolicella, Veneto"></div>
+      <div class="fg"><label>Sito web</label><input type="text" id="wy-website" value="${w.website || ''}" placeholder="https://…"></div>
+      <div class="fg"><label>Descrizione / storia</label><textarea id="wy-description" rows="4" placeholder="Storia, filosofia della cantina…">${w.description || ''}</textarea></div>
+      <div class="fg">
+        <label>Logo</label>
+        ${w.logo_url ? `<img src="${w.logo_url}" style="height:60px;border-radius:8px;display:block;margin-bottom:8px" alt="">` : ''}
+        <input type="file" accept="image/*" onchange="uploadWineryLogo(this)">
+      </div>
+      <button class="btn primary sm" onclick="saveWineryDetails()"><i class="ti ti-device-floppy"></i>Salva scheda</button>
+    </div>` : '';
+
+  body.innerHTML = `
+    <div class="winery-hero">
+      ${w.logo_url ? `<img src="${w.logo_url}" class="winery-logo" alt="">` : `<div class="winery-logo winery-logo-ph"><i class="ti ti-building-warehouse"></i></div>`}
+      <div>
+        <div class="winery-name">${w.name}</div>
+        ${w.region ? `<div style="font-size:12.5px;color:var(--muted)"><i class="ti ti-map-pin" style="font-size:12px"></i> ${w.region}</div>` : ''}
+        ${w.website ? `<a href="${w.website}" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--wine)"><i class="ti ti-world" style="font-size:12px"></i> ${w.website.replace(/^https?:\/\//,'')}</a>` : ''}
+      </div>
+    </div>
+    ${w.description ? `<p style="font-size:13px;color:var(--ink);line-height:1.6;margin-top:1rem">${w.description}</p>` : (!currentUser?.isAdmin ? `<p style="font-size:12.5px;color:var(--muted);margin-top:1rem">Non ci sono ancora informazioni su questa cantina.</p>` : '')}
+    <div class="fsec" style="margin-top:1.25rem">
+      <div class="stitle"><i class="ti ti-bottle"></i>Vini di questa cantina</div>
+      <div class="winery-wine-list">${winesHtml}</div>
+    </div>
+    ${adminForm}
+  `;
+}
+
+async function saveWineryDetails() {
+  if (!currentUser?.isAdmin || !currentWineryId) return;
+  const g = id => document.getElementById(id)?.value.trim() || null;
+  const row = { region: g('wy-region'), website: g('wy-website'), description: g('wy-description'), updated_at: new Date().toISOString() };
+  const { error } = await sb.from('wineries').update(row).eq('id', currentWineryId);
+  if (error) { toastErr('Errore salvataggio: ' + error.message); return; }
+  toast('✓ Scheda cantina aggiornata');
+  loadWineriesCache();
+  showWineryDetail(currentWineryId);
+}
+
+async function uploadWineryLogo(input) {
+  const file = input.files[0]; if (!file || !currentUser?.isAdmin || !currentWineryId) return;
+  let toUpload = file;
+  try { toUpload = await compressImage(file, 400, 0.85); } catch (e) { console.warn('compressImage logo fallita', e); }
+  const path = `wineries/${currentWineryId}-${Date.now()}.jpg`;
+  const { error } = await sb.storage.from('wine-labels').upload(path, toUpload, { upsert: true, contentType: toUpload.type || 'image/jpeg', cacheControl: '31536000' });
+  if (error) { toastErr('Errore caricamento logo: ' + error.message); return; }
+  const { data: urlData } = sb.storage.from('wine-labels').getPublicUrl(path);
+  const { error: updErr } = await sb.from('wineries').update({ logo_url: urlData.publicUrl }).eq('id', currentWineryId);
+  if (updErr) { toastErr('Errore salvataggio logo: ' + updErr.message); return; }
+  toast('✓ Logo aggiornato');
+  showWineryDetail(currentWineryId);
+}
+
+function goBackFromWinery() { showScreen(wineryReturnScreen || 'screen-list'); }
+
+// Elenco cantine create in automatico (dallo scan/salvataggio di un vino)
+// che non hanno ancora nessun dettaglio — per l'admin, da completare.
+async function loadWineriesToComplete() {
+  const { data, error } = await sb.from('wineries')
+    .select('id,name,created_at')
+    .is('region', null).is('website', null).is('description', null).is('logo_url', null)
+    .order('created_at', { ascending: false });
+  if (error) { toastErr('Errore caricamento cantine: ' + error.message); return []; }
+  return data || [];
+}
+
+async function showAdminWineriesScreen() {
+  if (!currentUser?.isAdmin) return;
+  showScreen('screen-admin-wineries');
+  const list = document.getElementById('admin-wineries-list');
+  list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted)">Caricamento…</div>';
+  const wineries = await loadWineriesToComplete();
+  document.getElementById('admin-wineries-count').textContent = wineries.length;
+  list.innerHTML = wineries.length
+    ? wineries.map(w => `
+      <div class="winery-row" onclick="showWineryDetail('${w.id}')">
+        <div class="winery-row-name"><i class="ti ti-building-warehouse"></i>${w.name}</div>
+        <i class="ti ti-chevron-right"></i>
+      </div>`).join('')
+    : '<div style="text-align:center;padding:2rem;color:var(--muted)">Nessuna cantina da completare 🎉</div>';
+}
+
 /* ══ APP INIT ══ */
 async function initApp() {
   const u = currentUser;
@@ -3181,6 +3381,7 @@ async function initApp() {
   if (!currentCellarOwnerId) currentCellarOwnerId = currentUser.id;
   await loadSharedCellars();
   await loadOwnerCellarPositionLabels();
+  loadWineriesCache();
   // Carica vini dal DB
   showLoadingOverlay(true);
   winesCache = await loadWines();
@@ -3539,6 +3740,7 @@ function renderGrid() {
 /* ── ADD FORM ── */
 function showAdd() {
   frontImg = ''; backImg = '';
+  selectedWineryId = null;
   renderAiBanner();
   // Reset accordion: Foto + Identità aperte, il resto chiuso (nuovo inserimento)
   resetSections();
@@ -4178,6 +4380,10 @@ async function commitSaveWine(wine, editId) {
   showLoadingOverlay(true);
   let savedId = null;
   try {
+    // Aggancia il vino a una scheda cantina in anagrafica: se l'utente ne
+    // ha scelta una esplicitamente dal suggerimento la usiamo direttamente,
+    // altrimenti cerchiamo (o creiamo) una cantina per nome.
+    wine.wineryId = wine.producer ? (selectedWineryId || await findOrCreateWinery(wine.producer)) : null;
     savedId = await dbSaveWine(wine);
   } catch (networkErr) {
     console.warn('saveWine: richiesta fallita nonostante navigator.onLine, salvo in locale', networkErr);
@@ -4293,7 +4499,7 @@ function showDetail(id) {
       <div class="dinfo" style="flex:1">
         ${w.visibility === false ? `<div style="font-size:10px;font-weight:600;color:var(--muted);background:var(--surf);border:0.5px solid var(--border);border-radius:20px;padding:2px 9px;display:inline-flex;align-items:center;gap:4px;margin-bottom:8px"><i class="ti ti-lock" style="font-size:10px"></i>Privato — non visibile nel Network</div>` : ''}
         <div class="dname">${w.name}</div>
-        <div class="dprod">${w.producer || ''}</div>
+        <div class="dprod">${w.producer || ''}${w.wineryId ? ` <a href="#" onclick="showWineryDetail('${w.wineryId}'); return false;" style="font-size:11.5px;color:var(--wine);text-decoration:underline">Scopri di più</a>` : ''}</div>
         <div class="dvintage">${w.vintage ? 'Annata: ' + w.vintage : ''}</div>
         ${w.doc ? `<div style="font-size:12px;color:var(--muted);line-height:1.4;margin-bottom:8px">${w.doc}</div>` : ''}
         <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px">
@@ -4481,6 +4687,7 @@ function editWine() {
   document.getElementById('f-province').value = '';
   const set = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.value = v; };
   set('f-name', w.name); set('f-producer', w.producer); set('f-vintage', w.vintage);
+  selectedWineryId = w.wineryId || null;
   set('f-type', w.type); set('f-doc', w.doc); applyGrapesToForm(w.grapes);
   set('f-country', w.country); updateRegionOptions();
   set('f-region', w.region); updateProvinceOptions();
@@ -5205,6 +5412,7 @@ function showProfileScreen() {
   // già qualcosa di configurato, altrimenti restano chiuse di default
   document.getElementById('fsec-assoc')?.classList.toggle('collapsed', !u.assoc);
   document.getElementById('fsec-cellar-mgmt')?.classList.toggle('collapsed', !(u.cellarPosTree && u.cellarPosTree.length));
+  document.getElementById('fsec-admin').style.display = u.isAdmin ? '' : 'none';
 
   // Immagine profilo
   pendingAvatarBase64 = null;
@@ -5507,7 +5715,7 @@ async function loadNetworkFeed() {
   networkWinesCache = wines.map(row => ({
     ...row, aisParams: row.ais_params, fisarParams: row.fisar_params, aisScore: row.ais_score, fisarScore: row.fisar_score,
     olfNote: row.olf_note, gustNote: row.gust_note, fpNote: row.fp_note, degSchema: row.deg_schema,
-    frontImg: row.front_img, backImg: row.back_img, ownerName: profMap[row.user_id]?.full_name || 'Utente',
+    frontImg: row.front_img, backImg: row.back_img, wineryId: row.winery_id || null, ownerName: profMap[row.user_id]?.full_name || 'Utente',
     ownerAvatar: profMap[row.user_id]?.avatar_base64 || '', ownerAssoc: profMap[row.user_id]?.assoc || ''
   }));
 
@@ -5657,7 +5865,7 @@ function showNetworkWinePreview(id) {
       </div>
       <div class="dinfo" style="flex:1">
         <div class="dname">${w.name}</div>
-        <div class="dprod">${w.producer || ''}</div>
+        <div class="dprod">${w.producer || ''}${w.wineryId ? ` <a href="#" onclick="showWineryDetail('${w.wineryId}'); return false;" style="font-size:11.5px;color:var(--wine);text-decoration:underline">Scopri di più</a>` : ''}</div>
         <div class="dvintage">${w.vintage ? 'Annata: ' + w.vintage : ''}</div>
         <div style="display:flex;align-items:center;gap:6px;margin:6px 0 8px;font-size:12px;color:var(--muted)">
           ${w.ownerAvatar ? `<img src="${w.ownerAvatar}" style="width:20px;height:20px;border-radius:50%;object-fit:cover">` : ''}
@@ -5854,6 +6062,18 @@ document.getElementById('f-grapes-input')?.addEventListener('keydown', e => {
   if (e.key === 'Enter') { e.preventDefault(); addGrapeTag(e.target.value); }
 });
 
+// Suggerisce cantine già in anagrafica mentre si scrive il produttore, per
+// evitare doppioni per un refuso; selezionandone una si aggancia quella
+// scheda esatta (utile quando due produttori diversi hanno nomi simili).
+// Se l'utente continua a scrivere dopo aver scelto, il vincolo si scioglie
+// e al salvataggio si ricorre di nuovo al match/creazione automatica per nome.
+attachAutocomplete('f-producer', () => wineriesCache.map(wineryLabel), sel => {
+  const w = wineriesCache.find(x => wineryLabel(x) === sel);
+  document.getElementById('f-producer').value = w ? w.name : sel;
+  selectedWineryId = w ? w.id : null;
+});
+document.getElementById('f-producer')?.addEventListener('input', () => { selectedWineryId = null; });
+
 /* ── INIT ── */
 calcAIS(); calcFISAR();
 
@@ -5879,7 +6099,8 @@ Object.assign(window, {
   dismissPublicPrompt, acceptPublicPrompt, markFScoreManual,
   confirmSumDuplicateQty, confirmSaveDuplicateAsNew, closeDuplicateWinePrompt,
   addPosNode, removePosNode, addWinePosition, removeWinePosition, onPosL1Change, onPosL2Change, onPosL3Change,
-  addDetailPosition, removeDetailPosition, onDetailPosL1Change, onDetailPosL2Change, onDetailPosL3Change
+  addDetailPosition, removeDetailPosition, onDetailPosL1Change, onDetailPosL2Change, onDetailPosL3Change,
+  showWineryDetail, saveWineryDetails, uploadWineryLogo, goBackFromWinery, showAdminWineriesScreen
 });
 </script>
 </body>
