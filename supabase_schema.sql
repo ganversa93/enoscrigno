@@ -3664,3 +3664,78 @@ end;
 $$;
 revoke all on function public.get_admin_stats() from public, anon;
 grant execute on function public.get_admin_stats() to authenticated;
+
+-- ════════════════════════════════════════════════════════════════
+-- 2026-11-23 — "Cantine da completare": il Logo non conta più
+--
+-- Il Logo è il campo meno importante dei tre (si può anche solo usare
+-- la favicon del sito, vedi useFaviconAsLogo() in index.html, o
+-- lasciarlo vuoto senza che la scheda sia davvero incompleta) — da ora
+-- una cantina resta "da completare" solo se manca Sito o Descrizione,
+-- indipendentemente dal Logo. Stessa firma di ritorno di prima per
+-- entrambe le funzioni, nessun drop function necessario.
+-- ════════════════════════════════════════════════════════════════
+create or replace function public.get_wineries_to_complete()
+returns table (id uuid, name text, created_at timestamptz, created_by_name text)
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+begin
+  if not public.is_admin() then
+    raise exception 'not authorized';
+  end if;
+  return query
+    select w.id, w.name, w.created_at, p.full_name
+    from public.wineries w
+    left join public.profiles p on p.id = w.created_by
+    where w.website is null or w.description is null
+    order by w.created_at desc;
+end;
+$$;
+revoke all on function public.get_wineries_to_complete() from public, anon;
+grant execute on function public.get_wineries_to_complete() to authenticated;
+
+create or replace function public.get_admin_stats()
+returns table (
+  total_users bigint,
+  new_users_7d bigint,
+  new_users_30d bigint,
+  public_profiles bigint,
+  premium_users bigint,
+  total_wines bigint,
+  total_wineries bigint,
+  wineries_incomplete bigint,
+  scan_usage_global_current integer,
+  scan_usage_global_limit integer,
+  standalone_app_users bigint
+)
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+begin
+  if not public.is_admin() then
+    raise exception 'not authorized';
+  end if;
+  return query
+    select
+      (select count(*) from public.profiles)::bigint,
+      (select count(*) from public.profiles where created_at >= now() - interval '7 days')::bigint,
+      (select count(*) from public.profiles where created_at >= now() - interval '30 days')::bigint,
+      (select count(*) from public.profiles where is_public = true)::bigint,
+      (select count(*) from public.profiles where ai_scan_enabled = true)::bigint,
+      (select count(*) from public.wines)::bigint,
+      (select count(*) from public.wineries)::bigint,
+      (select count(*) from public.wineries
+        where website is null or description is null)::bigint,
+      coalesce((select su.count from public.scan_usage su
+        where su.scope = 'global' and su.period = to_char(now(), 'YYYY-MM')), 0),
+      coalesce((select sl.global_monthly_limit from public.scan_limits sl where sl.id), 800),
+      (select count(*) from public.profiles where uses_standalone_app = true)::bigint;
+end;
+$$;
+revoke all on function public.get_admin_stats() from public, anon;
+grant execute on function public.get_admin_stats() to authenticated;

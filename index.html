@@ -6147,9 +6147,10 @@ async function updateWineryLogoUrl(logoUrl, successMsg) {
 
 function goBackFromWinery() { showScreen(wineryReturnScreen || 'screen-list'); }
 
-// Elenco cantine a cui manca ancora Sito web, Descrizione o Logo — per
-// l'admin, da completare (Paese/Regione/Provincia non contano più per
-// questo elenco: si riempiono da soli gratis, vedi
+// Elenco cantine a cui manca ancora Sito web o Descrizione — per
+// l'admin, da completare (il Logo non conta: è il campo meno
+// importante, anche solo con la favicon va bene. Paese/Regione/
+// Provincia non contano nemmeno: si riempiono da soli gratis, vedi
 // inferWineriesFromWines()). get_wineries_to_complete() (SECURITY
 // DEFINER) invece di una query
 // diretta sulla tabella: serve anche il nome di chi ha creato ogni
